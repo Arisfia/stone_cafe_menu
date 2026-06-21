@@ -1,0 +1,54 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function adminProfile() {
+      return /databases/$(database)/documents/adminProfiles/$(request.auth.uid);
+    }
+
+    function isApprovedAdmin() {
+      return signedIn()
+        && (
+          request.auth.token.admin == true
+          || (
+            exists(adminProfile())
+            && get(adminProfile()).data.isAdmin == true
+            && get(adminProfile()).data.disabled != true
+          )
+        );
+    }
+
+    match /categories/{categoryId} {
+      allow get, list: if resource.data.isActive == true || isApprovedAdmin();
+      allow create, update, delete: if isApprovedAdmin();
+    }
+
+    match /menuItems/{menuItemId} {
+      allow get, list: if resource.data.isAvailable == true || isApprovedAdmin();
+      allow create, update, delete: if isApprovedAdmin();
+    }
+
+    match /settings/{settingsId} {
+      allow get, list: if settingsId in ["general", "menu", "appearance", "qr"] || isApprovedAdmin();
+      allow create, update, delete: if isApprovedAdmin();
+    }
+
+    match /adminProfiles/{uid} {
+      allow get: if isApprovedAdmin() || (signedIn() && request.auth.uid == uid);
+      allow list, create, update, delete: if isApprovedAdmin();
+    }
+
+    match /auditLogs/{logId} {
+      allow read, create: if isApprovedAdmin();
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
