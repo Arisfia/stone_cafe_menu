@@ -8,19 +8,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { logoutAdmin } from "@/lib/firebase/auth";
 import { cn } from "@/lib/utils/cn";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
+import { AdminPreferences, useAdminLocale } from "@/components/admin/admin-preferences";
 
 const nav = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
-  { href: "/admin/categories", label: "Categories", icon: ListTree },
-  { href: "/admin/menu-items", label: "Menu Items", icon: MenuSquare },
-  { href: "/admin/qr-code", label: "QR Code", icon: QrCode },
-  { href: "/admin/settings", label: "Settings", icon: Settings }
-];
+  { href: "/admin/dashboard", labelKey: "dashboard", icon: BarChart3 },
+  { href: "/admin/categories", labelKey: "categories", icon: ListTree },
+  { href: "/admin/menu-items", labelKey: "menuItems", icon: MenuSquare },
+  { href: "/admin/qr-code", labelKey: "qrCode", icon: QrCode },
+  { href: "/admin/settings", labelKey: "settings", icon: Settings }
+] as const;
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAdminAuth();
+  const { text } = useAdminLocale();
   const isLogin = pathname === "/admin/login";
 
   if (isLogin) return <>{children}</>;
@@ -30,13 +32,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <main className="flex min-h-screen items-center justify-center p-6">
         <Card className="max-w-xl">
           <CardContent className="space-y-4 pt-5">
-            <h1 className="text-2xl font-semibold">Firebase configuration required</h1>
-            <p className="text-muted-foreground">
-              Admin pages require Firebase Authentication and Firestore. Add the values in `.env.local`, create an approved
-              /adminProfiles/uid document, then restart the dev server.
-            </p>
+            <AdminPreferences />
+            <h1 className="text-2xl font-semibold">{text.firebaseRequiredTitle}</h1>
+            <p className="text-muted-foreground">{text.firebaseRequiredDescription}</p>
             <Button asChild>
-              <Link href="/menu">View public menu</Link>
+              <Link href="/menu">{text.viewPublicMenu}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -45,12 +45,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }
 
   if (auth.loading) {
-    return <main className="flex min-h-screen items-center justify-center text-muted-foreground">Checking admin session...</main>;
+    return <main className="flex min-h-screen items-center justify-center text-muted-foreground">{text.checkingSession}</main>;
   }
 
   if (!auth.user || !auth.isAdmin) {
     router.replace("/admin/login");
-    return <main className="flex min-h-screen items-center justify-center text-muted-foreground">Redirecting...</main>;
+    return <main className="flex min-h-screen items-center justify-center text-muted-foreground">{text.redirecting}</main>;
   }
 
   async function handleLogout() {
@@ -62,11 +62,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <aside className="no-print fixed inset-y-0 start-0 hidden w-64 border-e bg-card p-4 lg:block">
         <Link href="/menu" className="mb-6 block text-xl font-semibold">
-          Ary Menu Admin
+          {text.brand}
         </Link>
         <nav className="grid gap-1">
           {nav.map((entry) => {
             const Icon = entry.icon;
+            const label = text[entry.labelKey];
             return (
               <Link
                 key={entry.href}
@@ -77,25 +78,29 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <Icon className="h-4 w-4" aria-hidden />
-                {entry.label}
+                {label}
               </Link>
             );
           })}
         </nav>
+        <div className="mt-6 rounded-md border p-3">
+          <AdminPreferences />
+        </div>
         <Button className="mt-6 w-full" variant="outline" onClick={handleLogout}>
           <LogOut className="h-4 w-4" aria-hidden />
-          Logout
+          {text.logout}
         </Button>
       </aside>
       <header className="no-print sticky top-0 z-20 border-b bg-card lg:hidden">
         <div className="flex items-center gap-2 overflow-x-auto p-3">
           {nav.map((entry) => (
             <Button key={entry.href} asChild size="sm" variant={pathname === entry.href ? "default" : "outline"}>
-              <Link href={entry.href}>{entry.label}</Link>
+              <Link href={entry.href}>{text[entry.labelKey]}</Link>
             </Button>
           ))}
+          <AdminPreferences compact />
           <Button size="sm" variant="outline" onClick={handleLogout}>
-            Logout
+            {text.logout}
           </Button>
         </div>
       </header>
