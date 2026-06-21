@@ -9,12 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { useAdminLocale } from "@/components/admin/admin-preferences";
 import { getAdminAppData, saveSettings } from "@/lib/firebase/firestore";
 import { hasSafeQrContrast } from "@/lib/utils/qr";
 import { defaultQrSettings } from "@/data/default-data";
 import type { QrSettings } from "@/types/models";
 
 export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
+  const { text } = useAdminLocale();
   const [settings, setSettings] = useState<QrSettings>(defaultQrSettings);
   const [dataUrl, setDataUrl] = useState("");
   const [svg, setSvg] = useState("");
@@ -45,7 +47,7 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
 
   async function saveQr() {
     await saveSettings("qr", settings as unknown as Record<string, unknown>);
-    setMessage("QR settings saved.");
+    setMessage(text.qrSettingsSaved);
   }
 
   async function copyQr() {
@@ -54,20 +56,20 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
       if ("ClipboardItem" in window && dataUrl) {
         const blob = await (await fetch(dataUrl)).blob();
         await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-        setMessage("QR image copied to clipboard.");
+        setMessage(text.qrImageCopied);
         return;
       }
       await navigator.clipboard.writeText(settings.menuUrl);
-      setMessage("Image clipboard is unsupported, so the menu URL was copied.");
+      setMessage(text.qrImageUnsupported);
     } catch {
       await navigator.clipboard.writeText(settings.menuUrl);
-      setMessage("QR image copy failed, so the menu URL was copied.");
+      setMessage(text.qrImageCopyFailed);
     }
   }
 
   function copyUrl() {
     navigator.clipboard.writeText(settings.menuUrl);
-    setMessage("Menu URL copied.");
+    setMessage(text.menuUrlCopied);
   }
 
   function downloadPng() {
@@ -92,7 +94,7 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
         <div className="text-xl" dir="rtl">{settings.title.ar}</div>
         <div className="text-xl" dir="rtl">{settings.title.ckb}</div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        {dataUrl ? <img src={dataUrl} alt="Menu QR code" className="h-80 w-80" /> : null}
+        {dataUrl ? <img src={dataUrl} alt={text.menuQrCode} className="h-80 w-80" /> : null}
         <p className="break-all text-lg">{settings.menuUrl}</p>
       </main>
     );
@@ -101,32 +103,32 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
   return (
     <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
       <Card>
-        <CardHeader><CardTitle>QR Design</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{text.qrDesign}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <Field label="Menu URL">
+          <Field label={text.menuUrl}>
             <Input value={settings.menuUrl} onChange={(e) => setSettings({ ...settings, menuUrl: e.target.value })} />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Foreground color"><Input type="color" value={settings.foregroundColor} onChange={(e) => setSettings({ ...settings, foregroundColor: e.target.value })} /></Field>
-            <Field label="Background color"><Input type="color" value={settings.backgroundColor} onChange={(e) => setSettings({ ...settings, backgroundColor: e.target.value })} /></Field>
+            <Field label={text.foregroundColor}><Input type="color" value={settings.foregroundColor} onChange={(e) => setSettings({ ...settings, foregroundColor: e.target.value })} /></Field>
+            <Field label={text.backgroundColor}><Input type="color" value={settings.backgroundColor} onChange={(e) => setSettings({ ...settings, backgroundColor: e.target.value })} /></Field>
           </div>
-          {!safeContrast ? <p className="rounded-md border border-destructive p-3 text-sm text-destructive">Selected colors have poor contrast and may make the QR hard to scan.</p> : null}
+          {!safeContrast ? <p className="rounded-md border border-destructive p-3 text-sm text-destructive">{text.poorQrContrast}</p> : null}
           <div className="flex items-center justify-between rounded-md border p-3">
-            <span className="text-sm font-medium">Include logo</span>
-            <Switch label="Include logo" checked={settings.includeLogo} onCheckedChange={(checked) => setSettings({ ...settings, includeLogo: checked })} />
+            <span className="text-sm font-medium">{text.includeLogo}</span>
+            <Switch label={text.includeLogo} checked={settings.includeLogo} onCheckedChange={(checked) => setSettings({ ...settings, includeLogo: checked })} />
           </div>
           <div className="grid gap-4">
-            <Field label="Title English"><Input value={settings.title.en} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, en: e.target.value } })} /></Field>
-            <Field label="Title Arabic"><Input dir="rtl" value={settings.title.ar} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, ar: e.target.value } })} /></Field>
-            <Field label="Title Kurdish"><Input dir="rtl" value={settings.title.ckb} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, ckb: e.target.value } })} /></Field>
+            <Field label={text.titleEnglish}><Input value={settings.title.en} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, en: e.target.value } })} /></Field>
+            <Field label={text.titleArabic}><Input dir="rtl" value={settings.title.ar} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, ar: e.target.value } })} /></Field>
+            <Field label={text.titleKurdish}><Input dir="rtl" value={settings.title.ckb} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, ckb: e.target.value } })} /></Field>
           </div>
           {message ? <p className="text-sm text-primary">{message}</p> : null}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={saveQr}>Save</Button>
-            <Button variant="outline" onClick={reset}><RotateCcw className="h-4 w-4" aria-hidden /> Reset</Button>
+            <Button onClick={saveQr}>{text.save}</Button>
+            <Button variant="outline" onClick={reset}><RotateCcw className="h-4 w-4" aria-hidden /> {text.reset}</Button>
             <Button variant="outline" onClick={() => setShowPreview((value) => !value)}>
               {showPreview ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
-              {showPreview ? "Hide" : "Show"}
+              {showPreview ? text.hide : text.show}
             </Button>
           </div>
         </CardContent>
@@ -134,30 +136,30 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
 
       <div className="space-y-4">
         <div>
-          <h1 className="text-3xl font-semibold">Main Menu QR Code</h1>
-          <p className="text-muted-foreground">One printable and copyable QR code for `/menu`. No table QR codes are generated.</p>
+          <h1 className="text-3xl font-semibold">{text.mainMenuQrCode}</h1>
+          <p className="text-muted-foreground">{text.qrDescription}</p>
         </div>
         {showPreview ? (
           <Card>
             <CardContent className="flex flex-col items-center gap-4 pt-5 text-center">
               <h2 className="text-xl font-semibold">{settings.title.en}</h2>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {dataUrl ? <img src={dataUrl} alt="Menu QR code" className="h-72 w-72 rounded-md border bg-white p-3" /> : null}
+              {dataUrl ? <img src={dataUrl} alt={text.menuQrCode} className="h-72 w-72 rounded-md border bg-white p-3" /> : null}
               <p className="break-all text-sm text-muted-foreground">{settings.menuUrl}</p>
             </CardContent>
           </Card>
         ) : null}
         <div className="flex flex-wrap gap-2">
-          <Button onClick={copyUrl}><Copy className="h-4 w-4" aria-hidden /> Copy URL</Button>
-          <Button variant="secondary" onClick={copyQr}><Copy className="h-4 w-4" aria-hidden /> Copy QR</Button>
+          <Button onClick={copyUrl}><Copy className="h-4 w-4" aria-hidden /> {text.copyUrl}</Button>
+          <Button variant="secondary" onClick={copyQr}><Copy className="h-4 w-4" aria-hidden /> {text.copyQr}</Button>
           <Button variant="outline" onClick={downloadPng}><Download className="h-4 w-4" aria-hidden /> PNG</Button>
           <Button variant="outline" onClick={downloadSvg}><Download className="h-4 w-4" aria-hidden /> SVG</Button>
-          <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" aria-hidden /> Print</Button>
+          <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" aria-hidden /> {text.print}</Button>
           <Button asChild variant="outline">
-            <Link href="/admin/qr-code/print" target="_blank"><Printer className="h-4 w-4" aria-hidden /> Print page</Link>
+            <Link href="/admin/qr-code/print" target="_blank"><Printer className="h-4 w-4" aria-hidden /> {text.printPage}</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={settings.menuUrl} target="_blank"><ExternalLink className="h-4 w-4" aria-hidden /> Test link</Link>
+            <Link href={settings.menuUrl} target="_blank"><ExternalLink className="h-4 w-4" aria-hidden /> {text.testLink}</Link>
           </Button>
         </div>
       </div>

@@ -12,7 +12,9 @@ import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploadField } from "@/components/forms/image-upload-field";
+import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { deleteMenuItem, getAdminAppData, saveMenuItem } from "@/lib/firebase/firestore";
+import { localized } from "@/lib/i18n/config";
 import { menuItemSchema } from "@/lib/validation/schemas";
 import type { AppData, MenuItem } from "@/types/models";
 
@@ -45,6 +47,7 @@ const emptyItem: MenuItemFormData = {
 };
 
 export function MenuItemManager() {
+  const { locale, text } = useAdminLocale();
   const [data, setData] = useState<AppData | null>(null);
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -94,7 +97,7 @@ export function MenuItemManager() {
     setAllergensText("");
     setDietaryText("");
     await refresh();
-    setMessage("Menu item saved.");
+    setMessage(text.menuItemSaved);
     setSaving(false);
   }
 
@@ -124,7 +127,7 @@ export function MenuItemManager() {
   }
 
   async function remove(item: MenuItem) {
-    if (!window.confirm(`Delete ${item.name.en}?`)) return;
+    if (!window.confirm(formatAdminText(text.deleteItemConfirm, { name: localized(item.name, locale, item.name.en) }))) return;
     await deleteMenuItem(item.id);
     await refresh();
   }
@@ -147,37 +150,37 @@ export function MenuItemManager() {
     <div className="grid gap-6 2xl:grid-cols-[520px_1fr]">
       <Card>
         <CardHeader>
-          <CardTitle>Menu Item</CardTitle>
+          <CardTitle>{text.menuItem}</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-            <Field label="Category" error={form.formState.errors.categoryId?.message}>
+            <Field label={text.category} error={adminErrorText(form.formState.errors.categoryId?.message, text)}>
               <Select {...form.register("categoryId")}>
-                <option value="">Choose category</option>
+                <option value="">{text.chooseCategory}</option>
                 {(data?.categories || []).map((category) => (
-                  <option key={category.id} value={category.id}>{category.name.en}</option>
+                  <option key={category.id} value={category.id}>{localized(category.name, locale, category.name.en)}</option>
                 ))}
               </Select>
             </Field>
             <div className="grid gap-4 md:grid-cols-3">
-              <Field label="English name" error={form.formState.errors.name?.en?.message}><Input {...form.register("name.en")} /></Field>
-              <Field label="Arabic name" error={form.formState.errors.name?.ar?.message}><Input dir="rtl" {...form.register("name.ar")} /></Field>
-              <Field label="Kurdish name" error={form.formState.errors.name?.ckb?.message}><Input dir="rtl" {...form.register("name.ckb")} /></Field>
+              <Field label={text.englishName} error={adminErrorText(form.formState.errors.name?.en?.message, text)}><Input {...form.register("name.en")} /></Field>
+              <Field label={text.arabicName} error={adminErrorText(form.formState.errors.name?.ar?.message, text)}><Input dir="rtl" {...form.register("name.ar")} /></Field>
+              <Field label={text.kurdishName} error={adminErrorText(form.formState.errors.name?.ckb?.message, text)}><Input dir="rtl" {...form.register("name.ckb")} /></Field>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
-              <Field label="English description"><Textarea {...form.register("description.en")} /></Field>
-              <Field label="Arabic description"><Textarea dir="rtl" {...form.register("description.ar")} /></Field>
-              <Field label="Kurdish description"><Textarea dir="rtl" {...form.register("description.ckb")} /></Field>
+              <Field label={text.englishDescription}><Textarea {...form.register("description.en")} /></Field>
+              <Field label={text.arabicDescription}><Textarea dir="rtl" {...form.register("description.ar")} /></Field>
+              <Field label={text.kurdishDescription}><Textarea dir="rtl" {...form.register("description.ckb")} /></Field>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
-              <Field label="English ingredients"><Input {...form.register("ingredients.en")} /></Field>
-              <Field label="Arabic ingredients"><Input dir="rtl" {...form.register("ingredients.ar")} /></Field>
-              <Field label="Kurdish ingredients"><Input dir="rtl" {...form.register("ingredients.ckb")} /></Field>
+              <Field label={text.englishIngredients}><Input {...form.register("ingredients.en")} /></Field>
+              <Field label={text.arabicIngredients}><Input dir="rtl" {...form.register("ingredients.ar")} /></Field>
+              <Field label={text.kurdishIngredients}><Input dir="rtl" {...form.register("ingredients.ckb")} /></Field>
             </div>
             <div className="grid gap-4 md:grid-cols-4">
-              <Field label="Base price"><Input type="number" {...form.register("basePrice")} /></Field>
-              <Field label="Discount price"><Input type="number" {...form.register("discountPrice")} /></Field>
-              <Field label="Currency">
+              <Field label={text.basePrice}><Input type="number" {...form.register("basePrice")} /></Field>
+              <Field label={text.discountPrice}><Input type="number" {...form.register("discountPrice")} /></Field>
+              <Field label={text.currency}>
                 <Select {...form.register("currency")}>
                   <option value="IQD">IQD</option>
                   <option value="USD">USD</option>
@@ -185,25 +188,25 @@ export function MenuItemManager() {
                   <option value="TRY">TRY</option>
                 </Select>
               </Field>
-              <Field label="Display order"><Input type="number" {...form.register("displayOrder")} /></Field>
+              <Field label={text.displayOrder}><Input type="number" {...form.register("displayOrder")} /></Field>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
-              <Field label="Preparation minutes"><Input type="number" {...form.register("preparationMinutes")} /></Field>
-              <Field label="Calories"><Input type="number" {...form.register("calories")} /></Field>
-              <Field label="Spicy level"><Input type="number" min={0} max={5} {...form.register("spicyLevel")} /></Field>
+              <Field label={text.preparationMinutes}><Input type="number" {...form.register("preparationMinutes")} /></Field>
+              <Field label={text.calories}><Input type="number" {...form.register("calories")} /></Field>
+              <Field label={text.spicyLevel}><Input type="number" min={0} max={5} {...form.register("spicyLevel")} /></Field>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
-              <Field label="Tags"><Input value={tagsText} onChange={(event) => setTagsText(event.target.value)} placeholder="coffee, cold" /></Field>
-              <Field label="Allergens"><Input value={allergensText} onChange={(event) => setAllergensText(event.target.value)} placeholder="Dairy, nuts" /></Field>
-              <Field label="Dietary labels"><Input value={dietaryText} onChange={(event) => setDietaryText(event.target.value)} placeholder="vegetarian, sugar-free" /></Field>
+              <Field label={text.tags}><Input value={tagsText} onChange={(event) => setTagsText(event.target.value)} placeholder={text.tagsPlaceholder} /></Field>
+              <Field label={text.allergens}><Input value={allergensText} onChange={(event) => setAllergensText(event.target.value)} placeholder={text.allergensPlaceholder} /></Field>
+              <Field label={text.dietaryLabels}><Input value={dietaryText} onChange={(event) => setDietaryText(event.target.value)} placeholder={text.dietaryLabelsPlaceholder} /></Field>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               {[
-                ["isAvailable", "Available"],
-                ["isSoldOut", "Sold out"],
-                ["isFeatured", "Featured"],
-                ["isPopular", "Popular"],
-                ["isNew", "New"]
+                ["isAvailable", text.available],
+                ["isSoldOut", text.soldOut],
+                ["isFeatured", text.featured],
+                ["isPopular", text.popular],
+                ["isNew", text.isNew]
               ].map(([name, label]) => (
                 <div key={name} className="flex items-center justify-between rounded-md border p-3">
                   <span className="text-sm font-medium">{label}</span>
@@ -216,7 +219,8 @@ export function MenuItemManager() {
               ))}
             </div>
             <ImageUploadField
-              label="Item image"
+              label={text.itemImage}
+              text={text}
               path={`menu-items/${form.watch("id") || "new"}`}
               imageUrl={form.watch("imageUrl") || ""}
               onUploaded={(result) => {
@@ -226,29 +230,29 @@ export function MenuItemManager() {
             />
             <div className="space-y-3 rounded-md border p-3">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="font-medium">Variants</h3>
-                <Button type="button" variant="outline" size="sm" onClick={addVariant}>Add variant</Button>
+                <h3 className="font-medium">{text.variants}</h3>
+                <Button type="button" variant="outline" size="sm" onClick={addVariant}>{text.addVariant}</Button>
               </div>
               {form.watch("variants").map((variant, index) => (
                 <div key={variant.id} className="grid gap-2 rounded-md bg-muted/50 p-3 md:grid-cols-5">
-                  <Input {...form.register(`variants.${index}.name.en`)} placeholder="English" />
-                  <Input dir="rtl" {...form.register(`variants.${index}.name.ar`)} placeholder="Arabic" />
-                  <Input dir="rtl" {...form.register(`variants.${index}.name.ckb`)} placeholder="Kurdish" />
-                  <Input type="number" {...form.register(`variants.${index}.price`)} placeholder="Price" />
+                  <Input {...form.register(`variants.${index}.name.en`)} placeholder={text.english} />
+                  <Input dir="rtl" {...form.register(`variants.${index}.name.ar`)} placeholder={text.arabic} />
+                  <Input dir="rtl" {...form.register(`variants.${index}.name.ckb`)} placeholder={text.kurdish} />
+                  <Input type="number" {...form.register(`variants.${index}.price`)} placeholder={text.price} />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => form.setValue("variants", form.getValues("variants").filter((_, entryIndex) => entryIndex !== index))}
                   >
-                    Remove
+                    {text.remove}
                   </Button>
                 </div>
               ))}
             </div>
             {message ? <p className="text-sm text-primary">{message}</p> : null}
             <div className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save item"}</Button>
-              <Button type="button" variant="outline" onClick={() => form.reset(emptyItem)}>New</Button>
+              <Button type="submit" disabled={saving}>{saving ? text.saving : text.saveItem}</Button>
+              <Button type="button" variant="outline" onClick={() => form.reset(emptyItem)}>{text.new}</Button>
             </div>
           </form>
         </CardContent>
@@ -256,22 +260,22 @@ export function MenuItemManager() {
 
       <div className="space-y-4">
         <div>
-          <h1 className="text-3xl font-semibold">Menu Items</h1>
-          <p className="text-muted-foreground">Create, edit, duplicate, delete, filter, preview, and manage item status.</p>
+          <h1 className="text-3xl font-semibold">{text.menuItems}</h1>
+          <p className="text-muted-foreground">{text.menuItemDescription}</p>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
-          <Input placeholder="Search items" value={query} onChange={(event) => setQuery(event.target.value)} />
+          <Input placeholder={text.searchItems} value={query} onChange={(event) => setQuery(event.target.value)} />
           <Select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-            <option value="all">All categories</option>
+            <option value="all">{text.allCategories}</option>
             {(data?.categories || []).map((category) => (
-              <option key={category.id} value={category.id}>{category.name.en}</option>
+              <option key={category.id} value={category.id}>{localized(category.name, locale, category.name.en)}</option>
             ))}
           </Select>
           <Select value={availabilityFilter} onChange={(event) => setAvailabilityFilter(event.target.value)}>
-            <option value="all">All statuses</option>
-            <option value="available">Available</option>
-            <option value="sold-out">Sold out</option>
-            <option value="missing-translations">Missing translations</option>
+            <option value="all">{text.allStatuses}</option>
+            <option value="available">{text.available}</option>
+            <option value="sold-out">{text.soldOut}</option>
+            <option value="missing-translations">{text.missingTranslations}</option>
           </Select>
         </div>
         <div className="grid gap-3">
@@ -279,18 +283,18 @@ export function MenuItemManager() {
             <Card key={item.id}>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-5">
                 <div>
-                  <p className="font-semibold">{item.name.en}</p>
-                  <p className="text-sm text-muted-foreground">{item.name.ar} / {item.name.ckb}</p>
+                  <p className="font-semibold">{localized(item.name, locale, item.name.en)}</p>
+                  <p className="text-sm text-muted-foreground">{item.name.en} / {item.name.ar} / {item.name.ckb}</p>
                   <p className="text-xs text-muted-foreground">
-                    {data?.categories.find((category) => category.id === item.categoryId)?.name.en || "No category"} · {item.basePrice} {item.currency}
-                    {item.isSoldOut ? " · Sold out" : ""}
+                    {localized(data?.categories.find((category) => category.id === item.categoryId)?.name, locale, text.noCategory)} · {item.basePrice} {item.currency}
+                    {item.isSoldOut ? ` · ${text.soldOut}` : ""}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => edit(item)}>Edit</Button>
-                  <Button variant="outline" onClick={() => duplicate(item)}>Duplicate</Button>
-                  <Button variant="outline" onClick={() => window.open(`/menu/item/${item.id}`, "_blank")}>Preview</Button>
-                  <Button variant="destructive" onClick={() => remove(item)}>Delete</Button>
+                  <Button variant="outline" onClick={() => edit(item)}>{text.edit}</Button>
+                  <Button variant="outline" onClick={() => duplicate(item)}>{text.duplicate}</Button>
+                  <Button variant="outline" onClick={() => window.open(`/menu/item/${item.id}`, "_blank")}>{text.preview}</Button>
+                  <Button variant="destructive" onClick={() => remove(item)}>{text.delete}</Button>
                 </div>
               </CardContent>
             </Card>
