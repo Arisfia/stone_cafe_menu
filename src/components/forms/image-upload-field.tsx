@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,10 @@ export function ImageUploadField({
   const storageConfigured = hasSupabaseConfig();
   const isUploading = progress > 0 && progress < 100;
 
+  useEffect(() => {
+    setPreview(imageUrl || "");
+  }, [imageUrl]);
+
   async function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -47,6 +51,7 @@ export function ImageUploadField({
     setProgress(0);
     try {
       const result = await uploadImage(path, file, setProgress);
+      setPreview(result.imageUrl);
       onUploaded(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : text?.imageUploadFailed || "Image upload failed.");

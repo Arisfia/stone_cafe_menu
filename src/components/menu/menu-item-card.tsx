@@ -22,6 +22,7 @@ export function MenuItemCard({
   const description = localized(item.description, locale);
   const Arrow = dirForLocale(locale) === "rtl" ? ArrowLeft : ArrowRight;
   const hasDiscount = Boolean(item.discountPrice);
+  const showImageBlock = Boolean(item.imageUrl) || settings.showImages;
 
   return (
     <article
@@ -30,7 +31,7 @@ export function MenuItemCard({
         featured && "border-primary/40 ring-1 ring-primary/20"
       )}
     >
-      {settings.showImages ? (
+      {showImageBlock ? (
         <div className="relative aspect-[5/4] overflow-hidden bg-gradient-to-br from-accent via-primary/5 to-secondary/10">
           {item.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -95,11 +96,11 @@ export function MenuItemCard({
         {description ? <p className="line-clamp-2 text-sm text-muted-foreground">{description}</p> : null}
 
         <div className="flex flex-wrap items-center gap-1.5">
-          {!settings.showImages && item.isSoldOut ? (
+          {!showImageBlock && item.isSoldOut ? (
             <Pill tone="destructive">{translate(locale, "menu.soldOut")}</Pill>
           ) : null}
-          {!settings.showImages && item.isNew ? <Pill tone="primary">{translate(locale, "menu.new")}</Pill> : null}
-          {!settings.showImages && item.isPopular ? (
+          {!showImageBlock && item.isNew ? <Pill tone="primary">{translate(locale, "menu.new")}</Pill> : null}
+          {!showImageBlock && item.isPopular ? (
             <Pill tone="secondary">{translate(locale, "menu.popular")}</Pill>
           ) : null}
           {item.spicyLevel && item.spicyLevel > 0 ? (

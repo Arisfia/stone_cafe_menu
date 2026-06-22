@@ -16,8 +16,6 @@ export const categorySchema = z.object({
   id: z.string().optional().default(""),
   name: localizedRequired,
   description: localizedOptional,
-  imageUrl: z.string().url().optional().or(z.literal("")),
-  imagePath: z.string().optional(),
   slug: z.string().min(1, "Slug is required."),
   displayOrder: z.coerce.number().int().min(0),
   isActive: z.boolean().default(true)

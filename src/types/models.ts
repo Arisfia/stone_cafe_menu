@@ -9,8 +9,6 @@ export type Category = {
   id: string;
   name: LocalizedText;
   description: OptionalLocalizedText;
-  imageUrl?: string;
-  imagePath?: string;
   slug: string;
   displayOrder: number;
   isActive: boolean;

@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { ImageUploadField } from "@/components/forms/image-upload-field";
 import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { getAdminAppData, deleteCategory, saveCategory, saveMenuItem } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
@@ -25,8 +24,6 @@ const emptyCategory: CategoryFormData = {
   id: "",
   name: { en: "", ar: "", ckb: "" },
   description: { en: "", ar: "", ckb: "" },
-  imageUrl: "",
-  imagePath: "",
   slug: "",
   displayOrder: 0,
   isActive: true
@@ -86,9 +83,11 @@ export function CategoryManager() {
 
   function edit(category: Category) {
     form.reset({
-      ...category,
-      imageUrl: category.imageUrl || "",
-      imagePath: category.imagePath || "",
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      displayOrder: category.displayOrder,
+      isActive: category.isActive,
       description: {
         en: category.description.en || "",
         ar: category.description.ar || "",
@@ -137,16 +136,6 @@ export function CategoryManager() {
               <span className="text-sm font-medium">{text.active}</span>
               <Switch label={text.active} checked={form.watch("isActive")} onCheckedChange={(checked) => form.setValue("isActive", checked)} />
             </div>
-            <ImageUploadField
-              label={text.categoryImage}
-              text={text}
-              path={`categories/${form.watch("id") || "new"}`}
-              imageUrl={form.watch("imageUrl") || ""}
-              onUploaded={(result) => {
-                form.setValue("imageUrl", result.imageUrl);
-                form.setValue("imagePath", result.imagePath);
-              }}
-            />
             {message ? <p className="text-sm text-primary">{message}</p> : null}
             <div className="flex gap-2">
               <Button type="submit" disabled={saving}>{saving ? text.saving : text.saveCategory}</Button>
