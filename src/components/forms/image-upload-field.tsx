@@ -5,8 +5,8 @@ import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { adminErrorText } from "@/components/admin/admin-preferences";
-import { hasFirebaseClientConfig } from "@/lib/firebase/client";
-import { uploadImage, validateImageFile } from "@/lib/firebase/storage";
+import { hasSupabaseConfig } from "@/lib/supabase/client";
+import { uploadImage, validateImageFile } from "@/lib/supabase/storage";
 
 export function ImageUploadField({
   label,
@@ -35,6 +35,7 @@ export function ImageUploadField({
       return;
     }
     setPreview(URL.createObjectURL(file));
+    setProgress(0);
     try {
       const result = await uploadImage(path, file, setProgress);
       onUploaded(result);
@@ -51,7 +52,7 @@ export function ImageUploadField({
         <img src={preview} alt="" className="h-32 w-full rounded-md border object-cover" />
       ) : null}
       <div className="flex items-center gap-2">
-        <Input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleChange} disabled={!hasFirebaseClientConfig()} />
+        <Input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleChange} disabled={!hasSupabaseConfig()} />
         <Button type="button" variant="outline" size="icon" aria-label={text?.uploadImage || "Upload image"} disabled>
           <Upload className="h-4 w-4" aria-hidden />
         </Button>
@@ -60,7 +61,7 @@ export function ImageUploadField({
         <p className="text-sm text-muted-foreground">{(text?.uploading || "Uploading {progress}%").replace("{progress}", String(progress))}</p>
       ) : null}
       {error ? <p className="text-sm text-destructive">{text ? adminErrorText(error, text) : error}</p> : null}
-      {!hasFirebaseClientConfig() ? <p className="text-xs text-muted-foreground">{text?.configureStorage || "Configure Firebase Storage to enable uploads."}</p> : null}
+      {!hasSupabaseConfig() ? <p className="text-xs text-muted-foreground">{text?.configureStorage || "Configure Supabase Storage to enable uploads."}</p> : null}
     </div>
   );
 }
