@@ -68,6 +68,22 @@ textarea {
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
 }
 
+/* Lock the viewport to a single static screen (welcome page).
+   position:fixed on body stops iOS Safari rubber-band overscroll. */
+html.overflow-lock,
+body.overflow-lock {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.overflow-lock {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  touch-action: none;
+}
+
 /* Welcome screen coffee-shop animations */
 @keyframes steam-rise {
   0% { transform: translateY(4px) scaleX(0.85); opacity: 0; }

@@ -21,10 +21,21 @@ export function WelcomeScreen() {
   const logoUrl = defaultAppData.general.logoUrl;
   const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
 
+  // Lock the page to a single, non-scrollable screen (prevents iOS Safari
+  // rubber-band overscroll). Reverted on unmount so /menu can scroll normally.
+  useEffect(() => {
+    document.documentElement.classList.add("overflow-lock");
+    document.body.classList.add("overflow-lock");
+    return () => {
+      document.documentElement.classList.remove("overflow-lock");
+      document.body.classList.remove("overflow-lock");
+    };
+  }, []);
+
   return (
     <main
       dir={dir}
-      className="relative flex h-[100svh] items-center justify-center overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-stone-100 p-4 dark:from-stone-950 dark:via-[#1b140f] dark:to-stone-900"
+      className="relative flex h-[100svh] touch-none items-center justify-center overflow-hidden overscroll-none bg-gradient-to-br from-amber-50 via-orange-50 to-stone-100 p-4 dark:from-stone-950 dark:via-[#1b140f] dark:to-stone-900"
     >
       <CoffeeBackground />
 
