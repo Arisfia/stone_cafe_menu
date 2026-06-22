@@ -77,6 +77,14 @@ body.overflow-lock {
   overscroll-behavior: none;
 }
 
+html.overflow-lock {
+  background: #fffbeb; /* amber-50, matches the welcome gradient base */
+}
+
+html.overflow-lock.dark {
+  background: #0c0a09; /* stone-950 */
+}
+
 body.overflow-lock {
   position: fixed;
   inset: 0;

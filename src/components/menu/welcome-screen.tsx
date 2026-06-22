@@ -35,7 +35,7 @@ export function WelcomeScreen() {
   return (
     <main
       dir={dir}
-      className="relative flex h-[100svh] touch-none items-center justify-center overflow-hidden overscroll-none bg-gradient-to-br from-amber-50 via-orange-50 to-stone-100 p-4 dark:from-stone-950 dark:via-[#1b140f] dark:to-stone-900"
+      className="fixed inset-0 flex touch-none items-center justify-center overflow-hidden overscroll-none bg-gradient-to-br from-amber-50 via-orange-50 to-stone-100 p-4 dark:from-stone-950 dark:via-[#1b140f] dark:to-stone-900"
     >
       <CoffeeBackground />
 
