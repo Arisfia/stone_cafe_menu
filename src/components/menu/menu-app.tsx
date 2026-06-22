@@ -6,6 +6,7 @@ import {
   BadgePercent,
   Bean,
   CakeSlice,
+  CircleCheck,
   Coffee,
   CupSoda,
   Egg,
@@ -13,6 +14,7 @@ import {
   LayoutGrid,
   Leaf,
   MapPin,
+  MessageCircle,
   Phone,
   Sandwich,
   Search,
@@ -121,7 +123,7 @@ export function MenuApp({
 
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 font-medium text-primary">
-              <span className="h-2 w-2 rounded-full bg-primary" aria-hidden />
+              <CircleCheck className="h-4 w-4" aria-hidden />
               {translate(locale, "menu.available")}
             </span>
             {data.general.phone ? (
@@ -132,6 +134,7 @@ export function MenuApp({
             ) : null}
             {data.general.whatsapp ? (
               <a className="focus-ring inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`https://wa.me/${data.general.whatsapp.replace(/\D/g, "")}`} target="_blank">
+                <MessageCircle className="h-4 w-4 text-primary" aria-hidden />
                 {translate(locale, "menu.whatsapp")}
               </a>
             ) : null}
