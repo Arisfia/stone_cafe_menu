@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 import { defaultAppData } from "@/data/default-data";
 import { getFirebaseDb } from "@/lib/firebase/client";
+import { removeImage } from "@/lib/supabase/storage";
 import { slugify } from "@/lib/utils/format";
 import type { AppData, Category, MenuItem } from "@/types/models";
 
@@ -52,7 +53,11 @@ export async function getPublicAppData(): Promise<AppData> {
 
   return {
     categories: categorySnap.docs.map((entry) => entry.data()),
-    menuItems: itemSnap.docs.map((entry) => entry.data()),
+    menuItems: itemSnap.docs.map((entry) => {
+      const item = { ...entry.data() };
+      delete item.imageHistory;
+      return item;
+    }),
     general: generalSnap.exists() ? { ...defaultAppData.general, ...generalSnap.data() } : defaultAppData.general,
     menu: menuSnap.exists() ? { ...defaultAppData.menu, ...menuSnap.data() } : defaultAppData.menu,
     appearance: appearanceSnap.exists() ? { ...defaultAppData.appearance, ...appearanceSnap.data() } : defaultAppData.appearance,
@@ -73,9 +78,12 @@ export async function getAdminAppData(): Promise<AppData> {
     getDoc(doc(db, "settings", "qr"))
   ]);
 
+  const menuItems = itemSnap.docs.map((entry) => entry.data());
+  await Promise.all(menuItems.map((item) => pruneExpiredImageHistory(item, true)));
+
   return {
     categories: categorySnap.docs.map((entry) => entry.data()),
-    menuItems: itemSnap.docs.map((entry) => entry.data()),
+    menuItems: menuItems.map(withActiveImageHistory),
     general: generalSnap.exists() ? { ...defaultAppData.general, ...generalSnap.data() } : defaultAppData.general,
     menu: menuSnap.exists() ? { ...defaultAppData.menu, ...menuSnap.data() } : defaultAppData.menu,
     appearance: appearanceSnap.exists() ? { ...defaultAppData.appearance, ...appearanceSnap.data() } : defaultAppData.appearance,
@@ -108,8 +116,9 @@ export async function deleteCategory(categoryId: string) {
 export async function saveMenuItem(item: MenuItem) {
   const db = getFirebaseDb();
   if (!db) return;
+  await pruneExpiredImageHistory(item, false);
   const payload = {
-    ...item,
+    ...withActiveImageHistory(item),
     updatedAt: serverTimestamp(),
     createdAt: item.createdAt || serverTimestamp()
   };
@@ -118,6 +127,27 @@ export async function saveMenuItem(item: MenuItem) {
   } else {
     await addDoc(collection(db, "menuItems").withConverter(itemConverter), payload);
   }
+}
+
+async function pruneExpiredImageHistory(item: MenuItem, persist: boolean) {
+  const expired = (item.imageHistory || []).filter((entry) => isExpired(entry.expiresAt));
+  if (!expired.length) return;
+  await Promise.allSettled(expired.map((entry) => removeImage(entry.imagePath)));
+  if (persist && item.id) {
+    const db = getFirebaseDb();
+    if (db) await updateDoc(doc(db, "menuItems", item.id), { imageHistory: withActiveImageHistory(item).imageHistory || [] });
+  }
+}
+
+function withActiveImageHistory(item: MenuItem): MenuItem {
+  return {
+    ...item,
+    imageHistory: (item.imageHistory || []).filter((entry) => !isExpired(entry.expiresAt))
+  };
+}
+
+function isExpired(value: string) {
+  return Number.isFinite(Date.parse(value)) && Date.parse(value) <= Date.now();
 }
 
 export async function deleteMenuItem(itemId: string) {

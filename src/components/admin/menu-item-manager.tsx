@@ -16,7 +16,7 @@ import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/ad
 import { deleteMenuItem, getAdminAppData, saveMenuItem } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
 import { menuItemSchema } from "@/lib/validation/schemas";
-import type { AppData, MenuItem } from "@/types/models";
+import type { AppData, ImageHistoryEntry, MenuItem } from "@/types/models";
 
 type MenuItemFormData = z.infer<typeof menuItemSchema>;
 
@@ -28,6 +28,7 @@ const emptyItem: MenuItemFormData = {
   ingredients: { en: "", ar: "", ckb: "" },
   imageUrl: "",
   imagePath: "",
+  imageHistory: [],
   basePrice: 0,
   discountPrice: undefined,
   currency: "IQD",
@@ -115,7 +116,8 @@ export function MenuItemManager() {
         ckb: item.ingredients?.ckb || ""
       },
       imageUrl: item.imageUrl || "",
-      imagePath: item.imagePath || ""
+      imagePath: item.imagePath || "",
+      imageHistory: activeImageHistory(item.imageHistory)
     });
     setTagsText(item.tags.join(", "));
     setAllergensText(item.allergens.join(", "));
@@ -123,7 +125,7 @@ export function MenuItemManager() {
   }
 
   function duplicate(item: MenuItem) {
-    edit({ ...item, id: "", name: { ...item.name, en: `${item.name.en} Copy` }, displayOrder: item.displayOrder + 1 });
+    edit({ ...item, id: "", imageHistory: [], name: { ...item.name, en: `${item.name.en} Copy` }, displayOrder: item.displayOrder + 1 });
   }
 
   async function remove(item: MenuItem) {
@@ -223,9 +225,27 @@ export function MenuItemManager() {
               text={text}
               path={`menu-items/${form.watch("id") || "new"}`}
               imageUrl={form.watch("imageUrl") || ""}
+              imageHistory={form.watch("imageHistory") || []}
               onUploaded={(result) => {
+                form.setValue("imageHistory", addCurrentImageToHistory(form.getValues()));
                 form.setValue("imageUrl", result.imageUrl);
                 form.setValue("imagePath", result.imagePath);
+              }}
+              onRemoved={() => {
+                form.setValue("imageHistory", addCurrentImageToHistory(form.getValues()));
+                form.setValue("imageUrl", "");
+                form.setValue("imagePath", "");
+              }}
+              onRollback={(entry) => {
+                const values = form.getValues();
+                const history = addCurrentImageToHistory({
+                  imageUrl: values.imageUrl,
+                  imagePath: values.imagePath,
+                  imageHistory: (values.imageHistory || []).filter((item) => item.id !== entry.id)
+                });
+                form.setValue("imageUrl", entry.imageUrl);
+                form.setValue("imagePath", entry.imagePath);
+                form.setValue("imageHistory", history);
               }}
             />
             <div className="space-y-3 rounded-md border p-3">
@@ -310,4 +330,31 @@ function splitList(value: string) {
     .split(",")
     .map((entry) => entry.trim())
     .filter(Boolean);
+}
+
+function addCurrentImageToHistory({
+  imageUrl,
+  imagePath,
+  imageHistory = []
+}: {
+  imageUrl?: string;
+  imagePath?: string;
+  imageHistory?: ImageHistoryEntry[];
+}) {
+  const active = activeImageHistory(imageHistory);
+  if (!imageUrl || !imagePath) return active;
+  const createdAt = new Date();
+  const previous: ImageHistoryEntry = {
+    id: crypto.randomUUID(),
+    imageUrl,
+    imagePath,
+    createdAt: createdAt.toISOString(),
+    expiresAt: new Date(createdAt.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  };
+  return [previous, ...active.filter((entry) => entry.imagePath !== imagePath && entry.imageUrl !== imageUrl)];
+}
+
+function activeImageHistory(history: ImageHistoryEntry[] = []) {
+  const now = Date.now();
+  return history.filter((entry) => Number.isFinite(Date.parse(entry.expiresAt)) && Date.parse(entry.expiresAt) > now);
 }

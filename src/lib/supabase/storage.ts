@@ -60,10 +60,11 @@ export async function removeImage(path?: string) {
   const baseUrl = SUPABASE_URL;
   const key = SUPABASE_KEY;
   if (!baseUrl || !key || !path) return;
-  await fetch(`${baseUrl}/storage/v1/object/${path}`, {
+  const response = await fetch(`${baseUrl}/storage/v1/object/${path}`, {
     method: "DELETE",
     headers: { authorization: `Bearer ${key}`, apikey: key }
   });
+  if (!response.ok) throw new Error(parseError(await response.text()) || "Image delete failed.");
 }
 
 function parseError(body: string) {

@@ -29,6 +29,14 @@ export const variantSchema = z.object({
   displayOrder: z.coerce.number().int().min(0)
 });
 
+const imageHistoryEntrySchema = z.object({
+  id: z.string().min(1),
+  imageUrl: z.string().url(),
+  imagePath: z.string().min(1),
+  createdAt: z.string().min(1),
+  expiresAt: z.string().min(1)
+});
+
 export const menuItemSchema = z.object({
   id: z.string().optional().default(""),
   categoryId: z.string().min(1, "Category is required."),
@@ -37,6 +45,7 @@ export const menuItemSchema = z.object({
   ingredients: localizedOptional,
   imageUrl: z.string().url().optional().or(z.literal("")),
   imagePath: z.string().optional(),
+  imageHistory: z.array(imageHistoryEntrySchema).default([]),
   basePrice: z.coerce.number().int().min(0),
   discountPrice: z.coerce.number().int().min(0).optional(),
   currency: z.enum(["IQD", "USD", "EUR", "TRY"]),

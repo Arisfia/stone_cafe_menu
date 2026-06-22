@@ -24,6 +24,14 @@ export type MenuVariant = {
   displayOrder: number;
 };
 
+export type ImageHistoryEntry = {
+  id: string;
+  imageUrl: string;
+  imagePath: string;
+  createdAt: string;
+  expiresAt: string;
+};
+
 export type MenuItem = {
   id: string;
   categoryId: string;
@@ -32,6 +40,7 @@ export type MenuItem = {
   ingredients?: OptionalLocalizedText;
   imageUrl?: string;
   imagePath?: string;
+  imageHistory?: ImageHistoryEntry[];
   basePrice: number;
   discountPrice?: number;
   currency: Currency;

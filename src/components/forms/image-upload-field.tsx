@@ -1,25 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Upload } from "lucide-react";
+import { RotateCcw, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { adminErrorText } from "@/components/admin/admin-preferences";
 import { hasSupabaseConfig } from "@/lib/supabase/client";
 import { uploadImage, validateImageFile } from "@/lib/supabase/storage";
+import type { ImageHistoryEntry } from "@/types/models";
 
 export function ImageUploadField({
   label,
   text,
   path,
   imageUrl,
-  onUploaded
+  imageHistory = [],
+  onUploaded,
+  onRemoved,
+  onRollback
 }: {
   label: string;
   text?: Record<string, string>;
   path: string;
   imageUrl?: string;
+  imageHistory?: ImageHistoryEntry[];
   onUploaded: (result: { imageUrl: string; imagePath: string }) => void;
+  onRemoved?: () => void;
+  onRollback?: (entry: ImageHistoryEntry) => void;
 }) {
   const [preview, setPreview] = useState(imageUrl || "");
   const [progress, setProgress] = useState(0);
@@ -60,6 +67,18 @@ export function ImageUploadField({
     }
   }
 
+  function removeCurrentImage() {
+    setError("");
+    setPreview("");
+    onRemoved?.();
+  }
+
+  function rollbackImage(entry: ImageHistoryEntry) {
+    setError("");
+    setPreview(entry.imageUrl);
+    onRollback?.(entry);
+  }
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">{label}</label>
@@ -85,7 +104,40 @@ export function ImageUploadField({
         >
           <Upload className="h-4 w-4" aria-hidden />
         </Button>
+        {imageUrl && onRemoved ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={text?.removeImage || "Remove image"}
+            disabled={isUploading}
+            onClick={removeCurrentImage}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden />
+          </Button>
+        ) : null}
       </div>
+      {imageHistory.length > 0 && onRollback ? (
+        <div className="flex flex-wrap gap-2">
+          {imageHistory.map((entry) => (
+            <div key={entry.id} className="relative h-16 w-16 overflow-hidden rounded-md border bg-muted">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={entry.imageUrl} alt="" className="h-full w-full object-cover" />
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                className="absolute inset-1 h-7 w-7 bg-background/90 text-foreground hover:bg-background"
+                aria-label={text?.rollbackImage || "Restore previous image"}
+                disabled={isUploading}
+                onClick={() => rollbackImage(entry)}
+              >
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+            </div>
+          ))}
+        </div>
+      ) : null}
       {isUploading ? (
         <p className="text-sm text-muted-foreground">{(text?.uploading || "Uploading {progress}%").replace("{progress}", String(progress))}</p>
       ) : null}
