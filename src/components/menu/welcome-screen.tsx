@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -33,6 +33,14 @@ export function WelcomeScreen() {
   const logoUrl = defaultAppData.general.logoUrl;
   const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
 
+  // Match the Stone Cafe logo green (#719567). Scoped to this subtree so the
+  // shared Button / selectors recolor here without affecting /menu or /admin.
+  const accentStyle = {
+    "--primary": "107 22% 36%",
+    "--primary-foreground": "0 0% 100%",
+    "--ring": "107 22% 36%"
+  } as CSSProperties;
+
   // Lock the page to a single, non-scrollable screen (prevents iOS Safari
   // rubber-band overscroll). Reverted on unmount so /menu can scroll normally.
   useEffect(() => {
@@ -47,12 +55,13 @@ export function WelcomeScreen() {
   return (
     <main
       dir={dir}
-      className="fixed inset-0 flex touch-none items-center justify-center overflow-hidden overscroll-none bg-gradient-to-br from-amber-50 via-orange-50 to-stone-100 p-4 dark:from-stone-950 dark:via-[#1b140f] dark:to-stone-900"
+      style={accentStyle}
+      className="fixed inset-0 flex touch-none items-center justify-center overflow-hidden overscroll-none bg-gradient-to-br from-[#eef3ec] via-[#e3eede] to-[#d5e3ce] p-4 dark:from-[#0d160c] dark:via-[#121d10] dark:to-[#0a120a]"
     >
       <CoffeeBackground />
 
-      <section className="relative z-10 w-full max-w-md rounded-3xl border border-amber-200/60 bg-card/80 p-6 text-center shadow-2xl backdrop-blur-xl dark:border-amber-900/40 sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700 dark:text-amber-400">
+      <section className="relative z-10 w-full max-w-md rounded-3xl border border-[#cdddc2]/70 bg-card/80 p-6 text-center shadow-2xl backdrop-blur-xl dark:border-[#2b3a25]/60 sm:p-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#577249] dark:text-[#a3c497]">
           {translate(locale, "welcome.greeting")}
         </p>
 
@@ -218,14 +227,14 @@ function CoffeeBackground() {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-      {/* warm aroma blobs */}
-      <div className="aroma-pan absolute -left-24 -top-24 h-80 w-80 rounded-full bg-amber-300/30 blur-3xl dark:bg-amber-700/20" />
+      {/* sage aroma blobs (+ a soft gold one echoing the logo's stone) */}
+      <div className="aroma-pan absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[#719567]/30 blur-3xl dark:bg-[#4e7341]/20" />
       <div
-        className="aroma-pan absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-orange-300/30 blur-3xl dark:bg-orange-800/20"
+        className="aroma-pan absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-[#8cae80]/30 blur-3xl dark:bg-[#2f4a26]/25"
         style={{ animationDelay: "4s" }}
       />
       <div
-        className="aroma-pan absolute right-1/3 top-10 h-56 w-56 rounded-full bg-rose-200/20 blur-3xl dark:bg-rose-900/10"
+        className="aroma-pan absolute right-1/3 top-10 h-56 w-56 rounded-full bg-[#e3c14d]/20 blur-3xl dark:bg-[#6b5a1f]/15"
         style={{ animationDelay: "8s" }}
       />
 
@@ -233,7 +242,7 @@ function CoffeeBackground() {
       {figures.map(({ Icon, ...figure }, index) => (
         <span
           key={index}
-          className="bean-float absolute text-amber-800 dark:text-amber-500"
+          className="bean-float absolute text-[#5f7d52] dark:text-[#9cbb90]"
           style={{ top: figure.top, left: figure.left, animationDelay: figure.delay, opacity: figure.opacity }}
         >
           <Icon style={{ width: figure.size, height: figure.size }} aria-hidden />

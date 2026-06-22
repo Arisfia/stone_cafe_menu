@@ -78,11 +78,11 @@ body.overflow-lock {
 }
 
 html.overflow-lock {
-  background: #fffbeb; /* amber-50, matches the welcome gradient base */
+  background: #eef3ec; /* matches the welcome gradient base (sage) */
 }
 
 html.overflow-lock.dark {
-  background: #0c0a09; /* stone-950 */
+  background: #0a120a; /* deep green */
 }
 
 body.overflow-lock {
