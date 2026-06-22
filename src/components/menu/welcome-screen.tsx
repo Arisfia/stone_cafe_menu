@@ -105,7 +105,9 @@ export function WelcomeScreen() {
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {translate(locale, "welcome.chooseLanguage")}
           </p>
-          <div className="flex justify-center">
+          {/* Fixed ltr order so the buttons keep their position when the
+              selected language flips the page between rtl and ltr. */}
+          <div className="flex justify-center" dir="ltr">
             <LanguageSelector locale={locale} onChange={setLocale} />
           </div>
         </div>
