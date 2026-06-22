@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Clock, Flame } from "lucide-react";
 import { dirForLocale, localized, translate } from "@/lib/i18n/config";
 import { formatMoney } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
+import { FallbackMenuImage } from "@/components/menu/fallback-menu-image";
 import type { Category, Locale, MenuItem, MenuSettings } from "@/types/models";
 
 export function MenuItemCard({
@@ -22,7 +23,6 @@ export function MenuItemCard({
   const description = localized(item.description, locale);
   const Arrow = dirForLocale(locale) === "rtl" ? ArrowLeft : ArrowRight;
   const hasDiscount = Boolean(item.discountPrice);
-  const showImageBlock = Boolean(item.imageUrl) || settings.showImages;
 
   return (
     <article
@@ -31,37 +31,23 @@ export function MenuItemCard({
         featured && "border-primary/40 ring-1 ring-primary/20"
       )}
     >
-      {showImageBlock ? (
-        <div className="relative aspect-[5/4] overflow-hidden bg-gradient-to-br from-accent via-primary/5 to-secondary/10">
-          {item.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.imageUrl}
-              alt={title}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center p-6">
-              <span className="text-center text-lg font-semibold leading-snug text-primary/70">{title}</span>
-            </div>
-          )}
+      <div className="relative aspect-[5/4] overflow-hidden bg-gradient-to-br from-accent via-primary/5 to-secondary/10">
+        <FallbackMenuImage src={item.imageUrl} alt={title} />
 
-          <div className="absolute inset-x-3 top-3 flex flex-wrap gap-1.5">
-            {item.isNew ? <Pill tone="primary">{translate(locale, "menu.new")}</Pill> : null}
-            {item.isPopular ? <Pill tone="secondary">{translate(locale, "menu.popular")}</Pill> : null}
-            {item.isFeatured ? <Pill tone="accent">{translate(locale, "menu.featured")}</Pill> : null}
-          </div>
-
-          {item.isSoldOut ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/65 backdrop-blur-[2px]">
-              <span className="rounded-full border border-destructive bg-background/90 px-4 py-1.5 text-sm font-semibold text-destructive">
-                {translate(locale, "menu.soldOut")}
-              </span>
-            </div>
-          ) : null}
+        <div className="absolute inset-x-3 top-3 flex flex-wrap gap-1.5">
+          {item.isNew ? <Pill tone="primary">{translate(locale, "menu.new")}</Pill> : null}
+          {item.isPopular ? <Pill tone="secondary">{translate(locale, "menu.popular")}</Pill> : null}
+          {item.isFeatured ? <Pill tone="accent">{translate(locale, "menu.featured")}</Pill> : null}
         </div>
-      ) : null}
+
+        {item.isSoldOut ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/65 backdrop-blur-[2px]">
+            <span className="rounded-full border border-destructive bg-background/90 px-4 py-1.5 text-sm font-semibold text-destructive">
+              {translate(locale, "menu.soldOut")}
+            </span>
+          </div>
+        ) : null}
+      </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3">
@@ -96,13 +82,6 @@ export function MenuItemCard({
         {description ? <p className="line-clamp-2 text-sm text-muted-foreground">{description}</p> : null}
 
         <div className="flex flex-wrap items-center gap-1.5">
-          {!showImageBlock && item.isSoldOut ? (
-            <Pill tone="destructive">{translate(locale, "menu.soldOut")}</Pill>
-          ) : null}
-          {!showImageBlock && item.isNew ? <Pill tone="primary">{translate(locale, "menu.new")}</Pill> : null}
-          {!showImageBlock && item.isPopular ? (
-            <Pill tone="secondary">{translate(locale, "menu.popular")}</Pill>
-          ) : null}
           {item.spicyLevel && item.spicyLevel > 0 ? (
             <Pill tone="muted">
               <Flame className="h-3 w-3" aria-hidden />
