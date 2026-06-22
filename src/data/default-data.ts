@@ -2,9 +2,9 @@ import type { AppData, Category, GeneralSettings, MenuItem } from "@/types/model
 
 export const defaultGeneralSettings: GeneralSettings = {
   restaurantName: {
-    en: "Ary Cafe & Restaurant",
-    ar: "مقهى ومطعم آري",
-    ckb: "کافێ و چێشتخانەی ئاری"
+    en: "Stone Cafe",
+    ar: "ستون كافيه",
+    ckb: "ستۆن کافێ"
   },
   description: {
     en: "Fresh coffee, warm meals, and desserts served all day.",
@@ -14,7 +14,7 @@ export const defaultGeneralSettings: GeneralSettings = {
   logoUrl: "/stone-cafe-logo.jpg",
   phone: "+964 750 000 0000",
   whatsapp: "+9647500000000",
-  email: "hello@ary-cafe.example",
+  email: "hello@stone-cafe.example",
   address: "Erbil, Kurdistan Region",
   googleMapsUrl: "https://maps.google.com",
   socialLinks: {
@@ -59,9 +59,9 @@ export const defaultQrSettings = {
     ckb: "کۆدەکە سکان بکە بۆ بینینی مینیو"
   },
   subtitle: {
-    en: "Ary Cafe & Restaurant",
-    ar: "مقهى ومطعم آري",
-    ckb: "کافێ و چێشتخانەی ئاری"
+    en: "Stone Cafe",
+    ar: "ستون كافيه",
+    ckb: "ستۆن کافێ"
   }
 };
 
@@ -84,7 +84,7 @@ export const defaultMenuItems: MenuItem[] = [
   item("fresh-orange-juice", "cold-drinks", 5, "Fresh Orange Juice", "عصير برتقال طازج", "شەربەتی پرتەقاڵی تازە", 4000, ["juice", "sugar-free"], false, false, true),
   item("classic-cheesecake", "desserts", 6, "Classic Cheesecake", "تشيز كيك كلاسيكي", "چیزکێکی کلاسیکی", 5500, ["dessert"], false, true, false),
   item("chicken-sandwich", "sandwiches", 7, "Grilled Chicken Sandwich", "سندويش دجاج مشوي", "ساندویچی مریشکی برژاو", 6500, ["chicken"], false, false, false),
-  item("ary-breakfast", "breakfast", 8, "Ary Breakfast Plate", "طبق فطور آري", "پلێتی نانی بەیانی ئاری", 9000, ["breakfast"], true, false, false),
+  item("stone-breakfast", "breakfast", 8, "Stone Breakfast Plate", "طبق فطور ستون", "پلێتی نانی بەیانی ستۆن", 9000, ["breakfast"], true, false, false),
   item("lentil-soup", "main-meals", 9, "Lentil Soup", "شوربة عدس", "شۆربای نیسک", 3500, ["vegetarian"], false, false, false),
   item("family-offer", "special-offers", 10, "Family Coffee Set", "مجموعة قهوة عائلية", "سێتی قاوەی خێزان", 18000, ["offer"], true, false, true)
 ];

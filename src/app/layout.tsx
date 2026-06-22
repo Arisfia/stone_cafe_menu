@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ary Cafe Digital Menu",
+  title: "Stone Cafe Digital Menu",
   description: "Multilingual cafe and restaurant digital menu"
 };
 

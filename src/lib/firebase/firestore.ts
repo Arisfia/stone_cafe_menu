@@ -43,7 +43,7 @@ export async function getPublicAppData(): Promise<AppData> {
 
   const [categorySnap, itemSnap, generalSnap, menuSnap, appearanceSnap, qrSnap] = await Promise.all([
     getDocs(query(collection(db, "categories").withConverter(categoryConverter), where("isActive", "==", true), orderBy("displayOrder"), limit(100))),
-    getDocs(query(collection(db, "menuItems").withConverter(itemConverter), orderBy("displayOrder"), limit(200))),
+    getDocs(query(collection(db, "menuItems").withConverter(itemConverter), where("isAvailable", "==", true), orderBy("displayOrder"), limit(200))),
     getDoc(doc(db, "settings", "general")),
     getDoc(doc(db, "settings", "menu")),
     getDoc(doc(db, "settings", "appearance")),
@@ -52,7 +52,7 @@ export async function getPublicAppData(): Promise<AppData> {
 
   return {
     categories: categorySnap.docs.map((entry) => entry.data()),
-    menuItems: itemSnap.docs.map((entry) => entry.data()).filter((entry) => entry.isAvailable),
+    menuItems: itemSnap.docs.map((entry) => entry.data()),
     general: generalSnap.exists() ? { ...defaultAppData.general, ...generalSnap.data() } : defaultAppData.general,
     menu: menuSnap.exists() ? { ...defaultAppData.menu, ...menuSnap.data() } : defaultAppData.menu,
     appearance: appearanceSnap.exists() ? { ...defaultAppData.appearance, ...appearanceSnap.data() } : defaultAppData.appearance,
