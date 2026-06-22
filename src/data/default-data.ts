@@ -11,6 +11,7 @@ export const defaultGeneralSettings: GeneralSettings = {
     ar: "قهوة طازجة ووجبات دافئة وحلويات طوال اليوم.",
     ckb: "قاوەی تازە، خواردنی گەرم و شیرینی لە درێژایی ڕۆژدا."
   },
+  logoUrl: "/stone-cafe-logo.jpg",
   phone: "+964 750 000 0000",
   whatsapp: "+9647500000000",
   email: "hello@ary-cafe.example",

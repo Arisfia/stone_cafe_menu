@@ -24,21 +24,33 @@ export function WelcomeScreen() {
   return (
     <main
       dir={dir}
-      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-stone-100 p-4 dark:from-stone-950 dark:via-[#1b140f] dark:to-stone-900"
+      className="relative flex h-[100svh] items-center justify-center overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-stone-100 p-4 dark:from-stone-950 dark:via-[#1b140f] dark:to-stone-900"
     >
       <CoffeeBackground />
 
-      <section className="relative z-10 w-full max-w-md rounded-3xl border border-amber-200/60 bg-card/80 p-8 text-center shadow-2xl backdrop-blur-xl dark:border-amber-900/40">
-        {/* Logo placeholder / steaming coffee */}
-        <div className="mx-auto mb-6 flex flex-col items-center gap-2">
-          <div className="relative flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-600 shadow-lg ring-4 ring-amber-200/50 dark:ring-amber-900/40">
+      <section className="relative z-10 w-full max-w-md rounded-3xl border border-amber-200/60 bg-card/80 p-6 text-center shadow-2xl backdrop-blur-xl dark:border-amber-900/40 sm:p-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700 dark:text-amber-400">
+          {translate(locale, "welcome.greeting")}
+        </p>
+
+        {/* Logo (placeholder steaming cup when no logo is set) */}
+        <div className="mx-auto my-4 flex flex-col items-center gap-2">
+          <div
+            className={cn(
+              "relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full shadow-lg ring-4",
+              logoUrl
+                ? "ring-white/70 dark:ring-white/10"
+                : "bg-gradient-to-br from-amber-400 to-orange-600 ring-amber-200/50 dark:ring-amber-900/40"
+            )}
+          >
             {logoUrl ? (
               <Image
                 src={logoUrl}
                 alt={restaurantName}
                 width={112}
                 height={112}
-                className="h-full w-full rounded-full object-cover"
+                className="h-full w-full object-cover"
+                priority
               />
             ) : (
               <SteamingCup />
@@ -51,14 +63,11 @@ export function WelcomeScreen() {
           ) : null}
         </div>
 
-        <p className="text-sm font-medium uppercase tracking-widest text-amber-700 dark:text-amber-400">
-          {translate(locale, "welcome.greeting")}
-        </p>
-        <h1 className="mt-1 text-3xl font-bold text-foreground">{restaurantName}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{translate(locale, "welcome.tagline")}</p>
+        {!logoUrl ? <h1 className="text-3xl font-bold text-foreground">{restaurantName}</h1> : null}
+        <p className="text-sm text-muted-foreground">{translate(locale, "welcome.tagline")}</p>
 
         {/* Language */}
-        <div className="mt-8 space-y-3">
+        <div className="mt-6 space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {translate(locale, "welcome.chooseLanguage")}
           </p>
