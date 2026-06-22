@@ -2,11 +2,32 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { MapPin, Phone, Search, Sparkles, UtensilsCrossed } from "lucide-react";
+import {
+  BadgePercent,
+  Bean,
+  CakeSlice,
+  Coffee,
+  CupSoda,
+  Egg,
+  Flame,
+  LayoutGrid,
+  Leaf,
+  MapPin,
+  Phone,
+  Sandwich,
+  Search,
+  Sparkles,
+  Star,
+  TrendingUp,
+  Utensils,
+  UtensilsCrossed,
+  type LucideIcon
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MenuItemCard } from "@/components/menu/menu-item-card";
-import { LanguageSelector } from "@/components/menu/language-selector";
+import { LanguageGlobe } from "@/components/menu/language-globe";
+import { MenuBackground } from "@/components/menu/menu-background";
 import { ThemeToggle } from "@/components/menu/theme-toggle";
 import { defaultAppData } from "@/data/default-data";
 import { getPublicAppData } from "@/lib/firebase/firestore";
@@ -72,9 +93,10 @@ export function MenuApp({
   const logoUrl = data.general.logoUrl;
 
   return (
-    <main dir={dir} className="min-h-screen bg-background">
+    <main dir={dir} className="relative min-h-screen">
+      <MenuBackground />
       {/* Branded header */}
-      <header className="relative overflow-hidden border-b bg-gradient-to-b from-accent/50 via-card to-card">
+      <header className="relative overflow-hidden border-b bg-gradient-to-b from-accent/55 via-card/95 to-card/90 backdrop-blur-sm">
         <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" aria-hidden />
         <div className="container relative grid gap-5 py-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -93,7 +115,7 @@ export function MenuApp({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <ThemeToggle />
-              <LanguageSelector locale={locale} onChange={setLocale} />
+              <LanguageGlobe locale={locale} onChange={setLocale} />
             </div>
           </div>
 
@@ -133,11 +155,16 @@ export function MenuApp({
       {/* Sticky category pills */}
       <nav className="sticky top-0 z-10 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
         <div className="container flex gap-2 overflow-x-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <CategoryPill active={categoryId === "all"} onClick={() => setCategoryId("all")}>
+          <CategoryPill active={categoryId === "all"} onClick={() => setCategoryId("all")} Icon={LayoutGrid}>
             {translate(locale, "menu.all")}
           </CategoryPill>
           {data.categories.map((category) => (
-            <CategoryPill key={category.id} active={categoryId === category.id} onClick={() => setCategoryId(category.id)}>
+            <CategoryPill
+              key={category.id}
+              active={categoryId === category.id}
+              onClick={() => setCategoryId(category.id)}
+              Icon={categoryIcon(category.slug)}
+            >
               {localized(category.name, locale)}
             </CategoryPill>
           ))}
@@ -151,17 +178,21 @@ export function MenuApp({
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
               {translate(locale, "menu.filters")}
             </span>
-            {(["all", "featured", "popular", "new", "vegetarian", "spicy"] as const).map((entry) => (
-              <Button
-                key={entry}
-                size="sm"
-                variant={filter === entry ? "secondary" : "outline"}
-                className="rounded-full"
-                onClick={() => setFilter(entry)}
-              >
-                {entry === "all" ? translate(locale, "menu.all") : translate(locale, `menu.${entry}`)}
-              </Button>
-            ))}
+            {(["all", "featured", "popular", "new", "vegetarian", "spicy"] as const).map((entry) => {
+              const FilterIcon = FILTER_ICONS[entry];
+              return (
+                <Button
+                  key={entry}
+                  size="sm"
+                  variant={filter === entry ? "secondary" : "outline"}
+                  className="rounded-full"
+                  onClick={() => setFilter(entry)}
+                >
+                  <FilterIcon className="h-3.5 w-3.5" aria-hidden />
+                  {entry === "all" ? translate(locale, "menu.all") : translate(locale, `menu.${entry}`)}
+                </Button>
+              );
+            })}
           </div>
         ) : null}
 
@@ -208,16 +239,51 @@ export function MenuApp({
   );
 }
 
-function CategoryPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  breakfast: Egg,
+  "hot-drinks": Coffee,
+  "cold-drinks": CupSoda,
+  coffee: Bean,
+  desserts: CakeSlice,
+  sandwiches: Sandwich,
+  "main-meals": UtensilsCrossed,
+  "special-offers": BadgePercent
+};
+
+function categoryIcon(slug: string): LucideIcon {
+  return CATEGORY_ICONS[slug] ?? Utensils;
+}
+
+const FILTER_ICONS: Record<string, LucideIcon> = {
+  all: LayoutGrid,
+  featured: Star,
+  popular: TrendingUp,
+  new: Sparkles,
+  vegetarian: Leaf,
+  spicy: Flame
+};
+
+function CategoryPill({
+  active,
+  onClick,
+  children,
+  Icon
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  Icon: LucideIcon;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "focus-ring whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+        "focus-ring inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors",
         active ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-card text-foreground hover:bg-muted"
       )}
     >
+      <Icon className="h-4 w-4" aria-hidden />
       {children}
     </button>
   );
