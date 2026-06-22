@@ -22,7 +22,6 @@ import { useLocale } from "@/hooks/use-locale";
 import { localized, translate } from "@/lib/i18n/config";
 import { defaultAppData } from "@/data/default-data";
 import { cn } from "@/lib/utils/cn";
-import type { Locale } from "@/types/models";
 
 const themeStorageKey = "ary-menu-theme";
 const themeChangeEvent = "ary-menu-theme-change";
@@ -33,12 +32,13 @@ export function WelcomeScreen() {
   const logoUrl = defaultAppData.general.logoUrl;
   const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
 
-  // Match the Stone Cafe logo green (#719567). Scoped to this subtree so the
-  // shared Button / selectors recolor here without affecting /menu or /admin.
+  // Brand mint #A4D8A6 (HSL 122 40% 75%) as the accent. Deep-green foreground
+  // keeps text legible on the light mint. Scoped to this subtree so the shared
+  // Button / selectors recolor here without affecting /menu or /admin.
   const accentStyle = {
-    "--primary": "107 22% 36%",
-    "--primary-foreground": "0 0% 100%",
-    "--ring": "107 22% 36%"
+    "--primary": "122 40% 75%",
+    "--primary-foreground": "128 44% 14%",
+    "--ring": "122 40% 75%"
   } as CSSProperties;
 
   // Lock the page to a single, non-scrollable screen (prevents iOS Safari
@@ -56,12 +56,14 @@ export function WelcomeScreen() {
     <main
       dir={dir}
       style={accentStyle}
-      className="fixed inset-0 flex touch-none items-center justify-center overflow-hidden overscroll-none bg-gradient-to-br from-[#eef3ec] via-[#e3eede] to-[#d5e3ce] p-4 dark:from-[#0d160c] dark:via-[#121d10] dark:to-[#0a120a]"
+      className="fixed inset-0 flex touch-none items-center justify-center overflow-hidden overscroll-none bg-gradient-to-br from-[#d7efd8] via-[#A4D8A6] to-[#86cc8a] p-4 dark:from-[#0c1810] dark:via-[#10210f] dark:to-[#0a140b]"
     >
       <CoffeeBackground />
 
-      <section className="relative z-10 w-full max-w-md rounded-3xl border border-[#cdddc2]/70 bg-card/80 p-6 text-center shadow-2xl backdrop-blur-xl dark:border-[#2b3a25]/60 sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#577249] dark:text-[#a3c497]">
+      <section className="relative z-10 w-full max-w-md rounded-3xl border border-[#86cc8a]/60 bg-card/85 p-6 text-center shadow-2xl backdrop-blur-xl dark:border-[#2b3a25]/60 sm:p-8">
+        <ThemeWheel className="absolute end-4 top-4 z-20" />
+
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7a3b] dark:text-[#A4D8A6]">
           {translate(locale, "welcome.greeting")}
         </p>
 
@@ -108,14 +110,6 @@ export function WelcomeScreen() {
           </div>
         </div>
 
-        {/* Theme */}
-        <div className="mt-6 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {translate(locale, "welcome.appearance")}
-          </p>
-          <ThemeSelector locale={locale} />
-        </div>
-
         {/* Enter */}
         <Button asChild size="default" className="mt-8 h-12 w-full text-base font-semibold">
           <Link href="/menu">
@@ -128,8 +122,9 @@ export function WelcomeScreen() {
   );
 }
 
-function ThemeSelector({ locale }: { locale: Locale }) {
+function ThemeWheel({ className }: { className?: string }) {
   const [dark, setDark] = useState(false);
+  const [turns, setTurns] = useState(0);
 
   useEffect(() => {
     function apply(isDark: boolean) {
@@ -152,41 +147,48 @@ function ThemeSelector({ locale }: { locale: Locale }) {
     };
   }, []);
 
-  function choose(isDark: boolean) {
-    setDark(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
-    const next = isDark ? "dark" : "light";
-    window.localStorage.setItem(themeStorageKey, next);
-    window.dispatchEvent(new CustomEvent(themeChangeEvent, { detail: next }));
+  function toggle() {
+    const next = !dark;
+    setDark(next);
+    setTurns((value) => value + 1);
+    document.documentElement.classList.toggle("dark", next);
+    const stored = next ? "dark" : "light";
+    window.localStorage.setItem(themeStorageKey, stored);
+    window.dispatchEvent(new CustomEvent(themeChangeEvent, { detail: stored }));
   }
 
   return (
-    <div className="inline-flex items-center gap-1 rounded-full border bg-background p-1">
-      <button
-        type="button"
-        onClick={() => choose(false)}
-        aria-pressed={!dark}
-        className={cn(
-          "focus-ring inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-          !dark ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-        )}
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label="Toggle light and dark mode"
+      aria-pressed={dark}
+      className={cn(
+        "focus-ring group flex h-11 w-11 items-center justify-center rounded-full border border-[#86cc8a]/60 bg-background/70 shadow-sm backdrop-blur transition-colors hover:bg-muted dark:border-[#2b3a25]/60",
+        className
+      )}
+    >
+      {/* Spinning wheel that turns a full rotation on every press */}
+      <span
+        className="relative h-5 w-5 transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+        style={{ transform: `rotate(${turns * 360}deg)` }}
       >
-        <Sun className="h-4 w-4" aria-hidden />
-        {translate(locale, "welcome.light")}
-      </button>
-      <button
-        type="button"
-        onClick={() => choose(true)}
-        aria-pressed={dark}
-        className={cn(
-          "focus-ring inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-          dark ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-        )}
-      >
-        <Moon className="h-4 w-4" aria-hidden />
-        {translate(locale, "welcome.dark")}
-      </button>
-    </div>
+        <Sun
+          className={cn(
+            "absolute inset-0 h-5 w-5 text-amber-500 transition-all duration-500",
+            dark ? "scale-0 -rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"
+          )}
+          aria-hidden
+        />
+        <Moon
+          className={cn(
+            "absolute inset-0 h-5 w-5 text-indigo-400 transition-all duration-500",
+            dark ? "scale-100 rotate-0 opacity-100" : "scale-0 rotate-90 opacity-0"
+          )}
+          aria-hidden
+        />
+      </span>
+    </button>
   );
 }
 
@@ -227,14 +229,14 @@ function CoffeeBackground() {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-      {/* sage aroma blobs (+ a soft gold one echoing the logo's stone) */}
-      <div className="aroma-pan absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[#719567]/30 blur-3xl dark:bg-[#4e7341]/20" />
+      {/* mint aroma blobs (+ a soft light glow) */}
+      <div className="aroma-pan absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[#A4D8A6]/45 blur-3xl dark:bg-[#A4D8A6]/15" />
       <div
-        className="aroma-pan absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-[#8cae80]/30 blur-3xl dark:bg-[#2f4a26]/25"
+        className="aroma-pan absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-[#c2ecc3]/50 blur-3xl dark:bg-[#2f4a26]/25"
         style={{ animationDelay: "4s" }}
       />
       <div
-        className="aroma-pan absolute right-1/3 top-10 h-56 w-56 rounded-full bg-[#e3c14d]/20 blur-3xl dark:bg-[#6b5a1f]/15"
+        className="aroma-pan absolute right-1/3 top-10 h-56 w-56 rounded-full bg-white/35 blur-3xl dark:bg-[#3a5a33]/20"
         style={{ animationDelay: "8s" }}
       />
 
@@ -242,7 +244,7 @@ function CoffeeBackground() {
       {figures.map(({ Icon, ...figure }, index) => (
         <span
           key={index}
-          className="bean-float absolute text-[#5f7d52] dark:text-[#9cbb90]"
+          className="bean-float absolute text-[#3f8a49] dark:text-[#A4D8A6]"
           style={{ top: figure.top, left: figure.left, animationDelay: figure.delay, opacity: figure.opacity }}
         >
           <Icon style={{ width: figure.size, height: figure.size }} aria-hidden />
