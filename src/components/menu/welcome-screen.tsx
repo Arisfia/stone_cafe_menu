@@ -61,7 +61,9 @@ export function WelcomeScreen() {
       <CoffeeBackground />
 
       <section className="relative z-10 w-full max-w-md rounded-3xl border border-[#86cc8a]/60 bg-card/85 p-6 text-center shadow-2xl backdrop-blur-xl dark:border-[#2b3a25]/60 sm:p-8">
-        <ThemeWheel className="absolute end-4 top-4 z-20" />
+        {/* Fixed physical corner (right) so it doesn't move when the selected
+            language flips the page direction. */}
+        <ThemeWheel className="absolute right-4 top-4 z-20" />
 
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7a3b] dark:text-[#A4D8A6]">
           {translate(locale, "welcome.greeting")}
