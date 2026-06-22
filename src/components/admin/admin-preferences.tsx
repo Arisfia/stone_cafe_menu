@@ -275,7 +275,7 @@ export const adminText: Record<Locale, AdminText> = {
     menuUrlCopied: "Menu URL copied.",
     uploadImage: "Upload image",
     uploading: "Uploading {progress}%",
-    configureStorage: "Configure Firebase Storage to enable uploads.",
+    configureStorage: "Configure Supabase Storage to enable uploads.",
     imageUploadFailed: "Image upload failed.",
     invalidImageType: "Use a JPG, PNG, or WebP image.",
     imageTooLarge: "Images must be 5 MB or smaller.",
@@ -444,7 +444,7 @@ export const adminText: Record<Locale, AdminText> = {
     menuUrlCopied: "تم نسخ رابط القائمة.",
     uploadImage: "رفع صورة",
     uploading: "جار الرفع {progress}%",
-    configureStorage: "قم بإعداد Firebase Storage لتفعيل الرفع.",
+    configureStorage: "قم بإعداد Supabase Storage لتفعيل الرفع.",
     imageUploadFailed: "فشل رفع الصورة.",
     invalidImageType: "استخدم صورة JPG أو PNG أو WebP.",
     imageTooLarge: "يجب أن تكون الصور 5 MB أو أقل.",
@@ -613,7 +613,7 @@ export const adminText: Record<Locale, AdminText> = {
     menuUrlCopied: "لینکی مینیو کۆپی کرا.",
     uploadImage: "بارکردنی وێنە",
     uploading: "بارکردن {progress}%",
-    configureStorage: "Firebase Storage ڕێکبخە بۆ چالاککردنی بارکردن.",
+    configureStorage: "Supabase Storage ڕێکبخە بۆ چالاککردنی بارکردن.",
     imageUploadFailed: "بارکردنی وێنە سەرکەوتوو نەبوو.",
     invalidImageType: "وێنەی JPG، PNG یان WebP بەکاربهێنە.",
     imageTooLarge: "وێنەکان دەبێت ٥ MB یان بچووکتر بن.",
@@ -638,7 +638,7 @@ export function adminErrorText(message: string | undefined, text: AdminText) {
   if (message.includes("Category is required")) return text.categoryRequired;
   if (message.includes("Use a JPG")) return text.invalidImageType;
   if (message.includes("5 MB")) return text.imageTooLarge;
-  if (message.includes("Firebase Storage is not configured")) return text.configureStorage;
+  if (message.includes("Storage is not configured")) return text.configureStorage;
   return message;
 }
 
