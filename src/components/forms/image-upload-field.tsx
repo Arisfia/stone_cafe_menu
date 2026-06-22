@@ -32,9 +32,15 @@ export function ImageUploadField({
     const file = event.target.files?.[0];
     if (!file) return;
     setError("");
+    if (!storageConfigured) {
+      setError("Supabase Storage is not configured.");
+      event.target.value = "";
+      return;
+    }
     const validation = validateImageFile(file);
     if (validation) {
       setError(validation);
+      event.target.value = "";
       return;
     }
     setPreview(URL.createObjectURL(file));
@@ -62,14 +68,14 @@ export function ImageUploadField({
           type="file"
           accept="image/jpeg,image/png,image/webp"
           onChange={handleChange}
-          disabled={!storageConfigured || isUploading}
+          disabled={isUploading}
         />
         <Button
           type="button"
           variant="outline"
           size="icon"
           aria-label={text?.uploadImage || "Upload image"}
-          disabled={!storageConfigured || isUploading}
+          disabled={isUploading}
           onClick={() => inputRef.current?.click()}
         >
           <Upload className="h-4 w-4" aria-hidden />
@@ -79,7 +85,6 @@ export function ImageUploadField({
         <p className="text-sm text-muted-foreground">{(text?.uploading || "Uploading {progress}%").replace("{progress}", String(progress))}</p>
       ) : null}
       {error ? <p className="text-sm text-destructive">{text ? adminErrorText(error, text) : error}</p> : null}
-      {!storageConfigured ? <p className="text-xs text-muted-foreground">{text?.configureStorage || "Configure Supabase Storage to enable uploads."}</p> : null}
     </div>
   );
 }
