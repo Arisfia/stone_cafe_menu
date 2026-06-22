@@ -3,7 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, Coffee, Moon, Sun } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CakeSlice,
+  Coffee,
+  Croissant,
+  CupSoda,
+  GlassWater,
+  Martini,
+  Moon,
+  Pizza,
+  Sun
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageSelector } from "@/components/menu/language-selector";
 import { useLocale } from "@/hooks/use-locale";
@@ -191,13 +203,17 @@ function SteamingCup() {
 }
 
 function CoffeeBackground() {
-  const beans = [
-    { top: "12%", left: "10%", size: 26, delay: "0s", opacity: 0.18 },
-    { top: "22%", left: "82%", size: 34, delay: "1.4s", opacity: 0.14 },
-    { top: "68%", left: "14%", size: 30, delay: "0.8s", opacity: 0.16 },
-    { top: "78%", left: "78%", size: 22, delay: "2.1s", opacity: 0.2 },
-    { top: "45%", left: "90%", size: 18, delay: "1.1s", opacity: 0.15 },
-    { top: "85%", left: "44%", size: 24, delay: "0.4s", opacity: 0.12 }
+  // Floating figures representing the cafe menu: coffee, mocktails, other
+  // non-alcoholic drinks, cinnamon rolls, trileçe (tralicha), and mini pizza.
+  const figures = [
+    { Icon: Coffee, top: "11%", left: "9%", size: 30, delay: "0s", opacity: 0.16 },
+    { Icon: Martini, top: "20%", left: "84%", size: 34, delay: "1.2s", opacity: 0.15 },
+    { Icon: Pizza, top: "70%", left: "11%", size: 32, delay: "0.7s", opacity: 0.16 },
+    { Icon: CakeSlice, top: "79%", left: "82%", size: 28, delay: "2s", opacity: 0.17 },
+    { Icon: CupSoda, top: "43%", left: "91%", size: 26, delay: "1s", opacity: 0.15 },
+    { Icon: Croissant, top: "85%", left: "46%", size: 30, delay: "0.4s", opacity: 0.14 },
+    { Icon: GlassWater, top: "31%", left: "5%", size: 24, delay: "1.6s", opacity: 0.16 },
+    { Icon: Coffee, top: "57%", left: "93%", size: 20, delay: "2.4s", opacity: 0.12 }
   ];
 
   return (
@@ -213,14 +229,14 @@ function CoffeeBackground() {
         style={{ animationDelay: "8s" }}
       />
 
-      {/* floating coffee beans */}
-      {beans.map((bean, index) => (
+      {/* floating menu figures */}
+      {figures.map(({ Icon, ...figure }, index) => (
         <span
           key={index}
           className="bean-float absolute text-amber-800 dark:text-amber-500"
-          style={{ top: bean.top, left: bean.left, animationDelay: bean.delay, opacity: bean.opacity }}
+          style={{ top: figure.top, left: figure.left, animationDelay: figure.delay, opacity: figure.opacity }}
         >
-          <Coffee style={{ width: bean.size, height: bean.size }} aria-hidden />
+          <Icon style={{ width: figure.size, height: figure.size }} aria-hidden />
         </span>
       ))}
     </div>
