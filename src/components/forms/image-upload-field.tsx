@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,9 @@ export function ImageUploadField({
   const [preview, setPreview] = useState(imageUrl || "");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const storageConfigured = hasSupabaseConfig();
+  const isUploading = progress > 0 && progress < 100;
 
   async function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -41,6 +44,8 @@ export function ImageUploadField({
       onUploaded(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : text?.imageUploadFailed || "Image upload failed.");
+    } finally {
+      event.target.value = "";
     }
   }
 
@@ -52,16 +57,29 @@ export function ImageUploadField({
         <img src={preview} alt="" className="h-32 w-full rounded-md border object-cover" />
       ) : null}
       <div className="flex items-center gap-2">
-        <Input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleChange} disabled={!hasSupabaseConfig()} />
-        <Button type="button" variant="outline" size="icon" aria-label={text?.uploadImage || "Upload image"} disabled>
+        <Input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleChange}
+          disabled={!storageConfigured || isUploading}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label={text?.uploadImage || "Upload image"}
+          disabled={!storageConfigured || isUploading}
+          onClick={() => inputRef.current?.click()}
+        >
           <Upload className="h-4 w-4" aria-hidden />
         </Button>
       </div>
-      {progress > 0 && progress < 100 ? (
+      {isUploading ? (
         <p className="text-sm text-muted-foreground">{(text?.uploading || "Uploading {progress}%").replace("{progress}", String(progress))}</p>
       ) : null}
       {error ? <p className="text-sm text-destructive">{text ? adminErrorText(error, text) : error}</p> : null}
-      {!hasSupabaseConfig() ? <p className="text-xs text-muted-foreground">{text?.configureStorage || "Configure Supabase Storage to enable uploads."}</p> : null}
+      {!storageConfigured ? <p className="text-xs text-muted-foreground">{text?.configureStorage || "Configure Supabase Storage to enable uploads."}</p> : null}
     </div>
   );
 }
