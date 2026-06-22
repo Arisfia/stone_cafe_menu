@@ -54,7 +54,10 @@ export function MenuItemManager() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [saving, setSaving] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [formOpen, setFormOpen] = useState(true);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [tagsText, setTagsText] = useState("");
   const [allergensText, setAllergensText] = useState("");
   const [dietaryText, setDietaryText] = useState("");
@@ -83,26 +86,43 @@ export function MenuItemManager() {
   }, [availabilityFilter, categoryFilter, data, query]);
 
   async function onSubmit(values: MenuItemFormData) {
+    const name = localized(values.name, locale, values.name.en || text.menuItem);
+    if (imageUploading) {
+      setError(text.imageUploadInProgress);
+      return;
+    }
     setSaving(true);
-    setMessage("");
+    setError("");
+    setMessage(formatAdminText(text.savingItem, { name }));
     const id = values.id || crypto.randomUUID();
-    await saveMenuItem({
+    const item = {
       ...values,
       id,
       tags: splitList(tagsText),
       allergens: splitList(allergensText),
       dietaryLabels: splitList(dietaryText)
-    } as MenuItem);
-    form.reset(emptyItem);
-    setTagsText("");
-    setAllergensText("");
-    setDietaryText("");
-    await refresh();
-    setMessage(text.menuItemSaved);
-    setSaving(false);
+    } as MenuItem;
+    try {
+      await saveMenuItem(item);
+      setData((current) => upsertMenuItem(current, item));
+      form.reset(emptyItem);
+      setTagsText("");
+      setAllergensText("");
+      setDietaryText("");
+      setFormOpen(false);
+      setMessage(formatAdminText(text.menuItemSavedNamed, { name }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : text.menuItemSaved);
+      setMessage("");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function edit(item: MenuItem) {
+    setFormOpen(true);
+    setMessage("");
+    setError("");
     form.reset({
       ...item,
       description: {
@@ -128,6 +148,16 @@ export function MenuItemManager() {
     edit({ ...item, id: "", imageHistory: [], name: { ...item.name, en: `${item.name.en} Copy` }, displayOrder: item.displayOrder + 1 });
   }
 
+  function newItem() {
+    form.reset(emptyItem);
+    setTagsText("");
+    setAllergensText("");
+    setDietaryText("");
+    setMessage("");
+    setError("");
+    setFormOpen(true);
+  }
+
   async function remove(item: MenuItem) {
     if (!window.confirm(formatAdminText(text.deleteItemConfirm, { name: localized(item.name, locale, item.name.en) }))) return;
     await deleteMenuItem(item.id);
@@ -150,12 +180,16 @@ export function MenuItemManager() {
 
   return (
     <div className="grid gap-6 2xl:grid-cols-[520px_1fr]">
-      <Card>
-        <CardHeader>
-          <CardTitle>{text.menuItem}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+      <div className="space-y-3">
+        {message ? <p className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm text-primary">{message}</p> : null}
+        {error ? <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</p> : null}
+        <Card>
+          <CardHeader>
+            <CardTitle>{text.menuItem}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {formOpen ? (
+              <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
             <Field label={text.category} error={adminErrorText(form.formState.errors.categoryId?.message, text)}>
               <Select {...form.register("categoryId")}>
                 <option value="">{text.chooseCategory}</option>
@@ -227,14 +261,14 @@ export function MenuItemManager() {
               imageUrl={form.watch("imageUrl") || ""}
               imageHistory={form.watch("imageHistory") || []}
               onUploaded={(result) => {
-                form.setValue("imageHistory", addCurrentImageToHistory(form.getValues()));
-                form.setValue("imageUrl", result.imageUrl);
-                form.setValue("imagePath", result.imagePath);
+                form.setValue("imageHistory", addCurrentImageToHistory(form.getValues()), { shouldDirty: true });
+                form.setValue("imageUrl", result.imageUrl, { shouldDirty: true, shouldValidate: true });
+                form.setValue("imagePath", result.imagePath, { shouldDirty: true });
               }}
               onRemoved={() => {
-                form.setValue("imageHistory", addCurrentImageToHistory(form.getValues()));
-                form.setValue("imageUrl", "");
-                form.setValue("imagePath", "");
+                form.setValue("imageHistory", addCurrentImageToHistory(form.getValues()), { shouldDirty: true });
+                form.setValue("imageUrl", "", { shouldDirty: true, shouldValidate: true });
+                form.setValue("imagePath", "", { shouldDirty: true });
               }}
               onRollback={(entry) => {
                 const values = form.getValues();
@@ -243,10 +277,11 @@ export function MenuItemManager() {
                   imagePath: values.imagePath,
                   imageHistory: (values.imageHistory || []).filter((item) => item.id !== entry.id)
                 });
-                form.setValue("imageUrl", entry.imageUrl);
-                form.setValue("imagePath", entry.imagePath);
-                form.setValue("imageHistory", history);
+                form.setValue("imageUrl", entry.imageUrl, { shouldDirty: true, shouldValidate: true });
+                form.setValue("imagePath", entry.imagePath, { shouldDirty: true });
+                form.setValue("imageHistory", history, { shouldDirty: true });
               }}
+              onUploadingChange={setImageUploading}
             />
             <div className="space-y-3 rounded-md border p-3">
               <div className="flex items-center justify-between gap-3">
@@ -269,14 +304,20 @@ export function MenuItemManager() {
                 </div>
               ))}
             </div>
-            {message ? <p className="text-sm text-primary">{message}</p> : null}
             <div className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={saving}>{saving ? text.saving : text.saveItem}</Button>
-              <Button type="button" variant="outline" onClick={() => form.reset(emptyItem)}>{text.new}</Button>
+              <Button type="submit" disabled={saving || imageUploading}>{saving ? text.saving : text.saveItem}</Button>
+              <Button type="button" variant="outline" onClick={newItem}>{text.new}</Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+              </form>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">{text.menuItemSaved}</p>
+                <Button type="button" onClick={newItem}>{text.new}</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="space-y-4">
         <div>
@@ -357,4 +398,15 @@ function addCurrentImageToHistory({
 function activeImageHistory(history: ImageHistoryEntry[] = []) {
   const now = Date.now();
   return history.filter((entry) => Number.isFinite(Date.parse(entry.expiresAt)) && Date.parse(entry.expiresAt) > now);
+}
+
+function upsertMenuItem(data: AppData | null, item: MenuItem): AppData | null {
+  if (!data) return data;
+  const exists = data.menuItems.some((entry) => entry.id === item.id);
+  return {
+    ...data,
+    menuItems: exists
+      ? data.menuItems.map((entry) => (entry.id === item.id ? item : entry))
+      : [...data.menuItems, item]
+  };
 }

@@ -17,7 +17,8 @@ export function ImageUploadField({
   imageHistory = [],
   onUploaded,
   onRemoved,
-  onRollback
+  onRollback,
+  onUploadingChange
 }: {
   label: string;
   text?: Record<string, string>;
@@ -27,6 +28,7 @@ export function ImageUploadField({
   onUploaded: (result: { imageUrl: string; imagePath: string }) => void;
   onRemoved?: () => void;
   onRollback?: (entry: ImageHistoryEntry) => void;
+  onUploadingChange?: (uploading: boolean) => void;
 }) {
   const [preview, setPreview] = useState(imageUrl || "");
   const [progress, setProgress] = useState(0);
@@ -56,6 +58,7 @@ export function ImageUploadField({
     }
     setPreview(URL.createObjectURL(file));
     setProgress(0);
+    onUploadingChange?.(true);
     try {
       const result = await uploadImage(path, file, setProgress);
       setPreview(result.imageUrl);
@@ -63,6 +66,7 @@ export function ImageUploadField({
     } catch (err) {
       setError(err instanceof Error ? err.message : text?.imageUploadFailed || "Image upload failed.");
     } finally {
+      onUploadingChange?.(false);
       event.target.value = "";
     }
   }
