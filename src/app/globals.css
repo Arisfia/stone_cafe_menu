@@ -68,6 +68,56 @@ textarea {
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
 }
 
+/* Welcome screen coffee-shop animations */
+@keyframes steam-rise {
+  0% { transform: translateY(4px) scaleX(0.85); opacity: 0; }
+  25% { opacity: 0.75; }
+  60% { opacity: 0.35; }
+  100% { transform: translateY(-26px) scaleX(1.35); opacity: 0; }
+}
+
+.steam-wisp {
+  transform-origin: center bottom;
+  animation: steam-rise 3.2s ease-in-out infinite;
+}
+
+@keyframes bean-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-18px) rotate(22deg); }
+}
+
+.bean-float {
+  animation: bean-float 8s ease-in-out infinite;
+}
+
+@keyframes aroma-pan {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(-14px, 10px); }
+  100% { transform: translate(0, 0); }
+}
+
+.aroma-pan {
+  animation: aroma-pan 18s ease-in-out infinite;
+}
+
+@keyframes cup-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.cup-bob {
+  animation: cup-bob 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .steam-wisp,
+  .bean-float,
+  .aroma-pan,
+  .cup-bob {
+    animation: none;
+  }
+}
+
 @media print {
   .no-print {
     display: none !important;

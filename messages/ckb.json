@@ -23,6 +23,16 @@
     "empty": "هیچ بڕگەیەک نەدۆزرایەوە.",
     "menuUnavailable": "مینیو بە شێوەیەکی کاتی بەردەست نییە."
   },
+  "welcome": {
+    "greeting": "بەخێربێیت بۆ",
+    "tagline": "قاوەی تازە، تایبەت بۆ تۆ",
+    "chooseLanguage": "زمانەکەت هەڵبژێرە",
+    "appearance": "ڕووکار",
+    "light": "ڕووناک",
+    "dark": "تاریک",
+    "enter": "بینینی مینیو",
+    "logoHint": "لۆگۆ"
+  },
   "admin": {
     "dashboard": "داشبۆرد",
     "categories": "بەشەکان",

@@ -23,6 +23,16 @@
     "empty": "No matching menu items.",
     "menuUnavailable": "The menu is temporarily unavailable."
   },
+  "welcome": {
+    "greeting": "Welcome to",
+    "tagline": "Freshly brewed, just for you",
+    "chooseLanguage": "Choose your language",
+    "appearance": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "enter": "View the Menu",
+    "logoHint": "Logo"
+  },
   "admin": {
     "dashboard": "Dashboard",
     "categories": "Categories",

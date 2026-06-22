@@ -23,6 +23,16 @@
     "empty": "لا توجد عناصر مطابقة.",
     "menuUnavailable": "القائمة غير متاحة مؤقتاً."
   },
+  "welcome": {
+    "greeting": "أهلاً بك في",
+    "tagline": "قهوة طازجة، خصيصاً لك",
+    "chooseLanguage": "اختر لغتك",
+    "appearance": "المظهر",
+    "light": "فاتح",
+    "dark": "داكن",
+    "enter": "عرض القائمة",
+    "logoHint": "الشعار"
+  },
   "admin": {
     "dashboard": "لوحة التحكم",
     "categories": "الأقسام",
