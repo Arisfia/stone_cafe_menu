@@ -3,12 +3,14 @@
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils/cn";
 
 const themeStorageKey = "ary-menu-theme";
 const themeChangeEvent = "ary-menu-theme-change";
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const [dark, setDark] = useState(false);
+  const [turns, setTurns] = useState(0);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(themeStorageKey);
@@ -42,6 +44,7 @@ export function ThemeToggle() {
   function toggle() {
     const next = !dark;
     setDark(next);
+    setTurns((value) => value + 1);
     const nextTheme = next ? "dark" : "light";
     window.localStorage.setItem(themeStorageKey, nextTheme);
     document.documentElement.classList.toggle("dark", next);
@@ -49,8 +52,34 @@ export function ThemeToggle() {
   }
 
   return (
-    <Button type="button" variant="outline" size="icon" onClick={toggle} aria-label="Toggle theme">
-      {dark ? <Sun className="h-4 w-4" aria-hidden /> : <Moon className="h-4 w-4" aria-hidden />}
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      onClick={toggle}
+      aria-label="Toggle theme"
+      aria-pressed={dark}
+      className={cn("group rounded-full bg-card shadow-sm", className)}
+    >
+      <span
+        className="relative h-5 w-5 transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+        style={{ transform: `rotate(${turns * 360}deg)` }}
+      >
+        <Sun
+          className={cn(
+            "absolute inset-0 h-5 w-5 text-amber-500 transition-all duration-500",
+            dark ? "scale-0 -rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"
+          )}
+          aria-hidden
+        />
+        <Moon
+          className={cn(
+            "absolute inset-0 h-5 w-5 text-indigo-400 transition-all duration-500",
+            dark ? "scale-100 rotate-0 opacity-100" : "scale-0 rotate-90 opacity-0"
+          )}
+          aria-hidden
+        />
+      </span>
     </Button>
   );
 }

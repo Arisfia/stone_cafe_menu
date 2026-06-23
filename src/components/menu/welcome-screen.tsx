@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, type CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -11,19 +11,15 @@ import {
   CupSoda,
   GlassWater,
   Martini,
-  Moon,
-  Pizza,
-  Sun
+  Pizza
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageSelector } from "@/components/menu/language-selector";
+import { ThemeToggle } from "@/components/menu/theme-toggle";
 import { useLocale } from "@/hooks/use-locale";
 import { localized, translate } from "@/lib/i18n/config";
 import { defaultAppData } from "@/data/default-data";
 import { cn } from "@/lib/utils/cn";
-
-const themeStorageKey = "ary-menu-theme";
-const themeChangeEvent = "ary-menu-theme-change";
 
 export function WelcomeScreen() {
   const { locale, setLocale, dir: textDir } = useLocale(defaultAppData.general.defaultLanguage, {
@@ -63,7 +59,7 @@ export function WelcomeScreen() {
       <section className="relative z-10 w-full max-w-md rounded-3xl border border-[#86cc8a]/60 bg-card/85 p-6 text-center shadow-2xl backdrop-blur-xl dark:border-[#2b3a25]/60 sm:p-8">
         {/* Fixed physical corner (right) so it doesn't move when the selected
             language flips the page direction. */}
-        <ThemeWheel className="absolute right-4 top-4 z-20" />
+        <ThemeToggle className="absolute right-4 top-4 z-20 h-11 w-11 border-[#86cc8a]/60 bg-background/70 shadow-sm backdrop-blur hover:bg-muted dark:border-[#2b3a25]/60" />
 
         <p dir={textDir} className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7a3b] dark:text-[#A4D8A6]">
           {translate(locale, "welcome.greeting")}
@@ -129,76 +125,6 @@ export function WelcomeScreen() {
         </Button>
       </section>
     </main>
-  );
-}
-
-function ThemeWheel({ className }: { className?: string }) {
-  const [dark, setDark] = useState(false);
-  const [turns, setTurns] = useState(0);
-
-  useEffect(() => {
-    function apply(isDark: boolean) {
-      setDark(isDark);
-      document.documentElement.classList.toggle("dark", isDark);
-    }
-    apply(window.localStorage.getItem(themeStorageKey) === "dark");
-
-    function handleThemeChange(event: Event) {
-      apply((event as CustomEvent<string>).detail === "dark");
-    }
-    function handleStorage(event: StorageEvent) {
-      if (event.key === themeStorageKey) apply(event.newValue === "dark");
-    }
-    window.addEventListener(themeChangeEvent, handleThemeChange);
-    window.addEventListener("storage", handleStorage);
-    return () => {
-      window.removeEventListener(themeChangeEvent, handleThemeChange);
-      window.removeEventListener("storage", handleStorage);
-    };
-  }, []);
-
-  function toggle() {
-    const next = !dark;
-    setDark(next);
-    setTurns((value) => value + 1);
-    document.documentElement.classList.toggle("dark", next);
-    const stored = next ? "dark" : "light";
-    window.localStorage.setItem(themeStorageKey, stored);
-    window.dispatchEvent(new CustomEvent(themeChangeEvent, { detail: stored }));
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label="Toggle light and dark mode"
-      aria-pressed={dark}
-      className={cn(
-        "focus-ring group flex h-11 w-11 items-center justify-center rounded-full border border-[#86cc8a]/60 bg-background/70 shadow-sm backdrop-blur transition-colors hover:bg-muted dark:border-[#2b3a25]/60",
-        className
-      )}
-    >
-      {/* Spinning wheel that turns a full rotation on every press */}
-      <span
-        className="relative h-5 w-5 transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-        style={{ transform: `rotate(${turns * 360}deg)` }}
-      >
-        <Sun
-          className={cn(
-            "absolute inset-0 h-5 w-5 text-amber-500 transition-all duration-500",
-            dark ? "scale-0 -rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"
-          )}
-          aria-hidden
-        />
-        <Moon
-          className={cn(
-            "absolute inset-0 h-5 w-5 text-indigo-400 transition-all duration-500",
-            dark ? "scale-100 rotate-0 opacity-100" : "scale-0 rotate-90 opacity-0"
-          )}
-          aria-hidden
-        />
-      </span>
-    </button>
   );
 }
 
