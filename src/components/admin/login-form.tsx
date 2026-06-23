@@ -13,7 +13,7 @@ import { AdminPreferences, useAdminLocale } from "@/components/admin/admin-prefe
 
 export function LoginForm() {
   const router = useRouter();
-  const { text } = useAdminLocale();
+  const { text, dir: textDir } = useAdminLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -52,24 +52,24 @@ export function LoginForm() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-6">
-      <Card className="w-full max-w-md">
+    <main dir="ltr" className="flex min-h-screen items-center justify-center bg-background p-6">
+      <Card className="w-full max-w-md" dir="ltr">
         <CardHeader>
           <AdminPreferences />
-          <CardTitle>{text.loginTitle}</CardTitle>
-          <CardDescription>{text.loginDescription}</CardDescription>
+          <CardTitle dir={textDir}>{text.loginTitle}</CardTitle>
+          <CardDescription dir={textDir}>{text.loginDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           {!hasFirebaseClientConfig() ? (
-            <p className="mb-4 rounded-md border border-accent bg-accent/15 p-3 text-sm">
+            <p dir={textDir} className="mb-4 rounded-md border border-accent bg-accent/15 p-3 text-sm">
               {text.missingFirebase}
             </p>
           ) : null}
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <Field label={text.email} htmlFor="email">
+            <Field label={text.email} labelDir={textDir} htmlFor="email">
               <Input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
             </Field>
-            <Field label={text.password} htmlFor="password">
+            <Field label={text.password} labelDir={textDir} htmlFor="password">
               <div className="flex gap-2">
                 <Input
                   id="password"
@@ -84,13 +84,21 @@ export function LoginForm() {
                 </Button>
               </div>
             </Field>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
-            {message ? <p className="text-sm text-primary">{message}</p> : null}
+            {error ? (
+              <p dir={textDir} className="text-sm text-destructive">
+                {error}
+              </p>
+            ) : null}
+            {message ? (
+              <p dir={textDir} className="text-sm text-primary">
+                {message}
+              </p>
+            ) : null}
             <Button className="w-full" type="submit" disabled={loading}>
-              {loading ? text.signingIn : text.signIn}
+              <span dir={textDir}>{loading ? text.signingIn : text.signIn}</span>
             </Button>
             <Button className="w-full" type="button" variant="ghost" onClick={handlePasswordReset}>
-              {text.forgotPassword}
+              <span dir={textDir}>{text.forgotPassword}</span>
             </Button>
           </form>
         </CardContent>

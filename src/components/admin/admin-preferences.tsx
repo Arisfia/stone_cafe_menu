@@ -655,15 +655,15 @@ export function adminErrorText(message: string | undefined, text: AdminText) {
 }
 
 export function useAdminLocale() {
-  const { locale, setLocale } = useLocale();
-  return { locale, setLocale, text: adminText[locale] };
+  const { locale, setLocale, dir } = useLocale("ckb", { documentDirection: "ltr" });
+  return { locale, setLocale, dir, text: adminText[locale] };
 }
 
 export function AdminPreferences({ compact = false }: { compact?: boolean }) {
   const { locale, setLocale } = useAdminLocale();
 
   return (
-    <div className={compact ? "flex shrink-0 items-center gap-2" : "space-y-3"}>
+    <div dir="ltr" className={compact ? "flex shrink-0 items-center gap-2" : "space-y-3"}>
       <LanguageSelector locale={locale} onChange={setLocale} />
       <ThemeToggle />
     </div>

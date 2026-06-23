@@ -22,21 +22,27 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAdminAuth();
-  const { text } = useAdminLocale();
+  const { text, dir: textDir } = useAdminLocale();
   const isLogin = pathname === "/admin/login";
 
   if (isLogin) return <>{children}</>;
 
   if (!auth.isConfigured) {
     return (
-      <main className="flex min-h-screen items-center justify-center p-6">
-        <Card className="max-w-xl">
+      <main dir="ltr" className="flex min-h-screen items-center justify-center p-6">
+        <Card className="max-w-xl" dir="ltr">
           <CardContent className="space-y-4 pt-5">
             <AdminPreferences />
-            <h1 className="text-2xl font-semibold">{text.firebaseRequiredTitle}</h1>
-            <p className="text-muted-foreground">{text.firebaseRequiredDescription}</p>
+            <h1 dir={textDir} className="text-2xl font-semibold">
+              {text.firebaseRequiredTitle}
+            </h1>
+            <p dir={textDir} className="text-muted-foreground">
+              {text.firebaseRequiredDescription}
+            </p>
             <Button asChild>
-              <Link href="/menu">{text.viewPublicMenu}</Link>
+              <Link href="/menu">
+                <span dir={textDir}>{text.viewPublicMenu}</span>
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -45,12 +51,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }
 
   if (auth.loading) {
-    return <main className="flex min-h-screen items-center justify-center text-muted-foreground">{text.checkingSession}</main>;
+    return (
+      <main dir="ltr" className="flex min-h-screen items-center justify-center text-muted-foreground">
+        <span dir={textDir}>{text.checkingSession}</span>
+      </main>
+    );
   }
 
   if (!auth.user || !auth.isAdmin) {
     router.replace("/admin/login");
-    return <main className="flex min-h-screen items-center justify-center text-muted-foreground">{text.redirecting}</main>;
+    return (
+      <main dir="ltr" className="flex min-h-screen items-center justify-center text-muted-foreground">
+        <span dir={textDir}>{text.redirecting}</span>
+      </main>
+    );
   }
 
   async function handleLogout() {
@@ -59,9 +73,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <aside className="no-print fixed inset-y-0 start-0 hidden w-64 border-e bg-card p-4 lg:block">
-        <Link href="/menu" className="mb-6 block text-xl font-semibold">
+    <div dir="ltr" className="min-h-screen bg-background">
+      <aside className="no-print fixed inset-y-0 left-0 hidden w-64 border-r bg-card p-4 lg:block">
+        <Link href="/menu" dir={textDir} className="mb-6 block text-xl font-semibold">
           {text.brand}
         </Link>
         <nav className="grid gap-1">
@@ -78,7 +92,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <Icon className="h-4 w-4" aria-hidden />
-                {label}
+                <span dir={textDir}>{label}</span>
               </Link>
             );
           })}
@@ -88,23 +102,25 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
         <Button className="mt-6 w-full" variant="outline" onClick={handleLogout}>
           <LogOut className="h-4 w-4" aria-hidden />
-          {text.logout}
+          <span dir={textDir}>{text.logout}</span>
         </Button>
       </aside>
       <header className="no-print sticky top-0 z-20 border-b bg-card lg:hidden">
         <div className="flex items-center gap-2 overflow-x-auto p-3">
           {nav.map((entry) => (
             <Button key={entry.href} asChild size="sm" variant={pathname === entry.href ? "default" : "outline"}>
-              <Link href={entry.href}>{text[entry.labelKey]}</Link>
+              <Link href={entry.href}>
+                <span dir={textDir}>{text[entry.labelKey]}</span>
+              </Link>
             </Button>
           ))}
           <AdminPreferences compact />
           <Button size="sm" variant="outline" onClick={handleLogout}>
-            {text.logout}
+            <span dir={textDir}>{text.logout}</span>
           </Button>
         </div>
       </header>
-      <main className="lg:ms-64">
+      <main className="lg:ml-64">
         <div className="container py-6">{children}</div>
       </main>
     </div>
