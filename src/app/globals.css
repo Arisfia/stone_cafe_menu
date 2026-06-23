@@ -173,7 +173,7 @@ body.overflow-lock {
 
 .settings-panel {
   transform-origin: top;
-  animation: settings-panel-open 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: settings-panel-open 0.42s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: opacity, transform, clip-path;
 }
 
