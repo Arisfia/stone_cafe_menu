@@ -196,7 +196,7 @@ export function SettingsManager() {
 
       <Button onClick={saveAll} disabled={saving}>{saving ? text.saving : text.saveSettings}</Button>
 
-      <Card>
+      <Card id="admin-password">
         <CardHeader><CardTitle>{text.adminPassword}</CardTitle></CardHeader>
         <CardContent>
           <form className="grid gap-4 md:grid-cols-3" onSubmit={handlePasswordChange}>

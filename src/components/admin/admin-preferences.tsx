@@ -1,6 +1,6 @@
 "use client";
 
-import { LanguageSelector } from "@/components/menu/language-selector";
+import { LanguageGlobe } from "@/components/menu/language-globe";
 import { ThemeToggle } from "@/components/menu/theme-toggle";
 import { useLocale } from "@/hooks/use-locale";
 import type { Locale } from "@/types/models";
@@ -125,6 +125,9 @@ export const adminText: Record<Locale, AdminText> = {
     qrCode: "QR Code",
     settings: "Settings",
     logout: "Logout",
+    adminProfile: "Admin profile",
+    employeeSettings: "Employee settings",
+    comingSoon: "Coming soon",
     firebaseRequiredTitle: "Firebase configuration required",
     firebaseRequiredDescription:
       "Admin pages require Firebase Authentication and Firestore. Add the values in `.env.local`, create an approved /adminProfiles/uid document, then restart the dev server.",
@@ -298,6 +301,9 @@ export const adminText: Record<Locale, AdminText> = {
     qrCode: "رمز QR",
     settings: "الإعدادات",
     logout: "تسجيل الخروج",
+    adminProfile: "ملف الإدارة",
+    employeeSettings: "إعدادات الموظفين",
+    comingSoon: "قريبا",
     firebaseRequiredTitle: "إعدادات Firebase مطلوبة",
     firebaseRequiredDescription:
       "صفحات الإدارة تحتاج إلى Firebase Authentication و Firestore. أضف القيم في `.env.local`، وأنشئ مستند /adminProfiles/uid معتمد، ثم أعد تشغيل خادم التطوير.",
@@ -471,6 +477,9 @@ export const adminText: Record<Locale, AdminText> = {
     qrCode: "کۆدی QR",
     settings: "ڕێکخستنەکان",
     logout: "چوونەدەرەوە",
+    adminProfile: "پرۆفایلی بەڕێوەبردن",
+    employeeSettings: "ڕێکخستنی کارمەندان",
+    comingSoon: "بەم زووانە",
     firebaseRequiredTitle: "ڕێکخستنی Firebase پێویستە",
     firebaseRequiredDescription:
       "پەڕەکانی بەڕێوەبردن پێویستیان بە Firebase Authentication و Firestore هەیە. نرخەکان لە `.env.local` زیاد بکە، دۆکیومێنتی /adminProfiles/uid ی پەسەند دروست بکە، پاشان سێرڤەری گەشەپێدان دووبارە پێبکە.",
@@ -663,8 +672,8 @@ export function AdminPreferences({ compact = false }: { compact?: boolean }) {
   const { locale, setLocale } = useAdminLocale();
 
   return (
-    <div dir="ltr" className={compact ? "flex shrink-0 items-center gap-2" : "space-y-3"}>
-      <LanguageSelector locale={locale} onChange={setLocale} />
+    <div dir="ltr" className={compact ? "flex shrink-0 items-center gap-2" : "flex items-center gap-2"}>
+      <LanguageGlobe locale={locale} onChange={setLocale} />
       <ThemeToggle />
     </div>
   );
