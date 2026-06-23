@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { dirForLocale, isLocale } from "@/lib/i18n/config";
+import { dirForLocale, isLocale, type LocaleDirection } from "@/lib/i18n/config";
 import type { Locale } from "@/types/models";
 
 const localeStorageKey = "ary-menu-locale";
 const localeChangeEvent = "ary-menu-locale-change";
 
-export function useLocale(defaultLocale: Locale = "ckb") {
+type DocumentDirection = "locale" | LocaleDirection | false;
+
+export function useLocale(defaultLocale: Locale = "ckb", options: { documentDirection?: DocumentDirection } = {}) {
+  const documentDirection = options.documentDirection ?? "locale";
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
 
   useEffect(() => {
@@ -36,8 +39,10 @@ export function useLocale(defaultLocale: Locale = "ckb") {
 
   useEffect(() => {
     document.documentElement.lang = locale;
-    document.documentElement.dir = dirForLocale(locale);
-  }, [locale]);
+    if (documentDirection) {
+      document.documentElement.dir = documentDirection === "locale" ? dirForLocale(locale) : documentDirection;
+    }
+  }, [documentDirection, locale]);
 
   function setLocale(nextLocale: Locale) {
     setLocaleState(nextLocale);

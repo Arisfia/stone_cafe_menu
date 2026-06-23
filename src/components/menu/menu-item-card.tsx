@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Clock, Flame } from "lucide-react";
+import { ArrowRight, Clock, Flame } from "lucide-react";
 import { dirForLocale, localized, translate } from "@/lib/i18n/config";
 import { formatMoney } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
@@ -21,7 +21,7 @@ export function MenuItemCard({
 }) {
   const title = localized(item.name, locale);
   const description = localized(item.description, locale);
-  const Arrow = dirForLocale(locale) === "rtl" ? ArrowLeft : ArrowRight;
+  const textDir = dirForLocale(locale);
   const hasDiscount = Boolean(item.discountPrice);
 
   return (
@@ -51,7 +51,7 @@ export function MenuItemCard({
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0" dir={textDir}>
             <h3 className="text-lg font-semibold leading-tight">{title}</h3>
             {category ? (
               <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -79,18 +79,22 @@ export function MenuItemCard({
           ) : null}
         </div>
 
-        {description ? <p className="line-clamp-2 text-sm text-muted-foreground">{description}</p> : null}
+        {description ? (
+          <p dir={textDir} className="line-clamp-2 text-sm text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
 
         <div className="flex flex-wrap items-center gap-1.5">
           {item.spicyLevel && item.spicyLevel > 0 ? (
             <Pill tone="muted">
               <Flame className="h-3 w-3" aria-hidden />
-              {translate(locale, "menu.spicy")}
+              <span dir={textDir}>{translate(locale, "menu.spicy")}</span>
             </Pill>
           ) : null}
           {item.dietaryLabels.map((label) => (
             <Pill key={label} tone="muted">
-              {dietaryLabel(locale, label)}
+              <span dir={textDir}>{dietaryLabel(locale, label)}</span>
             </Pill>
           ))}
           {settings.showAllergens && item.allergens.length ? (
@@ -103,13 +107,15 @@ export function MenuItemCard({
             href={`/menu/item/${item.id}`}
             className="focus-ring inline-flex items-center gap-1 rounded-md text-sm font-semibold text-primary transition-all hover:gap-2"
           >
-            {translate(locale, "menu.viewDetails")}
-            <Arrow className="h-4 w-4" aria-hidden />
+            <span dir={textDir}>{translate(locale, "menu.viewDetails")}</span>
+            <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
           {item.preparationMinutes ? (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3.5 w-3.5" aria-hidden />
-              {item.preparationMinutes} min
+              <span dir={textDir}>
+                {item.preparationMinutes} {translate(locale, "menu.min")}
+              </span>
             </span>
           ) : null}
         </div>

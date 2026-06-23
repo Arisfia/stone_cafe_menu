@@ -46,7 +46,9 @@ export function MenuApp({
   initialCategorySlug?: string;
   initialItemId?: string;
 }) {
-  const { locale, setLocale, dir } = useLocale(defaultAppData.general.defaultLanguage);
+  const { locale, setLocale, dir: textDir } = useLocale(defaultAppData.general.defaultLanguage, {
+    documentDirection: "ltr"
+  });
   const [data, setData] = useState<AppData>(defaultAppData);
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState<string>("all");
@@ -95,7 +97,7 @@ export function MenuApp({
   const logoUrl = data.general.logoUrl;
 
   return (
-    <main dir={dir} className="relative min-h-screen">
+    <main dir="ltr" className="relative min-h-screen">
       <MenuBackground />
       {/* Branded header */}
       <header className="relative overflow-hidden border-b bg-gradient-to-b from-accent/55 via-card/95 to-card/90 backdrop-blur-sm">
@@ -110,7 +112,7 @@ export function MenuApp({
                   restaurantName.slice(0, 2)
                 )}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0" dir={textDir}>
                 <h1 className="truncate text-2xl font-bold sm:text-3xl">{restaurantName}</h1>
                 <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
               </div>
@@ -124,24 +126,24 @@ export function MenuApp({
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 font-medium text-primary">
               <CircleCheck className="h-4 w-4" aria-hidden />
-              {translate(locale, "menu.available")}
+              <span dir={textDir}>{translate(locale, "menu.available")}</span>
             </span>
             {data.general.phone ? (
               <a className="focus-ring inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`tel:${data.general.phone}`}>
                 <Phone className="h-4 w-4 text-primary" aria-hidden />
-                {data.general.phone}
+                <span>{data.general.phone}</span>
               </a>
             ) : null}
             {data.general.whatsapp ? (
               <a className="focus-ring inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`https://wa.me/${data.general.whatsapp.replace(/\D/g, "")}`} target="_blank">
                 <MessageCircle className="h-4 w-4 text-primary" aria-hidden />
-                {translate(locale, "menu.whatsapp")}
+                <span dir={textDir}>{translate(locale, "menu.whatsapp")}</span>
               </a>
             ) : null}
             {data.general.googleMapsUrl ? (
               <a className="focus-ring inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={data.general.googleMapsUrl} target="_blank">
                 <MapPin className="h-4 w-4 text-primary" aria-hidden />
-                {translate(locale, "menu.openMaps")}
+                <span dir={textDir}>{translate(locale, "menu.openMaps")}</span>
               </a>
             ) : null}
           </div>
@@ -149,7 +151,13 @@ export function MenuApp({
           {data.menu.enableSearch ? (
             <label className="relative block max-w-2xl">
               <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input className="h-12 rounded-full ps-10" placeholder={translate(locale, "menu.search")} value={query} onChange={(event) => setQuery(event.target.value)} />
+              <Input
+                className="h-12 rounded-full ps-10"
+                dir={textDir}
+                placeholder={translate(locale, "menu.search")}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
             </label>
           ) : null}
         </div>
@@ -158,7 +166,7 @@ export function MenuApp({
       {/* Sticky category pills */}
       <nav className="sticky top-0 z-10 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
         <div className="container flex gap-2 overflow-x-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <CategoryPill active={categoryId === "all"} onClick={() => setCategoryId("all")} Icon={LayoutGrid}>
+          <CategoryPill active={categoryId === "all"} onClick={() => setCategoryId("all")} Icon={LayoutGrid} textDir={textDir}>
             {translate(locale, "menu.all")}
           </CategoryPill>
           {data.categories.map((category) => (
@@ -167,6 +175,7 @@ export function MenuApp({
               active={categoryId === category.id}
               onClick={() => setCategoryId(category.id)}
               Icon={categoryIcon(category.slug)}
+              textDir={textDir}
             >
               {localized(category.name, locale)}
             </CategoryPill>
@@ -179,7 +188,7 @@ export function MenuApp({
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              {translate(locale, "menu.filters")}
+              <span dir={textDir}>{translate(locale, "menu.filters")}</span>
             </span>
             {(["all", "featured", "popular", "new", "vegetarian", "spicy"] as const).map((entry) => {
               const FilterIcon = FILTER_ICONS[entry];
@@ -192,7 +201,7 @@ export function MenuApp({
                   onClick={() => setFilter(entry)}
                 >
                   <FilterIcon className="h-3.5 w-3.5" aria-hidden />
-                  {entry === "all" ? translate(locale, "menu.all") : translate(locale, `menu.${entry}`)}
+                  <span dir={textDir}>{entry === "all" ? translate(locale, "menu.all") : translate(locale, `menu.${entry}`)}</span>
                 </Button>
               );
             })}
@@ -209,7 +218,11 @@ export function MenuApp({
           />
         ) : null}
 
-        {error ? <p className="rounded-2xl border border-destructive bg-destructive/5 p-4 text-destructive">{error}</p> : null}
+        {error ? (
+          <p dir={textDir} className="rounded-2xl border border-destructive bg-destructive/5 p-4 text-destructive">
+            {error}
+          </p>
+        ) : null}
 
         {loading ? (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -234,7 +247,9 @@ export function MenuApp({
         {!loading && !visibleItems.length ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed py-16 text-center">
             <UtensilsCrossed className="h-10 w-10 text-muted-foreground/60" aria-hidden />
-            <p className="text-muted-foreground">{translate(locale, "menu.empty")}</p>
+            <p dir={textDir} className="text-muted-foreground">
+              {translate(locale, "menu.empty")}
+            </p>
           </div>
         ) : null}
       </section>
@@ -270,12 +285,14 @@ function CategoryPill({
   active,
   onClick,
   children,
-  Icon
+  Icon,
+  textDir
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
   Icon: LucideIcon;
+  textDir: "ltr" | "rtl";
 }) {
   return (
     <button
@@ -287,7 +304,7 @@ function CategoryPill({
       )}
     >
       <Icon className="h-4 w-4" aria-hidden />
-      {children}
+      <span dir={textDir}>{children}</span>
     </button>
   );
 }

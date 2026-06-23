@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Clock, Flame, MessageCircle } from "lucide-react";
+import { ArrowLeft, Clock, Flame, MessageCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/menu/theme-toggle";
 import { LanguageGlobe } from "@/components/menu/language-globe";
 import { MenuBackground } from "@/components/menu/menu-background";
@@ -16,11 +16,11 @@ import { useLocale } from "@/hooks/use-locale";
 import type { AppData, Locale } from "@/types/models";
 
 export function MenuItemDetail({ itemId }: { itemId: string }) {
-  const { locale, setLocale, dir } = useLocale(defaultAppData.general.defaultLanguage);
+  const { locale, setLocale, dir: textDir } = useLocale(defaultAppData.general.defaultLanguage, {
+    documentDirection: "ltr"
+  });
   const [data, setData] = useState<AppData>(defaultAppData);
   const [loading, setLoading] = useState(true);
-  // Back points "against" the reading direction.
-  const BackArrow = dir === "rtl" ? ArrowRight : ArrowLeft;
 
   useEffect(() => {
     getPublicAppData()
@@ -44,7 +44,7 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
   const whatsappDigits = data.general.whatsapp?.replace(/\D/g, "");
 
   return (
-    <main dir={dir} className="relative min-h-screen">
+    <main dir="ltr" className="relative min-h-screen">
       <MenuBackground />
 
       <header className="container flex items-center justify-between gap-3 py-5">
@@ -52,8 +52,8 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
           href="/menu"
           className="focus-ring inline-flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
         >
-          <BackArrow className="h-4 w-4" aria-hidden />
-          {translate(locale, "menu.backToMenu")}
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          <span dir={textDir}>{translate(locale, "menu.backToMenu")}</span>
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -66,10 +66,12 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
           <DetailSkeleton showImage={settings.showImages} />
         ) : !item ? (
           <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed py-20 text-center">
-            <p className="text-muted-foreground">{translate(locale, "menu.itemNotFound")}</p>
+            <p dir={textDir} className="text-muted-foreground">
+              {translate(locale, "menu.itemNotFound")}
+            </p>
             <Link href="/menu" className="focus-ring inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
-              <BackArrow className="h-4 w-4" aria-hidden />
-              {translate(locale, "menu.backToMenu")}
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              <span dir={textDir}>{translate(locale, "menu.backToMenu")}</span>
             </Link>
           </div>
         ) : (
@@ -94,7 +96,7 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
 
             <div className="flex flex-col gap-6 p-5 sm:p-7">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0">
+                <div className="min-w-0" dir={textDir}>
                   {category ? (
                     <p className="text-xs font-semibold uppercase tracking-wide text-primary">{localized(category.name, locale)}</p>
                   ) : null}
@@ -123,35 +125,47 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
                 {item.preparationMinutes ? (
                   <Chip>
                     <Clock className="h-3.5 w-3.5" aria-hidden />
-                    {item.preparationMinutes} {translate(locale, "menu.min")}
+                    <span dir={textDir}>
+                      {item.preparationMinutes} {translate(locale, "menu.min")}
+                    </span>
                   </Chip>
                 ) : null}
                 {settings.showCalories && item.calories ? (
                   <Chip>
-                    {item.calories} {translate(locale, "menu.kcal")}
+                    <span dir={textDir}>
+                      {item.calories} {translate(locale, "menu.kcal")}
+                    </span>
                   </Chip>
                 ) : null}
                 {item.spicyLevel && item.spicyLevel > 0 ? (
                   <Chip>
                     <Flame className="h-3.5 w-3.5" aria-hidden />
-                    {translate(locale, "menu.spicy")}
+                    <span dir={textDir}>{translate(locale, "menu.spicy")}</span>
                   </Chip>
                 ) : null}
                 {item.dietaryLabels.map((label) => (
-                  <Chip key={label}>{dietaryLabel(locale, label)}</Chip>
+                  <Chip key={label}>
+                    <span dir={textDir}>{dietaryLabel(locale, label)}</span>
+                  </Chip>
                 ))}
               </div>
 
-              {description ? <p className="text-base leading-relaxed text-muted-foreground">{description}</p> : null}
+              {description ? (
+                <p dir={textDir} className="text-base leading-relaxed text-muted-foreground">
+                  {description}
+                </p>
+              ) : null}
 
               {settings.showIngredients && ingredients ? (
-                <Section title={translate(locale, "menu.ingredients")}>
-                  <p className="text-sm text-muted-foreground">{ingredients}</p>
+                <Section title={translate(locale, "menu.ingredients")} textDir={textDir}>
+                  <p dir={textDir} className="text-sm text-muted-foreground">
+                    {ingredients}
+                  </p>
                 </Section>
               ) : null}
 
               {settings.showAllergens && item.allergens.length ? (
-                <Section title={translate(locale, "menu.allergens")}>
+                <Section title={translate(locale, "menu.allergens")} textDir={textDir}>
                   <div className="flex flex-wrap gap-2">
                     {item.allergens.map((allergen) => (
                       <span key={allergen} className="inline-flex rounded-full border border-border bg-background/70 px-3 py-1 text-sm text-muted-foreground">
@@ -163,11 +177,13 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
               ) : null}
 
               {variants.length > 1 ? (
-                <Section title={translate(locale, "menu.options")}>
+                <Section title={translate(locale, "menu.options")} textDir={textDir}>
                   <ul className="divide-y rounded-2xl border">
                     {variants.map((variant) => (
                       <li key={variant.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                        <span className="text-sm font-medium">{localized(variant.name, locale)}</span>
+                        <span dir={textDir} className="text-sm font-medium">
+                          {localized(variant.name, locale)}
+                        </span>
                         {settings.showPrices ? (
                           <span className="text-sm font-semibold text-primary">{formatMoney(variant.price, item.currency, locale)}</span>
                         ) : null}
@@ -184,7 +200,7 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
                   className="focus-ring mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   <MessageCircle className="h-5 w-5" aria-hidden />
-                  {translate(locale, "menu.orderWhatsapp")}
+                  <span dir={textDir}>{translate(locale, "menu.orderWhatsapp")}</span>
                 </a>
               ) : null}
             </div>
@@ -195,10 +211,20 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  textDir
+}: {
+  title: string;
+  children: React.ReactNode;
+  textDir: "ltr" | "rtl";
+}) {
   return (
     <div className="space-y-2">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground/80">{title}</h2>
+      <h2 dir={textDir} className="text-sm font-semibold uppercase tracking-wide text-foreground/80">
+        {title}
+      </h2>
       {children}
     </div>
   );

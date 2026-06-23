@@ -4,7 +4,6 @@ import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ArrowLeft,
   ArrowRight,
   CakeSlice,
   Coffee,
@@ -27,10 +26,11 @@ const themeStorageKey = "ary-menu-theme";
 const themeChangeEvent = "ary-menu-theme-change";
 
 export function WelcomeScreen() {
-  const { locale, setLocale, dir } = useLocale(defaultAppData.general.defaultLanguage);
+  const { locale, setLocale, dir: textDir } = useLocale(defaultAppData.general.defaultLanguage, {
+    documentDirection: "ltr"
+  });
   const restaurantName = localized(defaultAppData.general.restaurantName, locale);
   const logoUrl = defaultAppData.general.logoUrl;
-  const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
 
   // Brand mint #A4D8A6 (HSL 122 40% 75%) as the accent. Deep-green foreground
   // keeps text legible on the light mint. Scoped to this subtree so the shared
@@ -54,7 +54,7 @@ export function WelcomeScreen() {
 
   return (
     <main
-      dir={dir}
+      dir="ltr"
       style={accentStyle}
       className="fixed inset-0 flex touch-none items-center justify-center overflow-hidden overscroll-none bg-gradient-to-br from-[#d7efd8] via-[#A4D8A6] to-[#86cc8a] p-4 dark:from-[#0c1810] dark:via-[#10210f] dark:to-[#0a140b]"
     >
@@ -65,7 +65,7 @@ export function WelcomeScreen() {
             language flips the page direction. */}
         <ThemeWheel className="absolute right-4 top-4 z-20" />
 
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7a3b] dark:text-[#A4D8A6]">
+        <p dir={textDir} className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7a3b] dark:text-[#A4D8A6]">
           {translate(locale, "welcome.greeting")}
         </p>
 
@@ -93,18 +93,24 @@ export function WelcomeScreen() {
             )}
           </div>
           {!logoUrl ? (
-            <span className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+            <span dir={textDir} className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
               {translate(locale, "welcome.logoHint")}
             </span>
           ) : null}
         </div>
 
-        {!logoUrl ? <h1 className="text-3xl font-bold text-foreground">{restaurantName}</h1> : null}
-        <p className="text-sm text-muted-foreground">{translate(locale, "welcome.tagline")}</p>
+        {!logoUrl ? (
+          <h1 dir={textDir} className="text-3xl font-bold text-foreground">
+            {restaurantName}
+          </h1>
+        ) : null}
+        <p dir={textDir} className="text-sm text-muted-foreground">
+          {translate(locale, "welcome.tagline")}
+        </p>
 
         {/* Language */}
         <div className="mt-6 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <p dir={textDir} className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {translate(locale, "welcome.chooseLanguage")}
           </p>
           {/* Fixed ltr order so the buttons keep their position when the
@@ -117,8 +123,8 @@ export function WelcomeScreen() {
         {/* Enter */}
         <Button asChild size="default" className="mt-8 h-12 w-full text-base font-semibold">
           <Link href="/menu">
-            {translate(locale, "welcome.enter")}
-            <Arrow className="h-5 w-5" aria-hidden />
+            <span dir={textDir}>{translate(locale, "welcome.enter")}</span>
+            <ArrowRight className="h-5 w-5" aria-hidden />
           </Link>
         </Button>
       </section>

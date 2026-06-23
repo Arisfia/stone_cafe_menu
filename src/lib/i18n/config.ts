@@ -12,12 +12,13 @@ export const localeLabels: Record<Locale, string> = {
 };
 
 export const messages = { en, ar, ckb } as const;
+export type LocaleDirection = "ltr" | "rtl";
 
 export function isLocale(value: string | null | undefined): value is Locale {
   return value === "en" || value === "ar" || value === "ckb";
 }
 
-export function dirForLocale(locale: Locale) {
+export function dirForLocale(locale: Locale): LocaleDirection {
   return rtlLocales.includes(locale) ? "rtl" : "ltr";
 }
 
