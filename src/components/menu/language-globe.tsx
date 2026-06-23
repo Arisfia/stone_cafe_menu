@@ -6,7 +6,15 @@ import { dirForLocale, localeLabels, locales } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
 import type { Locale } from "@/types/models";
 
-export function LanguageGlobe({ locale, onChange }: { locale: Locale; onChange: (locale: Locale) => void }) {
+export function LanguageGlobe({
+  locale,
+  onChange,
+  menuAlign = "right"
+}: {
+  locale: Locale;
+  onChange: (locale: Locale) => void;
+  menuAlign?: "left" | "right";
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -48,7 +56,10 @@ export function LanguageGlobe({ locale, onChange }: { locale: Locale; onChange: 
       {open ? (
         <div
           role="menu"
-          className="pop-in absolute right-0 top-full z-30 mt-2 min-w-[9rem] overflow-hidden rounded-2xl border bg-card p-1.5 shadow-xl"
+          className={cn(
+            "pop-in absolute top-full z-30 mt-2 min-w-[9rem] overflow-hidden rounded-2xl border bg-card p-1.5 shadow-xl",
+            menuAlign === "left" ? "left-0" : "right-0"
+          )}
         >
           {locales.map((entry) => {
             const active = entry === locale;

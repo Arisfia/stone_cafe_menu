@@ -252,8 +252,17 @@ function AdminProfileMenu({
           role="menu"
           className="pop-in absolute bottom-full left-0 z-20 mb-2 w-full overflow-hidden rounded-2xl border bg-card p-1.5 shadow-xl"
         >
-          <ProfileMenuLink href="/admin/settings" icon={Settings} label={text.settings} textDir={textDir} onClick={handleNavigate} />
-          <ProfileMenuLink href="/admin/settings#admin-password" icon={KeyRound} label={text.adminPassword} textDir={textDir} onClick={handleNavigate} />
+          <div className="rounded-xl bg-muted/40 p-1">
+            <ProfileMenuLink href="/admin/settings" icon={Settings} label={text.settings} textDir={textDir} onClick={handleNavigate} />
+            <ProfileMenuLink
+              href="/admin/settings#admin-password"
+              icon={KeyRound}
+              label={text.adminPassword}
+              textDir={textDir}
+              onClick={handleNavigate}
+              nested
+            />
+          </div>
           <button
             type="button"
             disabled
@@ -308,22 +317,27 @@ function ProfileMenuLink({
   icon: Icon,
   label,
   textDir,
-  onClick
+  onClick,
+  nested = false
 }: {
   href: string;
   icon: typeof Settings;
   label: string;
   textDir: "ltr" | "rtl";
   onClick: () => void;
+  nested?: boolean;
 }) {
   return (
     <Link
       href={href}
       role="menuitem"
       onClick={onClick}
-      className="focus-ring flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
+      className={cn(
+        "focus-ring flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-muted",
+        nested && "pl-9 text-muted-foreground hover:text-foreground"
+      )}
     >
-      <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+      <Icon className={cn("h-4 w-4 shrink-0 text-primary", nested && "text-muted-foreground")} aria-hidden />
       <span dir={textDir}>{label}</span>
     </Link>
   );

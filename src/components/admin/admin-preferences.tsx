@@ -673,7 +673,7 @@ export function AdminPreferences({ compact = false }: { compact?: boolean }) {
 
   return (
     <div dir="ltr" className={compact ? "flex shrink-0 items-center gap-2" : "flex items-center gap-2"}>
-      <LanguageGlobe locale={locale} onChange={setLocale} />
+      <LanguageGlobe locale={locale} onChange={setLocale} menuAlign="left" />
       <ThemeToggle />
     </div>
   );
