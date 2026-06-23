@@ -157,6 +157,26 @@ body.overflow-lock {
   animation: pop-in 0.15s ease-out;
 }
 
+/* Admin settings section entrance */
+@keyframes settings-panel-open {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    clip-path: inset(0 0 100% 0 round 0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    clip-path: inset(0 0 0 0 round 0.75rem);
+  }
+}
+
+.settings-panel {
+  transform-origin: top;
+  animation: settings-panel-open 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform, clip-path;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .steam-wisp,
   .bean-float,
@@ -164,7 +184,8 @@ body.overflow-lock {
   .cup-bob,
   .globe-spin,
   .globe-orbit,
-  .pop-in {
+  .pop-in,
+  .settings-panel {
     animation: none;
   }
 }

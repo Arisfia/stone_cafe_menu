@@ -158,7 +158,7 @@ export function SettingsManager() {
       </div>
 
       {activeSection === "general" ? (
-        <Card id="general">
+        <Card id="general" className="settings-panel">
           <CardHeader><CardTitle>{text.generalSettings}</CardTitle></CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-4 md:grid-cols-3">
@@ -213,7 +213,7 @@ export function SettingsManager() {
       ) : null}
 
       {activeSection === "menu" ? (
-        <Card id="menu">
+        <Card id="menu" className="settings-panel">
           <CardHeader><CardTitle>{text.menuSettings}</CardTitle></CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Object.entries(menu).filter(([key]) => key !== "updatedAt").map(([key, value]) => (
@@ -230,7 +230,7 @@ export function SettingsManager() {
       ) : null}
 
       {activeSection === "appearance" ? (
-        <Card id="appearance">
+        <Card id="appearance" className="settings-panel">
           <CardHeader><CardTitle>{text.appearanceSettings}</CardTitle></CardHeader>
           <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
             <div className="grid gap-4 md:grid-cols-4">
@@ -272,7 +272,7 @@ export function SettingsManager() {
       ) : null}
 
       {activeSection === "account" ? (
-        <Card id="account">
+        <Card id="account" className="settings-panel">
           <CardHeader><CardTitle>{text.accountSettings}</CardTitle></CardHeader>
           <CardContent id="admin-password">
             <form className="grid gap-4 md:grid-cols-3" onSubmit={handlePasswordChange}>
@@ -308,7 +308,10 @@ function SettingsSectionButton({
       variant={active ? "default" : "outline"}
       aria-expanded={active}
       onClick={onClick}
-      className="h-auto min-h-20 justify-start rounded-lg p-4 text-start"
+      className={cn(
+        "h-auto min-h-20 justify-start rounded-lg p-4 text-start transition-all duration-200",
+        active && "shadow-soft"
+      )}
     >
       <Icon className="h-5 w-5 shrink-0" aria-hidden />
       <span className="min-w-0 whitespace-normal leading-snug">{label}</span>
