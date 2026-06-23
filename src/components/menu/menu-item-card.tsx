@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ArrowRight, Clock, Flame } from "lucide-react";
 import { dirForLocale, localized, translate } from "@/lib/i18n/config";
 import { formatMoney } from "@/lib/utils/format";
@@ -11,13 +10,15 @@ export function MenuItemCard({
   category,
   locale,
   settings,
-  featured = false
+  featured = false,
+  onViewDetails
 }: {
   item: MenuItem;
   category?: Category;
   locale: Locale;
   settings: MenuSettings;
   featured?: boolean;
+  onViewDetails?: (item: MenuItem) => void;
 }) {
   const title = localized(item.name, locale);
   const description = localized(item.description, locale);
@@ -103,13 +104,14 @@ export function MenuItemCard({
         </div>
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-          <Link
-            href={`/menu/item/${item.id}`}
+          <button
+            type="button"
+            onClick={() => onViewDetails?.(item)}
             className="focus-ring inline-flex items-center gap-1 rounded-md text-sm font-semibold text-primary transition-all hover:gap-2"
           >
             <span dir={textDir}>{translate(locale, "menu.viewDetails")}</span>
             <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
+          </button>
           {item.preparationMinutes ? (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3.5 w-3.5" aria-hidden />
