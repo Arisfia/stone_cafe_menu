@@ -128,6 +128,7 @@ export const adminText: Record<Locale, AdminText> = {
     adminProfile: "Admin profile",
     employeeSettings: "Employee settings",
     comingSoon: "Coming soon",
+    accountSettings: "Account",
     firebaseRequiredTitle: "Firebase configuration required",
     firebaseRequiredDescription:
       "Admin pages require Firebase Authentication and Firestore. Add the values in `.env.local`, create an approved /adminProfiles/uid document, then restart the dev server.",
@@ -304,6 +305,7 @@ export const adminText: Record<Locale, AdminText> = {
     adminProfile: "ملف الإدارة",
     employeeSettings: "إعدادات الموظفين",
     comingSoon: "قريبا",
+    accountSettings: "الحساب",
     firebaseRequiredTitle: "إعدادات Firebase مطلوبة",
     firebaseRequiredDescription:
       "صفحات الإدارة تحتاج إلى Firebase Authentication و Firestore. أضف القيم في `.env.local`، وأنشئ مستند /adminProfiles/uid معتمد، ثم أعد تشغيل خادم التطوير.",
@@ -480,6 +482,7 @@ export const adminText: Record<Locale, AdminText> = {
     adminProfile: "پرۆفایلی بەڕێوەبردن",
     employeeSettings: "ڕێکخستنی کارمەندان",
     comingSoon: "بەم زووانە",
+    accountSettings: "هەژمار",
     firebaseRequiredTitle: "ڕێکخستنی Firebase پێویستە",
     firebaseRequiredDescription:
       "پەڕەکانی بەڕێوەبردن پێویستیان بە Firebase Authentication و Firestore هەیە. نرخەکان لە `.env.local` زیاد بکە، دۆکیومێنتی /adminProfiles/uid ی پەسەند دروست بکە، پاشان سێرڤەری گەشەپێدان دووبارە پێبکە.",

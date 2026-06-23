@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
+  Building2,
   ChevronDown,
   CircleUserRound,
   ExternalLink,
@@ -13,8 +14,11 @@ import {
   LogOut,
   Menu,
   MenuSquare,
+  Palette,
   QrCode,
   Settings,
+  SlidersHorizontal,
+  type LucideIcon,
   UsersRound,
   X
 } from "lucide-react";
@@ -250,14 +254,38 @@ function AdminProfileMenu({
       {open ? (
         <div
           role="menu"
-          className="pop-in absolute bottom-full left-0 z-20 mb-2 w-full overflow-hidden rounded-2xl border bg-card p-1.5 shadow-xl"
+          className="pop-in absolute bottom-full left-0 z-20 mb-2 max-h-[calc(100vh-7rem)] w-full overflow-y-auto rounded-2xl border bg-card p-1.5 shadow-xl"
         >
           <div className="rounded-xl bg-muted/40 p-1">
             <ProfileMenuLink href="/admin/settings" icon={Settings} label={text.settings} textDir={textDir} onClick={handleNavigate} />
             <ProfileMenuLink
-              href="/admin/settings#admin-password"
+              href="/admin/settings#general"
+              icon={Building2}
+              label={text.generalSettings}
+              textDir={textDir}
+              onClick={handleNavigate}
+              nested
+            />
+            <ProfileMenuLink
+              href="/admin/settings#menu"
+              icon={SlidersHorizontal}
+              label={text.menuSettings}
+              textDir={textDir}
+              onClick={handleNavigate}
+              nested
+            />
+            <ProfileMenuLink
+              href="/admin/settings#appearance"
+              icon={Palette}
+              label={text.appearanceSettings}
+              textDir={textDir}
+              onClick={handleNavigate}
+              nested
+            />
+            <ProfileMenuLink
+              href="/admin/settings#account"
               icon={KeyRound}
-              label={text.adminPassword}
+              label={text.accountSettings}
               textDir={textDir}
               onClick={handleNavigate}
               nested
@@ -321,7 +349,7 @@ function ProfileMenuLink({
   nested = false
 }: {
   href: string;
-  icon: typeof Settings;
+  icon: LucideIcon;
   label: string;
   textDir: "ltr" | "rtl";
   onClick: () => void;
