@@ -21,7 +21,17 @@
     "openMaps": "Maps",
     "whatsapp": "WhatsApp",
     "empty": "No matching menu items.",
-    "menuUnavailable": "The menu is temporarily unavailable."
+    "menuUnavailable": "The menu is temporarily unavailable.",
+    "backToMenu": "Back to menu",
+    "ingredients": "Ingredients",
+    "allergens": "Allergens",
+    "calories": "Calories",
+    "kcal": "kcal",
+    "prepTime": "Prep time",
+    "min": "min",
+    "options": "Options",
+    "orderWhatsapp": "Order on WhatsApp",
+    "itemNotFound": "Item not found."
   },
   "welcome": {
     "greeting": "Welcome to",

@@ -1,6 +1,6 @@
-import { MenuApp } from "@/components/menu/menu-app";
+import { MenuItemDetail } from "@/components/menu/menu-item-detail";
 
 export default async function ItemPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  return <MenuApp initialItemId={slug} />;
+  return <MenuItemDetail itemId={slug} />;
 }

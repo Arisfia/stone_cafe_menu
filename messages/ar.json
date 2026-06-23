@@ -21,7 +21,17 @@
     "openMaps": "الخريطة",
     "whatsapp": "واتساب",
     "empty": "لا توجد عناصر مطابقة.",
-    "menuUnavailable": "القائمة غير متاحة مؤقتاً."
+    "menuUnavailable": "القائمة غير متاحة مؤقتاً.",
+    "backToMenu": "العودة إلى القائمة",
+    "ingredients": "المكونات",
+    "allergens": "مسببات الحساسية",
+    "calories": "السعرات الحرارية",
+    "kcal": "سعرة",
+    "prepTime": "وقت التحضير",
+    "min": "دقيقة",
+    "options": "الخيارات",
+    "orderWhatsapp": "اطلب عبر واتساب",
+    "itemNotFound": "العنصر غير موجود."
   },
   "welcome": {
     "greeting": "أهلاً بك في",
