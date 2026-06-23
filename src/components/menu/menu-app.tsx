@@ -14,7 +14,6 @@ import {
   LayoutGrid,
   Leaf,
   MapPin,
-  MessageCircle,
   Phone,
   Sandwich,
   Search,
@@ -25,6 +24,7 @@ import {
   UtensilsCrossed,
   type LucideIcon
 } from "lucide-react";
+import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MenuItemCard } from "@/components/menu/menu-item-card";
@@ -136,7 +136,7 @@ export function MenuApp({
             ) : null}
             {data.general.whatsapp ? (
               <a className="focus-ring inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`https://wa.me/${data.general.whatsapp.replace(/\D/g, "")}`} target="_blank">
-                <MessageCircle className="h-4 w-4 text-primary" aria-hidden />
+                <WhatsappIcon className="h-4 w-4 text-primary" aria-hidden />
                 <span dir={textDir}>{translate(locale, "menu.whatsapp")}</span>
               </a>
             ) : null}

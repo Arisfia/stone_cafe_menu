@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock, Flame, MessageCircle } from "lucide-react";
+import { ArrowLeft, Clock, Flame } from "lucide-react";
+import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { ThemeToggle } from "@/components/menu/theme-toggle";
 import { LanguageGlobe } from "@/components/menu/language-globe";
 import { MenuBackground } from "@/components/menu/menu-background";
@@ -199,7 +200,7 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
                   target="_blank"
                   className="focus-ring mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
-                  <MessageCircle className="h-5 w-5" aria-hidden />
+                  <WhatsappIcon className="h-5 w-5" aria-hidden />
                   <span dir={textDir}>{translate(locale, "menu.orderWhatsapp")}</span>
                 </a>
               ) : null}
