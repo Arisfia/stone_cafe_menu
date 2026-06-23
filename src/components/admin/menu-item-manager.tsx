@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
+import { ChevronDown, Copy, ExternalLink, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
@@ -15,8 +16,10 @@ import { ImageUploadField } from "@/components/forms/image-upload-field";
 import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { deleteMenuItem, getAdminAppData, saveMenuItem } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
+import { cn } from "@/lib/utils/cn";
+import { formatMoney } from "@/lib/utils/format";
 import { menuItemSchema } from "@/lib/validation/schemas";
-import type { AppData, ImageHistoryEntry, MenuItem } from "@/types/models";
+import type { AppData, ImageHistoryEntry, Locale, MenuItem } from "@/types/models";
 
 type MenuItemFormData = z.infer<typeof menuItemSchema>;
 
@@ -55,13 +58,15 @@ export function MenuItemManager() {
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [saving, setSaving] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
-  const [formOpen, setFormOpen] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [tagsText, setTagsText] = useState("");
   const [allergensText, setAllergensText] = useState("");
   const [dietaryText, setDietaryText] = useState("");
   const form = useForm<MenuItemFormData>({ resolver: zodResolver(menuItemSchema), defaultValues: emptyItem });
+  const watchedItem = form.watch();
 
   async function refresh() {
     setData(await getAdminAppData());
@@ -110,6 +115,7 @@ export function MenuItemManager() {
       setAllergensText("");
       setDietaryText("");
       setFormOpen(false);
+      setExpandedItemId(id);
       setMessage(formatAdminText(text.menuItemSavedNamed, { name }));
     } catch (err) {
       setError(err instanceof Error ? err.message : text.menuItemSaved);
@@ -121,6 +127,7 @@ export function MenuItemManager() {
 
   function edit(item: MenuItem) {
     setFormOpen(true);
+    setExpandedItemId(item.id);
     setMessage("");
     setError("");
     form.reset({
@@ -155,6 +162,7 @@ export function MenuItemManager() {
     setDietaryText("");
     setMessage("");
     setError("");
+    setExpandedItemId(null);
     setFormOpen(true);
   }
 
@@ -179,16 +187,27 @@ export function MenuItemManager() {
   }
 
   return (
-    <div className="grid gap-6 2xl:grid-cols-[520px_1fr]">
-      <div className="space-y-3">
-        {message ? <p className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm text-primary">{message}</p> : null}
-        {error ? <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</p> : null}
-        <Card>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold">{text.menuItems}</h1>
+          <p className="text-muted-foreground">{text.menuItemDescription}</p>
+        </div>
+        <Button type="button" onClick={newItem}>
+          <PlusCircle className="h-4 w-4" aria-hidden />
+          {text.addNewMenuItem}
+        </Button>
+      </div>
+
+      {message ? <p className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm text-primary">{message}</p> : null}
+      {error ? <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</p> : null}
+
+      {formOpen ? (
+        <Card className="settings-panel">
           <CardHeader>
             <CardTitle>{text.menuItem}</CardTitle>
           </CardHeader>
-          <CardContent>
-            {formOpen ? (
+          <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
               <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
             <Field label={text.category} error={adminErrorText(form.formState.errors.categoryId?.message, text)}>
               <Select {...form.register("categoryId")}>
@@ -306,24 +325,20 @@ export function MenuItemManager() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={saving || imageUploading}>{saving ? text.saving : text.saveItem}</Button>
-              <Button type="button" variant="outline" onClick={newItem}>{text.new}</Button>
+              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>{text.cancel}</Button>
             </div>
               </form>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">{text.menuItemSaved}</p>
-                <Button type="button" onClick={newItem}>{text.new}</Button>
-              </div>
-            )}
+            <MenuItemAdminPreview
+              item={watchedItem}
+              categoryName={localized(data?.categories.find((category) => category.id === watchedItem.categoryId)?.name, locale, text.noCategory)}
+              locale={locale}
+              text={text}
+            />
           </CardContent>
         </Card>
-      </div>
+      ) : null}
 
       <div className="space-y-4">
-        <div>
-          <h1 className="text-3xl font-semibold">{text.menuItems}</h1>
-          <p className="text-muted-foreground">{text.menuItemDescription}</p>
-        </div>
         <div className="grid gap-3 md:grid-cols-3">
           <Input placeholder={text.searchItems} value={query} onChange={(event) => setQuery(event.target.value)} />
           <Select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
@@ -340,30 +355,120 @@ export function MenuItemManager() {
           </Select>
         </div>
         <div className="grid gap-3">
-          {items.map((item) => (
-            <Card key={item.id}>
-              <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-5">
-                <div>
-                  <p className="font-semibold">{localized(item.name, locale, item.name.en)}</p>
-                  <p className="text-sm text-muted-foreground">{item.name.en} / {item.name.ar} / {item.name.ckb}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {localized(data?.categories.find((category) => category.id === item.categoryId)?.name, locale, text.noCategory)} · {item.basePrice} {item.currency}
-                    {item.isSoldOut ? ` · ${text.soldOut}` : ""}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => edit(item)}>{text.edit}</Button>
-                  <Button variant="outline" onClick={() => duplicate(item)}>{text.duplicate}</Button>
-                  <Button variant="outline" onClick={() => window.open(`/menu/item/${item.id}`, "_blank")}>{text.preview}</Button>
-                  <Button variant="destructive" onClick={() => remove(item)}>{text.delete}</Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {items.map((item) => {
+            const categoryName = localized(data?.categories.find((category) => category.id === item.categoryId)?.name, locale, text.noCategory);
+            const expanded = expandedItemId === item.id;
+            return (
+              <Card key={item.id}>
+                <button
+                  type="button"
+                  className="focus-ring flex w-full flex-wrap items-center justify-between gap-3 rounded-lg p-5 text-start transition-colors hover:bg-muted/50"
+                  aria-expanded={expanded}
+                  onClick={() => setExpandedItemId((current) => (current === item.id ? null : item.id))}
+                >
+                  <div>
+                    <p className="font-semibold">{localized(item.name, locale, item.name.en)}</p>
+                    <p className="text-sm text-muted-foreground">{item.name.en} / {item.name.ar} / {item.name.ckb}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {categoryName} · {item.basePrice} {item.currency}
+                      {item.isSoldOut ? ` · ${text.soldOut}` : ""}
+                    </p>
+                  </div>
+                  <ChevronDown className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} aria-hidden />
+                </button>
+                {expanded ? (
+                  <CardContent className="settings-panel border-t pt-5">
+                    <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
+                      <MenuItemAdminPreview item={item} categoryName={categoryName} locale={locale} text={text} />
+                      <div className="flex flex-wrap content-start gap-2">
+                        <Button variant="outline" onClick={() => edit(item)}><Pencil className="h-4 w-4" aria-hidden /> {text.edit}</Button>
+                        <Button variant="outline" onClick={() => duplicate(item)}><Copy className="h-4 w-4" aria-hidden /> {text.duplicate}</Button>
+                        <Button variant="outline" onClick={() => window.open(`/menu/item/${item.id}`, "_blank")}><ExternalLink className="h-4 w-4" aria-hidden /> {text.preview}</Button>
+                        <Button variant="destructive" onClick={() => remove(item)}><Trash2 className="h-4 w-4" aria-hidden /> {text.delete}</Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                ) : null}
+              </Card>
+            );
+          })}
         </div>
       </div>
     </div>
   );
+}
+
+function MenuItemAdminPreview({
+  item,
+  categoryName,
+  locale,
+  text
+}: {
+  item: MenuItemFormData | MenuItem;
+  categoryName: string;
+  locale: Locale;
+  text: Record<string, string>;
+}) {
+  const title = localized(item.name, locale, item.name.en || text.menuItem);
+  const description = localized(item.description, locale);
+  const hasDiscount = typeof item.discountPrice === "number" && item.discountPrice > 0;
+
+  return (
+    <div className="rounded-lg border bg-muted/25 p-3">
+      <p className="mb-3 text-sm font-medium">{text.preview}</p>
+      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+        <div className="relative aspect-[5/4] bg-gradient-to-br from-accent via-primary/10 to-secondary/10">
+          {item.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.imageUrl} alt={title} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full items-center justify-center p-6 text-center text-lg font-semibold text-primary/70">
+              {title}
+            </div>
+          )}
+          <div className="absolute inset-x-3 top-3 flex flex-wrap gap-1.5">
+            {item.isNew ? <PreviewPill>{text.isNew}</PreviewPill> : null}
+            {item.isPopular ? <PreviewPill>{text.popular}</PreviewPill> : null}
+            {item.isFeatured ? <PreviewPill>{text.featured}</PreviewPill> : null}
+          </div>
+          {item.isSoldOut ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/65 backdrop-blur-[2px]">
+              <span className="rounded-full border border-destructive bg-background/90 px-4 py-1.5 text-sm font-semibold text-destructive">
+                {text.soldOut}
+              </span>
+            </div>
+          ) : null}
+        </div>
+        <div className="space-y-3 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold leading-tight">{title}</h3>
+              <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">{categoryName}</p>
+            </div>
+            <div className="shrink-0 text-end">
+              {hasDiscount ? (
+                <>
+                  <p className="text-xs text-muted-foreground line-through">{formatMoney(item.basePrice, item.currency, locale)}</p>
+                  <p className="rounded-full bg-secondary/10 px-3 py-1 text-sm font-bold text-secondary">{formatMoney(item.discountPrice as number, item.currency, locale)}</p>
+                </>
+              ) : (
+                <p className="rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">{formatMoney(item.basePrice, item.currency, locale)}</p>
+              )}
+            </div>
+          </div>
+          {description ? <p className="line-clamp-2 text-sm text-muted-foreground">{description}</p> : null}
+          <div className="flex flex-wrap gap-1.5">
+            {item.dietaryLabels.map((label) => <PreviewPill key={label}>{label}</PreviewPill>)}
+            {item.preparationMinutes ? <PreviewPill>{item.preparationMinutes} min</PreviewPill> : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewPill({ children }: { children: React.ReactNode }) {
+  return <span className="rounded-full border bg-background/90 px-2.5 py-1 text-xs font-semibold">{children}</span>;
 }
 
 function splitList(value: string) {
