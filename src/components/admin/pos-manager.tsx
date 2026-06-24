@@ -9,7 +9,8 @@ import {
   ReceiptText,
   Search,
   Table2,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +36,9 @@ export function PosManager() {
   const [pos, setPos] = useState<PosState>(emptyPosState);
   const [selectedTableId, setSelectedTableId] = useState("");
   const [tableNameDraft, setTableNameDraft] = useState("");
+  const [draftTables, setDraftTables] = useState<PosTable[]>([]);
+  const [draftOrders, setDraftOrders] = useState<PosState["orders"]>({});
+  const [draftSelectedTableId, setDraftSelectedTableId] = useState("");
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [tableToolsOpen, setTableToolsOpen] = useState(false);
@@ -81,12 +85,13 @@ export function PosManager() {
   }, [categoryFilter, data?.categories, data?.menuItems, locale, query]);
 
   useEffect(() => {
+    if (tableToolsOpen) return;
     if (!selectedTable && tables[0]) {
       setSelectedTableId(tables[0].id);
       return;
     }
     setTableNameDraft(selectedTable?.name || "");
-  }, [selectedTable, tables]);
+  }, [selectedTable, tables, tableToolsOpen]);
 
   async function persist(nextPos: PosState, nextMessage?: string) {
     const previousPos = pos;
@@ -97,48 +102,96 @@ export function PosManager() {
     try {
       await savePosState(nextPos);
       if (nextMessage) setMessage(nextMessage);
+      return true;
     } catch (err) {
       setPos(previousPos);
       setError(err instanceof Error ? err.message : text.settingsSaveFailed);
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
-  function addTable() {
-    const nextNumber = tables.length + 1;
+  function openTableTools() {
+    const nextDraftTables = tables.map((table) => ({ ...table }));
+    setDraftTables(nextDraftTables);
+    setDraftOrders({ ...pos.orders });
+    setDraftSelectedTableId(selectedTable?.id || nextDraftTables[0]?.id || "");
+    setTableNameDraft(selectedTable?.name || nextDraftTables[0]?.name || "");
+    setMessage("");
+    setError("");
+    setTableToolsOpen(true);
+  }
+
+  function closeTableTools() {
+    setDraftTables([]);
+    setDraftOrders({});
+    setDraftSelectedTableId("");
+    setTableNameDraft(selectedTable?.name || "");
+    setTableToolsOpen(false);
+  }
+
+  function selectDraftTable(tableId: string) {
+    const table = draftTables.find((entry) => entry.id === tableId);
+    setDraftSelectedTableId(tableId);
+    setTableNameDraft(table?.name || "");
+  }
+
+  function renameDraftTable(name: string) {
+    setTableNameDraft(name);
+    setDraftTables((current) => current.map((table) => table.id === draftSelectedTableId ? { ...table, name } : table));
+  }
+
+  function addDraftTable() {
+    const nextNumber = draftTables.length + 1;
     const table: PosTable = {
       id: crypto.randomUUID(),
       name: `${text.table} ${nextNumber}`,
-      displayOrder: tables.length,
+      displayOrder: draftTables.length,
       isActive: true
     };
-    const nextPos = normalizeTableOrder({ ...pos, tables: [...tables, table] });
-    setSelectedTableId(table.id);
+    setDraftTables((current) => normalizeTableOrder({ ...pos, tables: [...current, table] }).tables);
+    setDraftOrders((current) => ({ ...current, [table.id]: emptyOrder(table.id) }));
+    setDraftSelectedTableId(table.id);
     setTableNameDraft(table.name);
-    setTableToolsOpen(false);
-    void persist(nextPos, text.tableSaved);
   }
 
-  function removeTable() {
-    if (!selectedTable) return;
-    const nextTables = tables.filter((table) => table.id !== selectedTable.id);
-    const nextOrders = { ...pos.orders };
-    delete nextOrders[selectedTable.id];
-    const nextPos = normalizeTableOrder({ ...pos, tables: nextTables, orders: nextOrders });
-    setSelectedTableId(nextPos.tables[0]?.id || "");
-    setTableToolsOpen(false);
-    void persist(nextPos, text.tableRemoved);
-  }
-
-  function renameTable() {
-    if (!selectedTable || !tableNameDraft.trim()) return;
-    const nextPos = {
+  function removeDraftTable() {
+    if (!draftSelectedTableId || draftTables.length <= 1) return;
+    const nextTables = normalizeTableOrder({
       ...pos,
-      tables: tables.map((table) => table.id === selectedTable.id ? { ...table, name: tableNameDraft.trim() } : table)
-    };
-    setTableToolsOpen(false);
-    void persist(nextPos, text.tableSaved);
+      tables: draftTables.filter((table) => table.id !== draftSelectedTableId)
+    }).tables;
+    const nextOrders = { ...draftOrders };
+    delete nextOrders[draftSelectedTableId];
+    const nextSelectedId = nextTables[0]?.id || "";
+    setDraftTables(nextTables);
+    setDraftOrders(nextOrders);
+    setDraftSelectedTableId(nextSelectedId);
+    setTableNameDraft(nextTables[0]?.name || "");
+  }
+
+  async function saveTableChanges() {
+    const nextTables = normalizeTableOrder({
+      ...pos,
+      tables: draftTables
+        .filter((table) => table.name.trim())
+        .map((table) => ({ ...table, name: table.name.trim() }))
+    }).tables;
+    if (!nextTables.length) return;
+
+    const tableIds = new Set(nextTables.map((table) => table.id));
+    const nextOrders = Object.fromEntries(Object.entries(pos.orders).filter(([tableId]) => tableIds.has(tableId)));
+    for (const table of nextTables) {
+      if (!nextOrders[table.id]) nextOrders[table.id] = draftOrders[table.id] || emptyOrder(table.id);
+    }
+
+    const nextSelectedTableId = tableIds.has(selectedTableId) ? selectedTableId : nextTables[0]?.id || "";
+    const saved = await persist({ ...pos, tables: nextTables, orders: nextOrders }, text.tableSaved);
+    if (saved) {
+      setSelectedTableId(nextSelectedTableId);
+      closeTableTools();
+    }
   }
 
   function updateOrder(updater: (order: PosTableOrder) => PosTableOrder) {
@@ -265,7 +318,7 @@ export function PosManager() {
               size="icon"
               aria-label={text.editTable}
               title={text.editTable}
-              onClick={() => setTableToolsOpen((open) => !open)}
+              onClick={() => tableToolsOpen ? closeTableTools() : openTableTools()}
             >
               <Pencil className="h-4 w-4" aria-hidden />
             </Button>
@@ -295,17 +348,43 @@ export function PosManager() {
           </div>
 
           {tableToolsOpen ? (
-            <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 md:grid-cols-[minmax(220px,1fr)_auto] md:items-end">
+            <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(8rem,1fr))] gap-2">
+                {draftTables.map((table) => {
+                  const order = draftOrders[table.id];
+                  const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
+                  return (
+                    <button
+                      key={table.id}
+                      type="button"
+                      onClick={() => selectDraftTable(table.id)}
+                      className={cn(
+                        "focus-ring min-h-16 rounded-lg border p-2 text-start transition-colors",
+                        table.id === draftSelectedTableId ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted"
+                      )}
+                    >
+                      <span dir={textDir} className="block truncate text-sm font-semibold">{table.name}</span>
+                      <span dir={textDir} className={cn("mt-1 block truncate text-xs", table.id === draftSelectedTableId ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                        {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
               <Field label={text.tableName}>
-                <Input value={tableNameDraft} onChange={(event) => setTableNameDraft(event.target.value)} />
+                <Input value={tableNameDraft} onChange={(event) => renameDraftTable(event.target.value)} disabled={!draftSelectedTableId} />
               </Field>
-              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-                <Button type="button" variant="outline" onClick={addTable}>
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+                <Button type="button" variant="outline" onClick={addDraftTable}>
                   <Plus className="h-4 w-4" aria-hidden />
                   {text.addTable}
                 </Button>
-                <Button type="button" variant="outline" onClick={renameTable} disabled={!selectedTable}>
+                <Button type="button" variant="outline" onClick={() => void saveTableChanges()} disabled={!draftTables.length}>
                   {text.saveTable}
+                </Button>
+                <Button type="button" variant="outline" size="icon" aria-label={text.cancel} title={text.cancel} onClick={closeTableTools}>
+                  <X className="h-4 w-4" aria-hidden />
                 </Button>
                 <Button
                   type="button"
@@ -313,8 +392,8 @@ export function PosManager() {
                   size="icon"
                   aria-label={text.removeTable}
                   title={text.removeTable}
-                  onClick={removeTable}
-                  disabled={!selectedTable || tables.length <= 1}
+                  onClick={removeDraftTable}
+                  disabled={!draftSelectedTableId || draftTables.length <= 1}
                 >
                   <Trash2 className="h-4 w-4" aria-hidden />
                 </Button>

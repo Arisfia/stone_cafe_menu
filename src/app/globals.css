@@ -210,6 +210,8 @@ body.overflow-lock {
 
 .globe-glyph {
   position: absolute;
+  top: -0.2rem;
+  left: 50%;
   display: inline-flex;
   min-width: 0.95rem;
   height: 0.95rem;
@@ -223,28 +225,11 @@ body.overflow-lock {
   font-size: 0.58rem;
   font-weight: 800;
   line-height: 1;
+  transform: translateX(-50%);
 }
 
 .globe-glyph-character {
   animation: globe-counter-spin 6s linear infinite;
-}
-
-.globe-glyph-en {
-  top: -0.2rem;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.globe-glyph-ar {
-  top: 62%;
-  right: -0.25rem;
-  transform: translateY(-50%);
-}
-
-.globe-glyph-ckb {
-  top: 62%;
-  left: -0.25rem;
-  transform: translateY(-50%);
 }
 
 /* Dropdown entrance */
