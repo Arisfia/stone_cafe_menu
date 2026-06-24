@@ -7,11 +7,9 @@ import {
   Bean,
   CakeSlice,
   CircleCheck,
-  Clock,
   Coffee,
   CupSoda,
   Egg,
-  Flame,
   LayoutGrid,
   MapPin,
   Phone,
@@ -212,7 +210,6 @@ export function MenuApp({
               <MenuItemCard
                 key={item.id}
                 item={item}
-                category={data.categories.find((category) => category.id === item.categoryId)}
                 locale={locale}
                 settings={data.menu}
                 onViewDetails={setActiveItem}
@@ -292,7 +289,7 @@ function CategoryPill({
 
 function CardSkeleton({ showImage }: { showImage: boolean }) {
   return (
-    <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
       {showImage ? <div className="aspect-[5/4] animate-pulse bg-muted" /> : null}
       <div className="space-y-3 p-4">
         <div className="h-5 w-2/3 animate-pulse rounded bg-muted" />
@@ -339,7 +336,7 @@ function MenuItemDetailModal({
     >
       <div className="flex min-h-full items-center justify-center">
         <article
-          className="pop-in relative max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border bg-card shadow-2xl sm:max-h-none sm:overflow-hidden sm:rounded-3xl"
+          className="pop-in relative max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-y-auto rounded-lg border bg-card shadow-2xl sm:max-h-none sm:overflow-hidden"
           onClick={(event) => event.stopPropagation()}
         >
           <Button
@@ -356,11 +353,6 @@ function MenuItemDetailModal({
           {settings.showImages ? (
             <div className="group relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-accent via-primary/5 to-secondary/10 sm:aspect-[16/10]">
               <FallbackMenuImage src={item.imageUrl} alt={title} />
-              <div className="absolute inset-x-4 top-4 flex flex-wrap gap-1.5 pr-12">
-                {item.isNew ? <DetailPill tone="primary">{translate(locale, "menu.new")}</DetailPill> : null}
-                {item.isPopular ? <DetailPill tone="secondary">{translate(locale, "menu.popular")}</DetailPill> : null}
-                {item.isFeatured ? <DetailPill tone="accent">{translate(locale, "menu.featured")}</DetailPill> : null}
-              </div>
               {item.isSoldOut ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/65 backdrop-blur-[2px]">
                   <span className="rounded-full border border-destructive bg-background/90 px-5 py-2 text-base font-semibold text-destructive">
@@ -395,35 +387,6 @@ function MenuItemDetailModal({
                   )}
                 </div>
               ) : null}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {item.preparationMinutes ? (
-                <DetailChip>
-                  <Clock className="h-3.5 w-3.5" aria-hidden />
-                  <span dir={textDir}>
-                    {item.preparationMinutes} {translate(locale, "menu.min")}
-                  </span>
-                </DetailChip>
-              ) : null}
-              {settings.showCalories && item.calories ? (
-                <DetailChip>
-                  <span dir={textDir}>
-                    {item.calories} {translate(locale, "menu.kcal")}
-                  </span>
-                </DetailChip>
-              ) : null}
-              {item.spicyLevel && item.spicyLevel > 0 ? (
-                <DetailChip>
-                  <Flame className="h-3.5 w-3.5" aria-hidden />
-                  <span dir={textDir}>{translate(locale, "menu.spicy")}</span>
-                </DetailChip>
-              ) : null}
-              {item.dietaryLabels.map((label) => (
-                <DetailChip key={label}>
-                  <span dir={textDir}>{detailDietaryLabel(locale, label)}</span>
-                </DetailChip>
-              ))}
             </div>
 
             {description ? (
@@ -502,36 +465,5 @@ function DetailSection({
       </h3>
       {children}
     </div>
-  );
-}
-
-function DetailChip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-      {children}
-    </span>
-  );
-}
-
-function detailDietaryLabel(locale: Locale, label: string) {
-  const map: Record<string, string> = {
-    vegetarian: "menu.vegetarian",
-    vegan: "menu.vegan",
-    "gluten-free": "menu.glutenFree",
-    "sugar-free": "menu.sugarFree"
-  };
-  return map[label] ? translate(locale, map[label]) : label;
-}
-
-function DetailPill({ children, tone = "primary" }: { children: React.ReactNode; tone?: "primary" | "secondary" | "accent" }) {
-  const tones = {
-    primary: "bg-primary text-primary-foreground",
-    secondary: "bg-secondary text-secondary-foreground",
-    accent: "bg-accent text-accent-foreground"
-  } as const;
-  return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold shadow-sm backdrop-blur-sm", tones[tone])}>
-      {children}
-    </span>
   );
 }

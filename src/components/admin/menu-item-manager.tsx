@@ -62,9 +62,6 @@ export function MenuItemManager() {
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [tagsText, setTagsText] = useState("");
-  const [allergensText, setAllergensText] = useState("");
-  const [dietaryText, setDietaryText] = useState("");
   const form = useForm<MenuItemFormData>({ resolver: zodResolver(menuItemSchema), defaultValues: emptyItem });
   const watchedItem = form.watch();
 
@@ -86,7 +83,7 @@ export function MenuItemManager() {
         if (availabilityFilter === "missing-translations") return !item.name.en || !item.name.ar || !item.name.ckb;
         return true;
       })
-      .filter((item) => JSON.stringify({ ...item.name, tags: item.tags }).toLowerCase().includes(query.toLowerCase()))
+      .filter((item) => JSON.stringify(item.name).toLowerCase().includes(query.toLowerCase()))
       .sort((a, b) => a.displayOrder - b.displayOrder);
   }, [availabilityFilter, categoryFilter, data, query]);
 
@@ -103,17 +100,20 @@ export function MenuItemManager() {
     const item = {
       ...values,
       id,
-      tags: splitList(tagsText),
-      allergens: splitList(allergensText),
-      dietaryLabels: splitList(dietaryText)
+      preparationMinutes: undefined,
+      calories: undefined,
+      spicyLevel: 0,
+      dietaryLabels: [],
+      allergens: [],
+      tags: [],
+      isFeatured: false,
+      isPopular: false,
+      isNew: false
     } as MenuItem;
     try {
       await saveMenuItem(item);
       setData((current) => upsertMenuItem(current, item));
       form.reset(emptyItem);
-      setTagsText("");
-      setAllergensText("");
-      setDietaryText("");
       setFormOpen(false);
       setExpandedItemId(id);
       setMessage(formatAdminText(text.menuItemSavedNamed, { name }));
@@ -146,9 +146,6 @@ export function MenuItemManager() {
       imagePath: item.imagePath || "",
       imageHistory: activeImageHistory(item.imageHistory)
     });
-    setTagsText(item.tags.join(", "));
-    setAllergensText(item.allergens.join(", "));
-    setDietaryText(item.dietaryLabels.join(", "));
   }
 
   function duplicate(item: MenuItem) {
@@ -157,9 +154,6 @@ export function MenuItemManager() {
 
   function newItem() {
     form.reset(emptyItem);
-    setTagsText("");
-    setAllergensText("");
-    setDietaryText("");
     setMessage("");
     setError("");
     setExpandedItemId(null);
@@ -245,23 +239,10 @@ export function MenuItemManager() {
               </Field>
               <Field label={text.displayOrder}><Input type="number" {...form.register("displayOrder")} /></Field>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label={text.preparationMinutes}><Input type="number" {...form.register("preparationMinutes")} /></Field>
-              <Field label={text.calories}><Input type="number" {...form.register("calories")} /></Field>
-              <Field label={text.spicyLevel}><Input type="number" min={0} max={5} {...form.register("spicyLevel")} /></Field>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label={text.tags}><Input value={tagsText} onChange={(event) => setTagsText(event.target.value)} placeholder={text.tagsPlaceholder} /></Field>
-              <Field label={text.allergens}><Input value={allergensText} onChange={(event) => setAllergensText(event.target.value)} placeholder={text.allergensPlaceholder} /></Field>
-              <Field label={text.dietaryLabels}><Input value={dietaryText} onChange={(event) => setDietaryText(event.target.value)} placeholder={text.dietaryLabelsPlaceholder} /></Field>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-3 sm:grid-cols-2">
               {[
                 ["isAvailable", text.available],
-                ["isSoldOut", text.soldOut],
-                ["isFeatured", text.featured],
-                ["isPopular", text.popular],
-                ["isNew", text.isNew]
+                ["isSoldOut", text.soldOut]
               ].map(([name, label]) => (
                 <div key={name} className="flex items-center justify-between rounded-md border p-3">
                   <span className="text-sm font-medium">{label}</span>
@@ -330,7 +311,6 @@ export function MenuItemManager() {
               </form>
             <MenuItemAdminPreview
               item={watchedItem}
-              categoryName={localized(data?.categories.find((category) => category.id === watchedItem.categoryId)?.name, locale, text.noCategory)}
               locale={locale}
               text={text}
             />
@@ -379,7 +359,7 @@ export function MenuItemManager() {
                 {expanded ? (
                   <CardContent className="settings-panel border-t pt-5">
                     <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-                      <MenuItemAdminPreview item={item} categoryName={categoryName} locale={locale} text={text} />
+                      <MenuItemAdminPreview item={item} locale={locale} text={text} />
                       <div className="flex flex-wrap content-start gap-2">
                         <Button variant="outline" onClick={() => edit(item)}><Pencil className="h-4 w-4" aria-hidden /> {text.edit}</Button>
                         <Button variant="outline" onClick={() => duplicate(item)}><Copy className="h-4 w-4" aria-hidden /> {text.duplicate}</Button>
@@ -400,12 +380,10 @@ export function MenuItemManager() {
 
 function MenuItemAdminPreview({
   item,
-  categoryName,
   locale,
   text
 }: {
   item: MenuItemFormData | MenuItem;
-  categoryName: string;
   locale: Locale;
   text: Record<string, string>;
 }) {
@@ -426,11 +404,6 @@ function MenuItemAdminPreview({
               {title}
             </div>
           )}
-          <div className="absolute inset-x-3 top-3 flex flex-wrap gap-1.5">
-            {item.isNew ? <PreviewPill>{text.isNew}</PreviewPill> : null}
-            {item.isPopular ? <PreviewPill>{text.popular}</PreviewPill> : null}
-            {item.isFeatured ? <PreviewPill>{text.featured}</PreviewPill> : null}
-          </div>
           {item.isSoldOut ? (
             <div className="absolute inset-0 flex items-center justify-center bg-background/65 backdrop-blur-[2px]">
               <span className="rounded-full border border-destructive bg-background/90 px-4 py-1.5 text-sm font-semibold text-destructive">
@@ -443,39 +416,23 @@ function MenuItemAdminPreview({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h3 className="text-lg font-semibold leading-tight">{title}</h3>
-              <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">{categoryName}</p>
             </div>
             <div className="shrink-0 text-end">
               {hasDiscount ? (
                 <>
                   <p className="text-xs text-muted-foreground line-through">{formatMoney(item.basePrice, item.currency, locale)}</p>
-                  <p className="rounded-full bg-secondary/10 px-3 py-1 text-sm font-bold text-secondary">{formatMoney(item.discountPrice as number, item.currency, locale)}</p>
+                  <p className="text-sm font-bold text-secondary">{formatMoney(item.discountPrice as number, item.currency, locale)}</p>
                 </>
               ) : (
-                <p className="rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">{formatMoney(item.basePrice, item.currency, locale)}</p>
+                <p className="text-sm font-bold text-primary">{formatMoney(item.basePrice, item.currency, locale)}</p>
               )}
             </div>
           </div>
           {description ? <p className="line-clamp-2 text-sm text-muted-foreground">{description}</p> : null}
-          <div className="flex flex-wrap gap-1.5">
-            {item.dietaryLabels.map((label) => <PreviewPill key={label}>{label}</PreviewPill>)}
-            {item.preparationMinutes ? <PreviewPill>{item.preparationMinutes} min</PreviewPill> : null}
-          </div>
         </div>
       </div>
     </div>
   );
-}
-
-function PreviewPill({ children }: { children: React.ReactNode }) {
-  return <span className="rounded-full border bg-background/90 px-2.5 py-1 text-xs font-semibold">{children}</span>;
-}
-
-function splitList(value: string) {
-  return value
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
 }
 
 function addCurrentImageToHistory({

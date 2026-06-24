@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock, Flame } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { ThemeToggle } from "@/components/menu/theme-toggle";
 import { LanguageGlobe } from "@/components/menu/language-globe";
@@ -12,9 +12,8 @@ import { defaultAppData } from "@/data/default-data";
 import { getPublicAppData } from "@/lib/firebase/firestore";
 import { localized, translate } from "@/lib/i18n/config";
 import { formatMoney } from "@/lib/utils/format";
-import { cn } from "@/lib/utils/cn";
 import { useLocale } from "@/hooks/use-locale";
-import type { AppData, Locale } from "@/types/models";
+import type { AppData } from "@/types/models";
 
 export function MenuItemDetail({ itemId }: { itemId: string }) {
   const { locale, setLocale, dir: textDir } = useLocale(defaultAppData.general.defaultLanguage, {
@@ -76,15 +75,10 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
             </Link>
           </div>
         ) : (
-          <article className="overflow-hidden rounded-2xl border bg-card shadow-sm sm:rounded-3xl">
+          <article className="overflow-hidden rounded-lg border bg-card shadow-sm">
             {settings.showImages ? (
               <div className="group relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-accent via-primary/5 to-secondary/10 sm:aspect-[16/10]">
                 <FallbackMenuImage src={item.imageUrl} alt={title} />
-                <div className="absolute inset-x-4 top-4 flex flex-wrap gap-1.5">
-                  {item.isNew ? <Pill tone="primary">{translate(locale, "menu.new")}</Pill> : null}
-                  {item.isPopular ? <Pill tone="secondary">{translate(locale, "menu.popular")}</Pill> : null}
-                  {item.isFeatured ? <Pill tone="accent">{translate(locale, "menu.featured")}</Pill> : null}
-                </div>
                 {item.isSoldOut ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/65 backdrop-blur-[2px]">
                     <span className="rounded-full border border-destructive bg-background/90 px-5 py-2 text-base font-semibold text-destructive">
@@ -119,36 +113,6 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
                     )}
                   </div>
                 ) : null}
-              </div>
-
-              {/* meta chips */}
-              <div className="flex flex-wrap gap-2">
-                {item.preparationMinutes ? (
-                  <Chip>
-                    <Clock className="h-3.5 w-3.5" aria-hidden />
-                    <span dir={textDir}>
-                      {item.preparationMinutes} {translate(locale, "menu.min")}
-                    </span>
-                  </Chip>
-                ) : null}
-                {settings.showCalories && item.calories ? (
-                  <Chip>
-                    <span dir={textDir}>
-                      {item.calories} {translate(locale, "menu.kcal")}
-                    </span>
-                  </Chip>
-                ) : null}
-                {item.spicyLevel && item.spicyLevel > 0 ? (
-                  <Chip>
-                    <Flame className="h-3.5 w-3.5" aria-hidden />
-                    <span dir={textDir}>{translate(locale, "menu.spicy")}</span>
-                  </Chip>
-                ) : null}
-                {item.dietaryLabels.map((label) => (
-                  <Chip key={label}>
-                    <span dir={textDir}>{dietaryLabel(locale, label)}</span>
-                  </Chip>
-                ))}
               </div>
 
               {description ? (
@@ -231,40 +195,9 @@ function Section({
   );
 }
 
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-      {children}
-    </span>
-  );
-}
-
-function dietaryLabel(locale: Locale, label: string) {
-  const map: Record<string, string> = {
-    vegetarian: "menu.vegetarian",
-    vegan: "menu.vegan",
-    "gluten-free": "menu.glutenFree",
-    "sugar-free": "menu.sugarFree"
-  };
-  return map[label] ? translate(locale, map[label]) : label;
-}
-
-function Pill({ children, tone = "primary" }: { children: React.ReactNode; tone?: "primary" | "secondary" | "accent" }) {
-  const tones = {
-    primary: "bg-primary text-primary-foreground",
-    secondary: "bg-secondary text-secondary-foreground",
-    accent: "bg-accent text-accent-foreground"
-  } as const;
-  return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold shadow-sm backdrop-blur-sm", tones[tone])}>
-      {children}
-    </span>
-  );
-}
-
 function DetailSkeleton({ showImage }: { showImage: boolean }) {
   return (
-    <div className="overflow-hidden rounded-3xl border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
       {showImage ? <div className="aspect-[16/10] animate-pulse bg-muted" /> : null}
       <div className="space-y-4 p-7">
         <div className="h-7 w-2/3 animate-pulse rounded bg-muted" />
