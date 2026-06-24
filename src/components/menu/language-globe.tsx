@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Globe2 } from "lucide-react";
 import { dirForLocale, localeLabels, locales } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
@@ -16,7 +16,25 @@ export function LanguageGlobe({
   menuAlign?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 160 });
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const updateMenuPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const viewportPadding = 12;
+    const menuWidth = Math.min(176, window.innerWidth - viewportPadding * 2);
+    const menuHeight = locales.length * 42 + 12;
+    const rect = trigger.getBoundingClientRect();
+    const preferredLeft = menuAlign === "left" ? rect.left : rect.right - menuWidth;
+    const left = Math.min(Math.max(preferredLeft, viewportPadding), window.innerWidth - menuWidth - viewportPadding);
+    const opensAbove = rect.bottom + 8 + menuHeight > window.innerHeight && rect.top > menuHeight + 8;
+    const top = opensAbove ? rect.top - menuHeight - 8 : rect.bottom + 8;
+
+    setMenuPosition({ top, left, width: menuWidth });
+  }, [menuAlign]);
 
   useEffect(() => {
     if (!open) return;
@@ -36,11 +54,26 @@ export function LanguageGlobe({
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [open, updateMenuPosition]);
+
   return (
     <div ref={ref} dir="ltr" className="relative">
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          if (!open) updateMenuPosition();
+          setOpen((value) => !value);
+        }}
         aria-label="Select language"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -56,10 +89,8 @@ export function LanguageGlobe({
       {open ? (
         <div
           role="menu"
-          className={cn(
-            "pop-in absolute top-full z-30 mt-2 min-w-[9rem] overflow-hidden rounded-2xl border bg-card p-1.5 shadow-xl",
-            menuAlign === "left" ? "left-0" : "right-0"
-          )}
+          style={{ left: menuPosition.left, top: menuPosition.top, width: menuPosition.width }}
+          className={cn("pop-in fixed z-50 overflow-hidden rounded-2xl border bg-card p-1.5 shadow-xl")}
         >
           {locales.map((entry) => {
             const active = entry === locale;

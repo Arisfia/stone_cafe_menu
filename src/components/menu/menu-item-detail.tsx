@@ -48,15 +48,15 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
     <main dir="ltr" className="relative min-h-screen">
       <MenuBackground />
 
-      <header className="container flex items-center justify-between gap-3 py-5">
+      <header className="container grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-5">
         <Link
           href="/menu"
-          className="focus-ring inline-flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
+          className="focus-ring inline-flex min-w-0 max-w-full items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          <span dir={textDir}>{translate(locale, "menu.backToMenu")}</span>
+          <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+          <span dir={textDir} className="truncate">{translate(locale, "menu.backToMenu")}</span>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
           <LanguageGlobe locale={locale} onChange={setLocale} />
         </div>
@@ -76,9 +76,9 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
             </Link>
           </div>
         ) : (
-          <article className="overflow-hidden rounded-3xl border bg-card shadow-sm">
+          <article className="overflow-hidden rounded-2xl border bg-card shadow-sm sm:rounded-3xl">
             {settings.showImages ? (
-              <div className="group relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-accent via-primary/5 to-secondary/10">
+              <div className="group relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-accent via-primary/5 to-secondary/10 sm:aspect-[16/10]">
                 <FallbackMenuImage src={item.imageUrl} alt={title} />
                 <div className="absolute inset-x-4 top-4 flex flex-wrap gap-1.5">
                   {item.isNew ? <Pill tone="primary">{translate(locale, "menu.new")}</Pill> : null}
@@ -95,19 +95,19 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
               </div>
             ) : null}
 
-            <div className="flex flex-col gap-6 p-5 sm:p-7">
-              <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex flex-col gap-5 p-4 sm:gap-6 sm:p-7">
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
                 <div className="min-w-0" dir={textDir}>
                   {category ? (
                     <p className="text-xs font-semibold uppercase tracking-wide text-primary">{localized(category.name, locale)}</p>
                   ) : null}
-                  <h1 className="mt-1 text-3xl font-bold leading-tight">{title}</h1>
+                  <h1 className="mt-1 text-2xl font-bold leading-tight sm:text-3xl">{title}</h1>
                 </div>
                 {settings.showPrices ? (
-                  <div className="flex flex-col items-end">
+                  <div className="flex flex-col items-start sm:items-end">
                     {hasDiscount ? (
                       <>
-                        <span className="text-3xl font-bold text-secondary">
+                        <span className="text-2xl font-bold text-secondary sm:text-3xl">
                           {formatMoney(item.discountPrice as number, item.currency, locale)}
                         </span>
                         <span className="text-base text-muted-foreground line-through">
@@ -115,7 +115,7 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
                         </span>
                       </>
                     ) : (
-                      <span className="text-3xl font-bold text-primary">{formatMoney(item.basePrice, item.currency, locale)}</span>
+                      <span className="text-2xl font-bold text-primary sm:text-3xl">{formatMoney(item.basePrice, item.currency, locale)}</span>
                     )}
                   </div>
                 ) : null}
@@ -198,7 +198,7 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
                 <a
                   href={`https://wa.me/${whatsappDigits}?text=${encodeURIComponent(`${localized(data.general.restaurantName, locale)} — ${title}`)}`}
                   target="_blank"
-                  className="focus-ring mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="focus-ring mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
                 >
                   <WhatsappIcon className="h-5 w-5" aria-hidden />
                   <span dir={textDir}>{translate(locale, "menu.orderWhatsapp")}</span>

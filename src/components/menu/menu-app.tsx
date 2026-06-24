@@ -119,9 +119,9 @@ export function MenuApp({
       <header className="relative overflow-hidden border-b bg-gradient-to-b from-accent/55 via-card/95 to-card/90 backdrop-blur-sm">
         <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" aria-hidden />
         <div className="container relative grid gap-5 py-7">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-4">
-              <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary text-xl font-bold text-primary-foreground shadow-md ring-1 ring-primary/20">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:flex-wrap sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary text-lg font-bold text-primary-foreground shadow-md ring-1 ring-primary/20 sm:h-16 sm:w-16 sm:text-xl">
                 {logoUrl ? (
                   <Image src={logoUrl} alt={restaurantName} width={64} height={64} className="h-full w-full object-cover" priority />
                 ) : (
@@ -129,35 +129,35 @@ export function MenuApp({
                 )}
               </div>
               <div className="min-w-0" dir={textDir}>
-                <h1 className="truncate text-2xl font-bold sm:text-3xl">{restaurantName}</h1>
-                <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
+                <h1 className="truncate text-xl font-bold sm:text-3xl">{restaurantName}</h1>
+                <p className="line-clamp-2 max-w-2xl text-sm text-muted-foreground">{description}</p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex shrink-0 items-center justify-end gap-2">
               <ThemeToggle />
               <LanguageGlobe locale={locale} onChange={setLocale} />
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-sm">
+          <div className="flex max-w-full flex-wrap items-center gap-2 text-sm">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 font-medium text-primary">
               <CircleCheck className="h-4 w-4" aria-hidden />
               <span dir={textDir}>{translate(locale, "menu.available")}</span>
             </span>
             {data.general.phone ? (
-              <a className="focus-ring inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`tel:${data.general.phone}`}>
+              <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`tel:${data.general.phone}`}>
                 <Phone className="h-4 w-4 text-primary" aria-hidden />
-                <span>{data.general.phone}</span>
+                <span className="truncate">{data.general.phone}</span>
               </a>
             ) : null}
             {data.general.whatsapp ? (
-              <a className="focus-ring inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`https://wa.me/${data.general.whatsapp.replace(/\D/g, "")}`} target="_blank">
+              <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`https://wa.me/${data.general.whatsapp.replace(/\D/g, "")}`} target="_blank">
                 <WhatsappIcon className="h-4 w-4 text-primary" aria-hidden />
                 <span dir={textDir}>{translate(locale, "menu.whatsapp")}</span>
               </a>
             ) : null}
             {data.general.googleMapsUrl ? (
-              <a className="focus-ring inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={data.general.googleMapsUrl} target="_blank">
+              <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={data.general.googleMapsUrl} target="_blank">
                 <MapPin className="h-4 w-4 text-primary" aria-hidden />
                 <span dir={textDir}>{translate(locale, "menu.openMaps")}</span>
               </a>
@@ -370,7 +370,7 @@ function MenuItemDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-background/60 p-4 backdrop-blur-md sm:p-6"
+      className="fixed inset-0 z-50 overflow-y-auto bg-background/60 p-3 backdrop-blur-md sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -378,7 +378,7 @@ function MenuItemDetailModal({
     >
       <div className="flex min-h-full items-center justify-center">
         <article
-          className="pop-in relative w-full max-w-3xl overflow-hidden rounded-3xl border bg-card shadow-2xl"
+          className="pop-in relative max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border bg-card shadow-2xl sm:max-h-none sm:overflow-hidden sm:rounded-3xl"
           onClick={(event) => event.stopPropagation()}
         >
           <Button
@@ -386,14 +386,14 @@ function MenuItemDetailModal({
             size="icon"
             variant="outline"
             aria-label={translate(locale, "menu.backToMenu")}
-            className="absolute right-4 top-4 z-10 rounded-full bg-card/90 shadow-sm backdrop-blur"
+            className="absolute right-3 top-3 z-10 rounded-full bg-card/90 shadow-sm backdrop-blur sm:right-4 sm:top-4"
             onClick={onClose}
           >
             <X className="h-4 w-4" aria-hidden />
           </Button>
 
           {settings.showImages ? (
-            <div className="group relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-accent via-primary/5 to-secondary/10">
+            <div className="group relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-accent via-primary/5 to-secondary/10 sm:aspect-[16/10]">
               <FallbackMenuImage src={item.imageUrl} alt={title} />
               <div className="absolute inset-x-4 top-4 flex flex-wrap gap-1.5 pr-12">
                 {item.isNew ? <DetailPill tone="primary">{translate(locale, "menu.new")}</DetailPill> : null}
@@ -410,19 +410,19 @@ function MenuItemDetailModal({
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-6 p-5 sm:p-7">
-            <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-col gap-5 p-4 sm:gap-6 sm:p-7">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
               <div className="min-w-0" dir={textDir}>
                 {category ? (
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary">{localized(category.name, locale)}</p>
                 ) : null}
-                <h2 className="mt-1 text-3xl font-bold leading-tight">{title}</h2>
+                <h2 className="mt-1 text-2xl font-bold leading-tight sm:text-3xl">{title}</h2>
               </div>
               {settings.showPrices ? (
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col items-start sm:items-end">
                   {hasDiscount ? (
                     <>
-                      <span className="text-3xl font-bold text-secondary">
+                      <span className="text-2xl font-bold text-secondary sm:text-3xl">
                         {formatMoney(item.discountPrice as number, item.currency, locale)}
                       </span>
                       <span className="text-base text-muted-foreground line-through">
@@ -430,7 +430,7 @@ function MenuItemDetailModal({
                       </span>
                     </>
                   ) : (
-                    <span className="text-3xl font-bold text-primary">{formatMoney(item.basePrice, item.currency, locale)}</span>
+                    <span className="text-2xl font-bold text-primary sm:text-3xl">{formatMoney(item.basePrice, item.currency, locale)}</span>
                   )}
                 </div>
               ) : null}
@@ -512,7 +512,7 @@ function MenuItemDetailModal({
               <a
                 href={`https://wa.me/${whatsappDigits}?text=${encodeURIComponent(`${restaurantName} - ${title}`)}`}
                 target="_blank"
-                className="focus-ring mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                className="focus-ring mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
               >
                 <WhatsappIcon className="h-5 w-5" aria-hidden />
                 <span dir={textDir}>{translate(locale, "menu.orderWhatsapp")}</span>
