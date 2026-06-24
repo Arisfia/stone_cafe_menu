@@ -5,11 +5,13 @@ import { cn } from "@/lib/utils/cn";
 export function Switch({
   checked,
   onCheckedChange,
-  label
+  label,
+  disabled = false
 }: {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   label: string;
+  disabled?: boolean;
 }) {
   return (
     <button
@@ -17,10 +19,12 @@ export function Switch({
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      disabled={disabled}
       onClick={() => onCheckedChange(!checked)}
       className={cn(
         "focus-ring inline-flex h-6 w-11 items-center rounded-full border transition",
-        checked ? "bg-primary" : "bg-muted"
+        checked ? "bg-primary" : "bg-muted",
+        disabled && "cursor-not-allowed opacity-50"
       )}
     >
       <span

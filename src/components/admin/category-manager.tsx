@@ -13,7 +13,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
-import { getAdminAppData, deleteCategory, saveCategory, saveMenuItem } from "@/lib/firebase/firestore";
+import { getAdminAppData, deleteCategory, saveCategory, saveMenuItem, updateCategoryActive } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
 import { slugify } from "@/lib/utils/format";
@@ -40,6 +40,8 @@ export function CategoryManager() {
   const [formOpen, setFormOpen] = useState(false);
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [statusSavingIds, setStatusSavingIds] = useState<string[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [moveTarget, setMoveTarget] = useState("");
   const form = useForm<CategoryFormData>({ resolver: zodResolver(categorySchema), defaultValues: emptyCategory });
@@ -65,6 +67,7 @@ export function CategoryManager() {
     const id = values.id || slugify(values.name.en);
     setSaving(true);
     setMessage("");
+    setError("");
     await saveCategory({ ...values, id } as Category);
     form.reset(emptyCategory);
     await refresh();
@@ -92,6 +95,8 @@ export function CategoryManager() {
   function edit(category: Category) {
     setFormOpen(true);
     setExpandedCategoryId(category.id);
+    setMessage("");
+    setError("");
     form.reset({
       id: category.id,
       name: category.name,
@@ -109,8 +114,29 @@ export function CategoryManager() {
   function newCategory() {
     form.reset(emptyCategory);
     setMessage("");
+    setError("");
     setFormOpen(true);
     setExpandedCategoryId(null);
+  }
+
+  async function toggleCategoryActive(category: Category, isActive: boolean) {
+    const nextCategory = { ...category, isActive };
+    const name = localized(category.name, locale, category.name.en);
+
+    setStatusSavingIds((current) => (current.includes(category.id) ? current : [...current, category.id]));
+    setMessage("");
+    setError("");
+    setData((current) => replaceCategory(current, nextCategory));
+
+    try {
+      await updateCategoryActive(category.id, isActive);
+      setMessage(`${name}: ${isActive ? text.active : text.inactive}`);
+    } catch (err) {
+      setData((current) => replaceCategory(current, category));
+      setError(err instanceof Error ? err.message : text.categorySaved);
+    } finally {
+      setStatusSavingIds((current) => current.filter((id) => id !== category.id));
+    }
   }
 
   const targetItemCount = deleteTarget ? data?.menuItems.filter((item) => item.categoryId === deleteTarget.id).length || 0 : 0;
@@ -129,6 +155,7 @@ export function CategoryManager() {
       </div>
 
       {message ? <p className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm text-primary">{message}</p> : null}
+      {error ? <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</p> : null}
 
       {formOpen ? (
         <Card className="settings-panel">
@@ -199,23 +226,37 @@ export function CategoryManager() {
           {categories.map((category) => {
             const expanded = expandedCategoryId === category.id;
             const itemCount = data?.menuItems.filter((item) => item.categoryId === category.id).length || 0;
+            const statusSaving = statusSavingIds.includes(category.id);
             return (
               <Card key={category.id}>
-                <button
-                  type="button"
-                  className="focus-ring flex w-full flex-wrap items-center justify-between gap-3 rounded-lg p-5 text-start transition-colors hover:bg-muted/50"
-                  aria-expanded={expanded}
-                  onClick={() => setExpandedCategoryId((current) => (current === category.id ? null : category.id))}
-                >
-                  <div>
-                    <p className="font-semibold">{localized(category.name, locale, category.name.en)}</p>
-                    <p className="text-sm text-muted-foreground">{category.name.en} / {category.name.ar} / {category.name.ckb}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {text.order} {category.displayOrder} · {category.isActive ? text.active : text.inactive} · {itemCount} {text.menuItems}
-                    </p>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg p-5 transition-colors hover:bg-muted/50">
+                  <button
+                    type="button"
+                    className="focus-ring flex min-w-0 flex-1 items-center justify-between gap-3 rounded-md text-start"
+                    aria-expanded={expanded}
+                    onClick={() => setExpandedCategoryId((current) => (current === category.id ? null : category.id))}
+                  >
+                    <div className="min-w-0">
+                      <p className="font-semibold">{localized(category.name, locale, category.name.en)}</p>
+                      <p className="text-sm text-muted-foreground">{category.name.en} / {category.name.ar} / {category.name.ckb}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {text.order} {category.displayOrder} · {itemCount} {text.menuItems}
+                      </p>
+                    </div>
+                    <ChevronDown className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} aria-hidden />
+                  </button>
+                  <div className="flex shrink-0 items-center gap-2 rounded-md border bg-background px-3 py-2">
+                    <span className={cn("text-xs font-semibold", category.isActive ? "text-primary" : "text-muted-foreground")}>
+                      {category.isActive ? text.active : text.inactive}
+                    </span>
+                    <Switch
+                      label={`${text.active}: ${localized(category.name, locale, category.name.en)}`}
+                      checked={category.isActive}
+                      disabled={statusSaving}
+                      onCheckedChange={(checked) => toggleCategoryActive(category, checked)}
+                    />
                   </div>
-                  <ChevronDown className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} aria-hidden />
-                </button>
+                </div>
                 {expanded ? (
                   <CardContent className="settings-panel border-t pt-5">
                     <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
@@ -319,4 +360,12 @@ function CategoryAdminPreview({
       </div>
     </div>
   );
+}
+
+function replaceCategory(data: AppData | null, category: Category): AppData | null {
+  if (!data) return data;
+  return {
+    ...data,
+    categories: data.categories.map((entry) => (entry.id === category.id ? category : entry))
+  };
 }

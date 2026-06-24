@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploadField } from "@/components/forms/image-upload-field";
 import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
-import { deleteMenuItem, getAdminAppData, saveMenuItem } from "@/lib/firebase/firestore";
+import { deleteMenuItem, getAdminAppData, saveMenuItem, updateMenuItemAvailability } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
 import { formatMoney } from "@/lib/utils/format";
@@ -62,6 +62,7 @@ export function MenuItemManager() {
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [statusSavingIds, setStatusSavingIds] = useState<string[]>([]);
   const form = useForm<MenuItemFormData>({ resolver: zodResolver(menuItemSchema), defaultValues: emptyItem });
   const watchedItem = form.watch();
 
@@ -164,6 +165,26 @@ export function MenuItemManager() {
     if (!window.confirm(formatAdminText(text.deleteItemConfirm, { name: localized(item.name, locale, item.name.en) }))) return;
     await deleteMenuItem(item.id);
     await refresh();
+  }
+
+  async function toggleItemAvailable(item: MenuItem, isAvailable: boolean) {
+    const nextItem = { ...item, isAvailable };
+    const name = localized(item.name, locale, item.name.en);
+
+    setStatusSavingIds((current) => (current.includes(item.id) ? current : [...current, item.id]));
+    setMessage("");
+    setError("");
+    setData((current) => upsertMenuItem(current, nextItem));
+
+    try {
+      await updateMenuItemAvailability(item.id, isAvailable);
+      setMessage(`${name}: ${isAvailable ? text.available : text.inactive}`);
+    } catch (err) {
+      setData((current) => upsertMenuItem(current, item));
+      setError(err instanceof Error ? err.message : text.menuItemSaved);
+    } finally {
+      setStatusSavingIds((current) => current.filter((id) => id !== item.id));
+    }
   }
 
   function addVariant() {
@@ -338,24 +359,38 @@ export function MenuItemManager() {
           {items.map((item) => {
             const categoryName = localized(data?.categories.find((category) => category.id === item.categoryId)?.name, locale, text.noCategory);
             const expanded = expandedItemId === item.id;
+            const statusSaving = statusSavingIds.includes(item.id);
             return (
               <Card key={item.id}>
-                <button
-                  type="button"
-                  className="focus-ring flex w-full flex-wrap items-center justify-between gap-3 rounded-lg p-5 text-start transition-colors hover:bg-muted/50"
-                  aria-expanded={expanded}
-                  onClick={() => setExpandedItemId((current) => (current === item.id ? null : item.id))}
-                >
-                  <div>
-                    <p className="font-semibold">{localized(item.name, locale, item.name.en)}</p>
-                    <p className="text-sm text-muted-foreground">{item.name.en} / {item.name.ar} / {item.name.ckb}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {categoryName} · {item.basePrice} {item.currency}
-                      {item.isSoldOut ? ` · ${text.soldOut}` : ""}
-                    </p>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg p-5 transition-colors hover:bg-muted/50">
+                  <button
+                    type="button"
+                    className="focus-ring flex min-w-0 flex-1 items-center justify-between gap-3 rounded-md text-start"
+                    aria-expanded={expanded}
+                    onClick={() => setExpandedItemId((current) => (current === item.id ? null : item.id))}
+                  >
+                    <div className="min-w-0">
+                      <p className="font-semibold">{localized(item.name, locale, item.name.en)}</p>
+                      <p className="text-sm text-muted-foreground">{item.name.en} / {item.name.ar} / {item.name.ckb}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {categoryName} · {item.basePrice} {item.currency}
+                        {item.isSoldOut ? ` · ${text.soldOut}` : ""}
+                      </p>
+                    </div>
+                    <ChevronDown className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} aria-hidden />
+                  </button>
+                  <div className="flex shrink-0 items-center gap-2 rounded-md border bg-background px-3 py-2">
+                    <span className={cn("text-xs font-semibold", item.isAvailable ? "text-primary" : "text-muted-foreground")}>
+                      {item.isAvailable ? text.available : text.inactive}
+                    </span>
+                    <Switch
+                      label={`${text.available}: ${localized(item.name, locale, item.name.en)}`}
+                      checked={item.isAvailable}
+                      disabled={statusSaving}
+                      onCheckedChange={(checked) => toggleItemAvailable(item, checked)}
+                    />
                   </div>
-                  <ChevronDown className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} aria-hidden />
-                </button>
+                </div>
                 {expanded ? (
                   <CardContent className="settings-panel border-t pt-5">
                     <div className="grid gap-4 lg:grid-cols-[360px_1fr]">

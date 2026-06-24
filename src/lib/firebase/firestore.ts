@@ -113,6 +113,12 @@ export async function deleteCategory(categoryId: string) {
   await deleteDoc(doc(db, "categories", categoryId));
 }
 
+export async function updateCategoryActive(categoryId: string, isActive: boolean) {
+  const db = getFirebaseDb();
+  if (!db) return;
+  await updateDoc(doc(db, "categories", categoryId), { isActive, updatedAt: serverTimestamp() });
+}
+
 export async function saveMenuItem(item: MenuItem) {
   const db = getFirebaseDb();
   if (!db) return;
@@ -127,6 +133,12 @@ export async function saveMenuItem(item: MenuItem) {
   } else {
     await addDoc(collection(db, "menuItems").withConverter(itemConverter), payload);
   }
+}
+
+export async function updateMenuItemAvailability(itemId: string, isAvailable: boolean) {
+  const db = getFirebaseDb();
+  if (!db) return;
+  await updateDoc(doc(db, "menuItems", itemId), { isAvailable, updatedAt: serverTimestamp() });
 }
 
 async function pruneExpiredImageHistory(item: MenuItem, persist: boolean) {
