@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "StoneCafeCairo";
+  src: url("/fonts/Cairo-Bold.ttf") format("truetype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: "StoneCafeReadex";
+  src: url("/fonts/ReadexPro-Bold.ttf") format("truetype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 700;
+}
+
 :root {
   --background: 210 40% 98%;
   --foreground: 222 47% 11%;
@@ -55,6 +71,23 @@ body {
   min-height: 100%;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
+  font-family: "StoneCafeCairo", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 700;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "StoneCafeReadex", "StoneCafeCairo", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 700 !important;
+}
+
+.font-medium,
+.font-semibold {
+  font-weight: 700 !important;
 }
 
 button,

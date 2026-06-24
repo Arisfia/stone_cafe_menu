@@ -109,7 +109,7 @@ export function LanguageGlobe({
                   active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                 )}
               >
-                <span dir={dirForLocale(entry)}>{localeLabels[entry]}</span>
+                <span lang={entry} dir={dirForLocale(entry)}>{localeLabels[entry]}</span>
                 {active ? <Check className="h-4 w-4" aria-hidden /> : null}
               </button>
             );

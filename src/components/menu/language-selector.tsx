@@ -17,7 +17,7 @@ export function LanguageSelector({ locale, onChange }: { locale: Locale; onChang
           variant={entry === locale ? "default" : "outline"}
           onClick={() => onChange(entry)}
         >
-          <span dir={dirForLocale(entry)}>{localeLabels[entry]}</span>
+          <span lang={entry} dir={dirForLocale(entry)}>{localeLabels[entry]}</span>
         </Button>
       ))}
     </div>
