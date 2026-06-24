@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import {
   BadgePercent,
@@ -46,21 +46,19 @@ export function MenuApp({
   });
   const [data, setData] = useState<AppData>(defaultAppData);
   const [query, setQuery] = useState("");
-  const [categoryId, setCategoryId] = useState<string>("all");
+  const [activeCategoryId, setActiveCategoryId] = useState<string>("all");
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const initialScrollDone = useRef(false);
 
   useEffect(() => {
     getPublicAppData()
-      .then((next) => {
-        setData(next);
-        const initialCategory = next.categories.find((category) => category.slug === initialCategorySlug);
-        if (initialCategory) setCategoryId(initialCategory.id);
-      })
+      .then((next) => setData(next))
       .catch(() => setError(translate(locale, "menu.menuUnavailable")))
       .finally(() => setLoading(false));
-  }, [initialCategorySlug, locale]);
+  }, [locale]);
 
   useEffect(() => {
     if (!activeItem) return;
@@ -82,7 +80,6 @@ export function MenuApp({
     const normalized = normalizeSearch(query);
     return data.menuItems
       .filter((item) => data.menu.showSoldOutItems || !item.isSoldOut)
-      .filter((item) => categoryId === "all" || item.categoryId === categoryId)
       .filter((item) => {
         if (!normalized) return true;
         const category = data.categories.find((entry) => entry.id === item.categoryId);
@@ -98,7 +95,60 @@ export function MenuApp({
         return haystack.includes(normalized);
       })
       .sort((a, b) => a.displayOrder - b.displayOrder);
-  }, [categoryId, data, query]);
+  }, [data, query]);
+
+  // Group the visible items under their category so the menu shows every
+  // section with a heading instead of one flat list.
+  const sections = useMemo(() => {
+    return [...data.categories]
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+      .map((category) => ({
+        category,
+        items: visibleItems.filter((item) => item.categoryId === category.id)
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [data.categories, visibleItems]);
+
+  // Items whose category is missing/inactive still render so nothing disappears.
+  const orphanItems = useMemo(() => {
+    const known = new Set(data.categories.map((category) => category.id));
+    return visibleItems.filter((item) => !known.has(item.categoryId));
+  }, [data.categories, visibleItems]);
+
+  const scrollToCategory = useCallback((id: string) => {
+    setActiveCategoryId(id);
+    if (id === "all") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  // Highlight the pill of the section currently scrolled under the sticky bar.
+  useEffect(() => {
+    function onScroll() {
+      const offset = 120;
+      let current = "all";
+      for (const section of sections) {
+        const el = sectionRefs.current[section.category.id];
+        if (el && el.getBoundingClientRect().top <= offset) current = section.category.id;
+      }
+      setActiveCategoryId(current);
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [sections]);
+
+  // When opening /menu/category/[slug], jump straight to that section once.
+  useEffect(() => {
+    if (initialScrollDone.current || loading || !initialCategorySlug) return;
+    const category = data.categories.find((entry) => entry.slug === initialCategorySlug);
+    const el = category ? sectionRefs.current[category.id] : null;
+    if (!el) return;
+    initialScrollDone.current = true;
+    requestAnimationFrame(() => el.scrollIntoView({ behavior: "auto", block: "start" }));
+  }, [data.categories, initialCategorySlug, loading, sections]);
 
   const restaurantName = localized(data.general.restaurantName, locale);
   const description = localized(data.general.description, locale);
@@ -174,14 +224,14 @@ export function MenuApp({
       {/* Sticky category pills */}
       <nav className="sticky top-0 z-10 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
         <div className="container flex gap-2 overflow-x-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <CategoryPill active={categoryId === "all"} onClick={() => setCategoryId("all")} Icon={LayoutGrid} textDir={textDir}>
+          <CategoryPill active={activeCategoryId === "all"} onClick={() => scrollToCategory("all")} Icon={LayoutGrid} textDir={textDir}>
             {translate(locale, "menu.all")}
           </CategoryPill>
           {data.categories.map((category) => (
             <CategoryPill
               key={category.id}
-              active={categoryId === category.id}
-              onClick={() => setCategoryId(category.id)}
+              active={activeCategoryId === category.id}
+              onClick={() => scrollToCategory(category.id)}
               Icon={categoryIcon(category.slug)}
               textDir={textDir}
             >
@@ -205,16 +255,50 @@ export function MenuApp({
             ))}
           </div>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {visibleItems.map((item) => (
-              <MenuItemCard
-                key={item.id}
-                item={item}
-                locale={locale}
-                settings={data.menu}
-                onViewDetails={setActiveItem}
-              />
-            ))}
+          <div className="grid gap-10">
+            {sections.map((section) => {
+              const SectionIcon = categoryIcon(section.category.slug);
+              return (
+                <div
+                  key={section.category.id}
+                  ref={(el) => { sectionRefs.current[section.category.id] = el; }}
+                  className="grid scroll-mt-24 gap-5"
+                >
+                  <div dir={textDir} className="flex items-center gap-3">
+                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <SectionIcon className="h-5 w-5" aria-hidden />
+                    </span>
+                    <h2 className="text-xl font-bold sm:text-2xl">{localized(section.category.name, locale)}</h2>
+                    <span className="h-px flex-1 bg-border" aria-hidden />
+                  </div>
+                  <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    {section.items.map((item) => (
+                      <MenuItemCard
+                        key={item.id}
+                        item={item}
+                        locale={locale}
+                        settings={data.menu}
+                        onViewDetails={setActiveItem}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {orphanItems.length ? (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {orphanItems.map((item) => (
+                  <MenuItemCard
+                    key={item.id}
+                    item={item}
+                    locale={locale}
+                    settings={data.menu}
+                    onViewDetails={setActiveItem}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
         )}
 

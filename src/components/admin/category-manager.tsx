@@ -13,7 +13,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
-import { getAdminAppData, deleteCategory, saveCategory, saveMenuItem, updateCategoryActive } from "@/lib/firebase/firestore";
+import { getAdminAppData, deleteCategory, deleteMenuItem, saveCategory, saveMenuItem, updateCategoryActive } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
 import { slugify } from "@/lib/utils/format";
@@ -45,6 +45,7 @@ export function CategoryManager() {
   const [statusSavingIds, setStatusSavingIds] = useState<string[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [moveTarget, setMoveTarget] = useState("");
+  const [deleteMode, setDeleteMode] = useState<"move" | "delete">("move");
   const form = useForm<CategoryFormData>({ resolver: zodResolver(categorySchema), defaultValues: emptyCategory });
 
   async function refresh() {
@@ -81,14 +82,19 @@ export function CategoryManager() {
   async function confirmDelete() {
     if (!deleteTarget || !data) return;
     const items = data.menuItems.filter((item) => item.categoryId === deleteTarget.id);
-    if (items.length && !moveTarget) return;
+    if (items.length && deleteMode === "move" && !moveTarget) return;
     setSaving(true);
-    if (moveTarget) {
-      await Promise.all(items.map((item) => saveMenuItem({ ...item, categoryId: moveTarget })));
+    if (items.length) {
+      if (deleteMode === "move") {
+        await Promise.all(items.map((item) => saveMenuItem({ ...item, categoryId: moveTarget })));
+      } else {
+        await Promise.all(items.map((item) => deleteMenuItem(item.id)));
+      }
     }
     await deleteCategory(deleteTarget.id);
     setDeleteTarget(null);
     setMoveTarget("");
+    setDeleteMode("move");
     await refresh();
     setSaving(false);
   }
@@ -249,7 +255,7 @@ export function CategoryManager() {
                           <Button type="button" variant="outline" size="icon" aria-label={text.edit} title={text.edit} onClick={() => edit(category)}>
                             <Pencil className="h-4 w-4" aria-hidden />
                           </Button>
-                          <Button type="button" variant="destructive" size="icon" aria-label={text.delete} title={text.delete} onClick={() => setDeleteTarget(category)}>
+                          <Button type="button" variant="destructive" size="icon" aria-label={text.delete} title={text.delete} onClick={() => { setMoveTarget(""); setDeleteMode("move"); setDeleteTarget(category); }}>
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </Button>
                         </div>
@@ -276,18 +282,48 @@ export function CategoryManager() {
                   : text.categoryHasNoItems}
               </p>
               {targetItemCount ? (
-                <Select value={moveTarget} onChange={(event) => setMoveTarget(event.target.value)}>
-                  <option value="">{text.chooseDestinationCategory}</option>
-                  {(data?.categories || [])
-                    .filter((category) => category.id !== deleteTarget.id)
-                    .map((category) => (
-                      <option key={category.id} value={category.id}>{localized(category.name, locale, category.name.en)}</option>
-                    ))}
-                </Select>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteMode("move")}
+                      className={cn(
+                        "focus-ring rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                        deleteMode === "move" ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"
+                      )}
+                    >
+                      {text.moveItems}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteMode("delete")}
+                      className={cn(
+                        "focus-ring rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                        deleteMode === "delete" ? "border-destructive bg-destructive text-destructive-foreground" : "bg-card hover:bg-muted"
+                      )}
+                    >
+                      {text.deleteItemsToo}
+                    </button>
+                  </div>
+                  {deleteMode === "move" ? (
+                    <Select value={moveTarget} onChange={(event) => setMoveTarget(event.target.value)}>
+                      <option value="">{text.chooseDestinationCategory}</option>
+                      {(data?.categories || [])
+                        .filter((category) => category.id !== deleteTarget.id)
+                        .map((category) => (
+                          <option key={category.id} value={category.id}>{localized(category.name, locale, category.name.en)}</option>
+                        ))}
+                    </Select>
+                  ) : (
+                    <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+                      {formatAdminText(text.deleteItemsWarning, { count: targetItemCount })}
+                    </p>
+                  )}
+                </div>
               ) : null}
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDeleteTarget(null)}>{text.cancel}</Button>
-                <Button variant="destructive" onClick={confirmDelete} disabled={saving || (targetItemCount > 0 && !moveTarget)}>{text.delete}</Button>
+                <Button variant="outline" onClick={() => { setDeleteTarget(null); setDeleteMode("move"); }}>{text.cancel}</Button>
+                <Button variant="destructive" onClick={confirmDelete} disabled={saving || (targetItemCount > 0 && deleteMode === "move" && !moveTarget)}>{text.delete}</Button>
               </div>
             </CardContent>
           </Card>
