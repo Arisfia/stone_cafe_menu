@@ -324,28 +324,30 @@ export function PosManager() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
-            {tables.map((table) => {
-              const order = pos.orders[table.id];
-              const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
-              return (
-                <button
-                  key={table.id}
-                  type="button"
-                  onClick={() => setSelectedTableId(table.id)}
-                  className={cn(
-                    "focus-ring min-h-20 rounded-lg border p-3 text-start transition-colors",
-                    table.id === selectedTable?.id ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted"
-                  )}
-                >
-                  <span dir={textDir} className="block truncate text-base font-semibold">{table.name}</span>
-                  <span dir={textDir} className={cn("mt-2 block truncate text-xs", table.id === selectedTable?.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
-                    {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          {!tableToolsOpen ? (
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
+              {tables.map((table) => {
+                const order = pos.orders[table.id];
+                const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
+                return (
+                  <button
+                    key={table.id}
+                    type="button"
+                    onClick={() => setSelectedTableId(table.id)}
+                    className={cn(
+                      "focus-ring min-h-20 rounded-lg border p-3 text-start transition-colors",
+                      table.id === selectedTable?.id ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted"
+                    )}
+                  >
+                    <span dir={textDir} className="block truncate text-base font-semibold">{table.name}</span>
+                    <span dir={textDir} className={cn("mt-2 block truncate text-xs", table.id === selectedTable?.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                      {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
 
           {tableToolsOpen ? (
             <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">

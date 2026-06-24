@@ -198,7 +198,7 @@ export async function getPosState(): Promise<PosState> {
 export async function savePosState(state: PosState) {
   const db = getFirebaseDb();
   if (!db) return;
-  await setDoc(doc(db, "settings", "pos"), { ...state, updatedAt: serverTimestamp() }, { merge: true });
+  await setDoc(doc(db, "settings", "pos"), { ...serializePosState(state), updatedAt: serverTimestamp() }, { merge: true });
 }
 
 function normalizePosState(value: unknown): PosState {
@@ -221,16 +221,16 @@ function normalizePosState(value: unknown): PosState {
           const order = entry[1];
           return Boolean(order && typeof order === "object" && Array.isArray(order.lines));
         })
-        .map(([tableId, order]) => [
-          tableId,
-          {
+        .map(([tableId, order]) => {
+          const normalizedOrder: PosState["orders"][string] = {
             tableId,
             lines: order.lines.filter((line) => line && typeof line.id === "string" && typeof line.itemId === "string"),
             discountType: order.discountType === "percent" ? "percent" : "amount",
-            discountValue: Number.isFinite(order.discountValue) ? Math.max(0, order.discountValue) : 0,
-            updatedAt: order.updatedAt
-          }
-        ])
+            discountValue: Number.isFinite(order.discountValue) ? Math.max(0, order.discountValue) : 0
+          };
+          if (typeof order.updatedAt === "string") normalizedOrder.updatedAt = order.updatedAt;
+          return [tableId, normalizedOrder];
+        })
     ),
     completedOrders: completedOrders
       .filter((order) => order && typeof order.id === "string" && typeof order.tableId === "string" && Array.isArray(order.lines))
@@ -247,5 +247,25 @@ function normalizePosState(value: unknown): PosState {
         currency: order.currency || "IQD",
         completedAt: typeof order.completedAt === "string" ? order.completedAt : new Date().toISOString()
       }))
+  };
+}
+
+function serializePosState(state: PosState) {
+  const normalized = normalizePosState(state);
+  return {
+    tables: normalized.tables,
+    orders: Object.fromEntries(
+      Object.entries(normalized.orders).map(([tableId, order]) => {
+        const payload: PosState["orders"][string] = {
+          tableId: order.tableId || tableId,
+          lines: order.lines,
+          discountType: order.discountType,
+          discountValue: order.discountValue
+        };
+        if (typeof order.updatedAt === "string") payload.updatedAt = order.updatedAt;
+        return [tableId, payload];
+      })
+    ),
+    completedOrders: normalized.completedOrders || []
   };
 }
