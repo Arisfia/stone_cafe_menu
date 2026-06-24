@@ -262,6 +262,68 @@ body.overflow-lock {
   will-change: opacity, transform, clip-path;
 }
 
+/* Menu category icon animations */
+@keyframes cat-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.cat-bob { animation: cat-bob 2.4s ease-in-out infinite; }
+
+@keyframes cat-spin {
+  to { transform: rotate(360deg); }
+}
+.cat-spin { transform-origin: center; animation: cat-spin 6s linear infinite; }
+
+@keyframes cat-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+.cat-pulse { transform-origin: center; animation: cat-pulse 1.8s ease-in-out infinite; }
+
+@keyframes cat-wiggle {
+  0%, 100% { transform: rotate(-9deg); }
+  50% { transform: rotate(9deg); }
+}
+.cat-wiggle { transform-origin: center; animation: cat-wiggle 2.2s ease-in-out infinite; }
+
+@keyframes cat-shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(-1px) rotate(-5deg); }
+  40% { transform: translateX(1px) rotate(5deg); }
+  60% { transform: translateX(-0.8px) rotate(-3deg); }
+  80% { transform: translateX(0.8px) rotate(3deg); }
+}
+.cat-shake { transform-origin: center; animation: cat-shake 1.5s ease-in-out infinite; }
+
+@keyframes cat-sway {
+  0%, 100% { transform: rotate(-5deg) scale(1); }
+  50% { transform: rotate(5deg) scale(1.06); }
+}
+.cat-sway { transform-origin: center; animation: cat-sway 3s ease-in-out infinite; }
+
+/* Boiling egg: the shell jiggles in the water */
+@keyframes cat-boil {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-1px) rotate(3deg); }
+}
+.cat-boil { transform-origin: center bottom; animation: cat-boil 1.3s ease-in-out infinite; }
+
+/* Bubbles rising out of the water (boiling egg / fizzy drink) */
+@keyframes cat-bubble {
+  0% { transform: translateY(2px) scale(0.5); opacity: 0; }
+  30% { opacity: 0.9; }
+  100% { transform: translateY(-7px) scale(1); opacity: 0; }
+}
+.cat-bubble { transform-origin: center; animation: cat-bubble 1.8s ease-in-out infinite; }
+
+/* Steam wisps rising off a hot drink */
+@keyframes cat-steam {
+  0% { transform: translateY(2px) scaleY(0.7); opacity: 0; }
+  30% { opacity: 0.85; }
+  100% { transform: translateY(-6px) scaleY(1.2); opacity: 0; }
+}
+.cat-steam { transform-origin: center bottom; animation: cat-steam 2.4s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .steam-wisp,
   .bean-float,
@@ -271,7 +333,16 @@ body.overflow-lock {
   .globe-orbit,
   .globe-glyph-character,
   .pop-in,
-  .settings-panel {
+  .settings-panel,
+  .cat-bob,
+  .cat-spin,
+  .cat-pulse,
+  .cat-wiggle,
+  .cat-shake,
+  .cat-sway,
+  .cat-boil,
+  .cat-bubble,
+  .cat-steam {
     animation: none;
   }
 }

@@ -3,26 +3,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import {
-  BadgePercent,
-  Bean,
-  CakeSlice,
   CircleCheck,
-  Coffee,
-  CupSoda,
-  Egg,
-  LayoutGrid,
   MapPin,
   Phone,
-  Sandwich,
   Search,
-  Utensils,
   UtensilsCrossed,
-  X,
-  type LucideIcon
+  X
 } from "lucide-react";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CategoryIcon } from "@/components/menu/category-icon";
 import { MenuItemCard } from "@/components/menu/menu-item-card";
 import { LanguageGlobe } from "@/components/menu/language-globe";
 import { MenuBackground } from "@/components/menu/menu-background";
@@ -224,7 +215,7 @@ export function MenuApp({
       {/* Sticky category pills */}
       <nav className="sticky top-0 z-10 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
         <div className="container flex gap-2 overflow-x-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <CategoryPill active={activeCategoryId === "all"} onClick={() => scrollToCategory("all")} Icon={LayoutGrid} textDir={textDir}>
+          <CategoryPill active={activeCategoryId === "all"} onClick={() => scrollToCategory("all")} slug="all" textDir={textDir}>
             {translate(locale, "menu.all")}
           </CategoryPill>
           {data.categories.map((category) => (
@@ -232,7 +223,7 @@ export function MenuApp({
               key={category.id}
               active={activeCategoryId === category.id}
               onClick={() => scrollToCategory(category.id)}
-              Icon={categoryIcon(category.slug)}
+              slug={category.slug}
               textDir={textDir}
             >
               {localized(category.name, locale)}
@@ -257,7 +248,6 @@ export function MenuApp({
         ) : (
           <div className="grid gap-10">
             {sections.map((section) => {
-              const SectionIcon = categoryIcon(section.category.slug);
               return (
                 <div
                   key={section.category.id}
@@ -266,7 +256,7 @@ export function MenuApp({
                 >
                   <div dir={textDir} className="flex items-center gap-3">
                     <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <SectionIcon className="h-5 w-5" aria-hidden />
+                      <CategoryIcon slug={section.category.slug} className="h-5 w-5" />
                     </span>
                     <h2 className="text-xl font-bold sm:text-2xl">{localized(section.category.name, locale)}</h2>
                     <span className="h-px flex-1 bg-border" aria-hidden />
@@ -326,32 +316,17 @@ export function MenuApp({
   );
 }
 
-const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  breakfast: Egg,
-  "hot-drinks": Coffee,
-  "cold-drinks": CupSoda,
-  coffee: Bean,
-  desserts: CakeSlice,
-  sandwiches: Sandwich,
-  "main-meals": UtensilsCrossed,
-  "special-offers": BadgePercent
-};
-
-function categoryIcon(slug: string): LucideIcon {
-  return CATEGORY_ICONS[slug] ?? Utensils;
-}
-
 function CategoryPill({
   active,
   onClick,
   children,
-  Icon,
+  slug,
   textDir
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
-  Icon: LucideIcon;
+  slug: string;
   textDir: "ltr" | "rtl";
 }) {
   return (
@@ -363,7 +338,7 @@ function CategoryPill({
         active ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-card text-foreground hover:bg-muted"
       )}
     >
-      <Icon className="h-4 w-4" aria-hidden />
+      <CategoryIcon slug={slug} className="h-4 w-4" />
       <span dir={textDir}>{children}</span>
     </button>
   );
