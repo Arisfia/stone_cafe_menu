@@ -177,19 +177,19 @@ export function MenuApp({
               <CircleCheck className="h-4 w-4" aria-hidden />
               <span dir={textDir}>{translate(locale, "menu.available")}</span>
             </span>
-            {data.general.phone ? (
+            {!loading && data.general.phone ? (
               <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`tel:${data.general.phone}`}>
                 <Phone className="h-4 w-4 text-primary" aria-hidden />
                 <span className="truncate">{data.general.phone}</span>
               </a>
             ) : null}
-            {data.general.whatsapp ? (
+            {!loading && data.general.whatsapp ? (
               <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`https://wa.me/${data.general.whatsapp.replace(/\D/g, "")}`} target="_blank">
                 <WhatsappIcon className="h-4 w-4 text-primary" aria-hidden />
                 <span dir={textDir}>{translate(locale, "menu.whatsapp")}</span>
               </a>
             ) : null}
-            {data.general.googleMapsUrl ? (
+            {!loading && data.general.googleMapsUrl ? (
               <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={data.general.googleMapsUrl} target="_blank">
                 <MapPin className="h-4 w-4 text-primary" aria-hidden />
                 <span dir={textDir}>{translate(locale, "menu.openMaps")}</span>

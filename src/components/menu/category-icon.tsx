@@ -5,26 +5,26 @@ import {
   LayoutGrid,
   Sandwich,
   Utensils,
+  UtensilsCrossed,
   type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
-// Each category icon gets its own looping motion. Breakfast, hot drinks, main
-// meals, special offers and coffee use purpose-built animated SVGs; the rest
-// reuse Lucide icons with a transform animation. All motion is disabled under
-// prefers-reduced-motion (see globals.css).
+// Each category icon gets its own looping motion. Breakfast, hot drinks and
+// coffee use purpose-built animated SVGs; the rest reuse Lucide icons with a
+// transform animation. All motion is disabled under prefers-reduced-motion
+// (see globals.css).
 const SLUG_ICON: Record<string, { Icon: LucideIcon; anim: string }> = {
   "cold-drinks": { Icon: CupSoda, anim: "cat-shake" },
   desserts: { Icon: CakeSlice, anim: "cat-bob" },
   sandwiches: { Icon: Sandwich, anim: "cat-bob" },
+  "main-meals": { Icon: UtensilsCrossed, anim: "cat-wiggle" },
   all: { Icon: LayoutGrid, anim: "cat-sway" }
 };
 
 export function CategoryIcon({ slug, className }: { slug: string; className?: string }) {
-  if (slug === "breakfast") return <FriedEggIcon className={className} />;
+  if (slug === "breakfast") return <BoilingEggIcon className={className} />;
   if (slug === "hot-drinks") return <HotDrinkIcon className={className} />;
-  if (slug === "main-meals") return <MainMealsIcon className={className} />;
-  if (slug === "special-offers") return <SpecialOfferIcon className={className} />;
   if (slug === "coffee") return <CoffeeDustIcon className={className} />;
 
   const entry = SLUG_ICON[slug] ?? { Icon: Utensils, anim: "cat-wiggle" };
@@ -32,19 +32,18 @@ export function CategoryIcon({ slug, className }: { slug: string; className?: st
   return <Icon className={cn(entry.anim, className)} aria-hidden />;
 }
 
-function FriedEggIcon({ className }: { className?: string }) {
+function BoilingEggIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden focusable="false">
-      <g className="cat-egg-jelly">
-        <path
-          d="M11 5C15 5 18 7 18.4 10.5C18.8 14 16.5 17.6 13 18C9.5 18.4 5.4 17 4.6 13.5C3.8 10 5 6.6 8 5.5C9 5.1 10 5 11 5Z"
-          fill="currentColor"
-          opacity="0.16"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-        <circle className="cat-yolk" cx="11.3" cy="11.8" r="3" fill="currentColor" />
+      <g fill="currentColor">
+        <circle className="cat-bubble" cx="8" cy="7" r="1" style={{ animationDelay: "0s" }} />
+        <circle className="cat-bubble" cx="12" cy="6" r="1.2" style={{ animationDelay: "0.5s" }} />
+        <circle className="cat-bubble" cx="16" cy="7.5" r="0.9" style={{ animationDelay: "1s" }} />
+      </g>
+      <g className="cat-boil">
+        <ellipse cx="12" cy="15" rx="6.4" ry="7" fill="currentColor" opacity="0.18" />
+        <ellipse cx="12" cy="15" rx="6.4" ry="7" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        <circle cx="12" cy="15.5" r="2.4" fill="currentColor" />
       </g>
     </svg>
   );
@@ -64,58 +63,14 @@ function HotDrinkIcon({ className }: { className?: string }) {
   );
 }
 
-function MainMealsIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden focusable="false">
-      {/* fork */}
-      <g className="cat-fork" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none">
-        <path d="M6 3.5v4M8 3.5v4M10 3.5v4" />
-        <path d="M6 7.5h4" />
-        <path d="M8 7.5V21" />
-      </g>
-      {/* knife */}
-      <g className="cat-cut">
-        <path d="M16 3.5C18.4 5.5 18.4 10 16 13Z" fill="currentColor" opacity="0.16" />
-        <path d="M16 3.5C18.4 5.5 18.4 10 16 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M16 13v8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      </g>
-    </svg>
-  );
-}
-
-function SpecialOfferIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden focusable="false">
-      <g transform="rotate(-90 12 12)">
-        <circle
-          className="cat-ring-draw"
-          cx="12"
-          cy="12"
-          r="8.5"
-          pathLength={100}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeDasharray="100"
-          strokeLinecap="round"
-        />
-      </g>
-      <g className="cat-percent-in" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-        <line x1="9" y1="15" x2="15" y2="9" />
-        <circle cx="9.4" cy="9.4" r="1.3" fill="currentColor" stroke="none" />
-        <circle cx="14.6" cy="14.6" r="1.3" fill="currentColor" stroke="none" />
-      </g>
-    </svg>
-  );
-}
-
+// Crumbs fall downward (and slightly outward), as if the bean is being shredded.
 const COFFEE_DUST = [
-  { dx: "6px", dy: "-6px", delay: "0s" },
-  { dx: "-6px", dy: "-5px", delay: "0.06s" },
-  { dx: "7px", dy: "4px", delay: "0.12s" },
-  { dx: "-7px", dy: "5px", delay: "0.04s" },
-  { dx: "0px", dy: "-8px", delay: "0.1s" },
-  { dx: "2px", dy: "8px", delay: "0.15s" }
+  { dx: "-5px", dy: "8px", delay: "0s" },
+  { dx: "-2px", dy: "10px", delay: "0.05s" },
+  { dx: "1px", dy: "9px", delay: "0.12s" },
+  { dx: "4px", dy: "8px", delay: "0.04s" },
+  { dx: "6px", dy: "10px", delay: "0.1s" },
+  { dx: "-6px", dy: "9px", delay: "0.15s" }
 ];
 
 function CoffeeDustIcon({ className }: { className?: string }) {
@@ -132,7 +87,7 @@ function CoffeeDustIcon({ className }: { className?: string }) {
             key={index}
             className="cat-dust"
             cx="12"
-            cy="12"
+            cy="11"
             r="1.1"
             style={{ "--dx": dust.dx, "--dy": dust.dy, animationDelay: dust.delay } as CSSProperties}
           />

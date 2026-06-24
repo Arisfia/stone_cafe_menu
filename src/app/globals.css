@@ -381,7 +381,7 @@ body.overflow-lock {
   58% { opacity: 0.95; }
   100% { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(1); }
 }
-.cat-dust { animation: cat-dust 2.4s ease-out infinite; }
+.cat-dust { animation: cat-dust 2.4s ease-in infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   .steam-wisp,
