@@ -495,15 +495,22 @@ export function PosManager() {
 
                 <div className="grid gap-3 rounded-lg border p-3">
                   <div className="grid grid-cols-[140px_1fr] gap-2">
-                    <Select value={selectedOrder.discountType} onChange={(event) => setDiscountType(event.target.value as PosDiscountType)}>
-                      <option value="amount">{text.amountDiscount}</option>
-                      <option value="percent">{text.percentDiscount}</option>
+                    <Select
+                      value={selectedOrder.discountType}
+                      aria-label={text.discount}
+                      title={selectedOrder.discountType === "percent" ? text.percentDiscount : text.amountDiscount}
+                      onChange={(event) => setDiscountType(event.target.value as PosDiscountType)}
+                    >
+                      <option value="amount">{totals.currency}</option>
+                      <option value="percent">%</option>
                     </Select>
                     <Input
                       type="number"
                       min={0}
                       max={selectedOrder.discountType === "percent" ? 100 : undefined}
                       value={selectedOrder.discountValue}
+                      onFocus={(event) => event.currentTarget.select()}
+                      onClick={(event) => event.currentTarget.select()}
                       onChange={(event) => setDiscountValue(Number(event.target.value))}
                     />
                   </div>
