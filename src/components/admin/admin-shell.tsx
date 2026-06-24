@@ -10,6 +10,7 @@ import {
   CircleUserRound,
   ExternalLink,
   KeyRound,
+  LineChart,
   ListTree,
   LogOut,
   Menu,
@@ -36,6 +37,7 @@ const nav: { href: string; labelKey: string; icon: LucideIcon; feature: AdminFea
   { href: "/admin/categories", labelKey: "categories", icon: ListTree, feature: "categories" },
   { href: "/admin/menu-items", labelKey: "menuItems", icon: MenuSquare, feature: "menuItems" },
   { href: "/admin/pos", labelKey: "pos", icon: Table2, feature: "pos" },
+  { href: "/admin/reports", labelKey: "reports", icon: LineChart, feature: "reports" },
   { href: "/admin/qr-code", labelKey: "qrCode", icon: QrCode, feature: "qrCode" },
   { href: "/admin/settings", labelKey: "settings", icon: Settings, feature: "settings" }
 ];

@@ -172,7 +172,7 @@ export type QrSettings = {
 
 export type AdminRole = "admin" | "employee";
 
-export type AdminFeature = "dashboard" | "categories" | "menuItems" | "pos" | "qrCode" | "settings";
+export type AdminFeature = "dashboard" | "categories" | "menuItems" | "pos" | "reports" | "qrCode" | "settings";
 
 export type AdminPermissions = Partial<Record<AdminFeature, boolean>>;
 
