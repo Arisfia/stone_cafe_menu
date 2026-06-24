@@ -14,7 +14,7 @@ import {
   Pizza
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LanguageSelector } from "@/components/menu/language-selector";
+import { LanguageGlobe } from "@/components/menu/language-globe";
 import { ThemeToggle } from "@/components/menu/theme-toggle";
 import { useLocale } from "@/hooks/use-locale";
 import { localized, translate } from "@/lib/i18n/config";
@@ -110,10 +110,9 @@ export function WelcomeScreen() {
           <p dir={textDir} className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {translate(locale, "welcome.chooseLanguage")}
           </p>
-          {/* Fixed ltr order so the buttons keep their position when the
-              selected language flips the page between rtl and ltr. */}
+          {/* Globe symbol matches the admin + menu language switcher. */}
           <div className="flex justify-center" dir="ltr">
-            <LanguageSelector locale={locale} onChange={setLocale} />
+            <LanguageGlobe locale={locale} onChange={setLocale} />
           </div>
         </div>
 

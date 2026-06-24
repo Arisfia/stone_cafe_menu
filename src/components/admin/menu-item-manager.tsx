@@ -64,6 +64,7 @@ export function MenuItemManager() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [statusSavingIds, setStatusSavingIds] = useState<string[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<MenuItem | null>(null);
   const form = useForm<MenuItemFormData>({ resolver: zodResolver(menuItemSchema), defaultValues: emptyItem });
 
   async function refresh() {
@@ -168,10 +169,16 @@ export function MenuItemManager() {
     form.reset(emptyItem);
   }
 
-  async function remove(item: MenuItem) {
-    if (!window.confirm(formatAdminText(text.deleteItemConfirm, { name: localized(item.name, locale, item.name.en) }))) return;
-    await deleteMenuItem(item.id);
-    await refresh();
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setSaving(true);
+    try {
+      await deleteMenuItem(deleteTarget.id);
+      setDeleteTarget(null);
+      await refresh();
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function toggleItemAvailable(item: MenuItem, isAvailable: boolean) {
@@ -306,7 +313,7 @@ export function MenuItemManager() {
                           <Button type="button" variant="outline" size="icon" aria-label={text.edit} title={text.edit} onClick={() => edit(item)}>
                             <Pencil className="h-4 w-4" aria-hidden />
                           </Button>
-                          <Button type="button" variant="destructive" size="icon" aria-label={text.delete} title={text.delete} onClick={() => remove(item)}>
+                          <Button type="button" variant="destructive" size="icon" aria-label={text.delete} title={text.delete} onClick={() => setDeleteTarget(item)}>
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </Button>
                         </div>
@@ -319,6 +326,25 @@ export function MenuItemManager() {
           })}
         </div>
       </div>
+
+      {deleteTarget ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>{text.deleteItem}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {formatAdminText(text.deleteItemConfirm, { name: localized(deleteTarget.name, locale, deleteTarget.name.en) })}
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={saving}>{text.cancel}</Button>
+                <Button variant="destructive" onClick={confirmDelete} disabled={saving}>{text.delete}</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
     </div>
   );
 }

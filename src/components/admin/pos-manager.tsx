@@ -43,6 +43,7 @@ export function PosManager() {
   const [draftSelectedTableId, setDraftSelectedTableId] = useState("");
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [discountInput, setDiscountInput] = useState("");
   const [tableToolsOpen, setTableToolsOpen] = useState(false);
   const [tableAction, setTableAction] = useState<"move" | "merge" | null>(null);
   const [message, setMessage] = useState("");
@@ -103,6 +104,17 @@ export function PosManager() {
   useEffect(() => {
     setTableAction(null);
   }, [selectedTableId]);
+
+  // Mirror the order's discount into the editable field, but keep an empty field
+  // empty (so backspacing the value to nothing clears the zero instead of snapping back).
+  useEffect(() => {
+    const numeric = selectedOrder?.discountValue ?? 0;
+    setDiscountInput((current) => {
+      if (current !== "" && Number(current) === numeric) return current;
+      if (current === "" && numeric === 0) return current;
+      return String(numeric);
+    });
+  }, [selectedTableId, selectedOrder?.discountValue]);
 
   async function persist(nextPos: PosState, nextMessage?: string) {
     const previousPos = pos;
@@ -556,11 +568,11 @@ export function PosManager() {
               <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
                 <Button type="button" variant="outline" onClick={() => addDraftTable("indoor")}>
                   <Plus className="h-4 w-4" aria-hidden />
-                  {text.addIndoorTable}
+                  {text.indoor}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => addDraftTable("outdoor")}>
                   <Plus className="h-4 w-4" aria-hidden />
-                  {text.addOutdoorTable}
+                  {text.outdoor}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => void saveTableChanges()} disabled={!draftTables.length}>
                   {text.saveTable}
@@ -688,12 +700,17 @@ export function PosManager() {
                     </Select>
                     <Input
                       type="number"
+                      inputMode="numeric"
                       min={0}
                       max={selectedOrder.discountType === "percent" ? 100 : undefined}
-                      value={selectedOrder.discountValue}
+                      placeholder="0"
+                      value={discountInput}
                       onFocus={(event) => event.currentTarget.select()}
                       onClick={(event) => event.currentTarget.select()}
-                      onChange={(event) => setDiscountValue(Number(event.target.value))}
+                      onChange={(event) => {
+                        setDiscountInput(event.target.value);
+                        setDiscountValue(Number(event.target.value));
+                      }}
                     />
                   </div>
                   <TotalRow label={text.subtotal} value={formatMoney(totals.subtotal, totals.currency, locale)} />
@@ -702,10 +719,10 @@ export function PosManager() {
                 </div>
 
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <Button type="button" variant="outline" onClick={completeOrder} disabled={!selectedOrder.lines.length}>
+                  <Button type="button" onClick={completeOrder} disabled={!selectedOrder.lines.length}>
                     {text.completeOrder}
                   </Button>
-                  <Button type="button" onClick={printInvoice} disabled={!selectedOrder.lines.length}>
+                  <Button type="button" variant="outline" onClick={printInvoice} disabled={!selectedOrder.lines.length}>
                     <Printer className="h-4 w-4" aria-hidden />
                     {text.printInvoice}
                   </Button>
