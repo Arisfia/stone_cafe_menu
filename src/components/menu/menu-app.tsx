@@ -13,14 +13,10 @@ import {
   Egg,
   Flame,
   LayoutGrid,
-  Leaf,
   MapPin,
   Phone,
   Sandwich,
   Search,
-  Sparkles,
-  Star,
-  TrendingUp,
   Utensils,
   UtensilsCrossed,
   X,
@@ -53,7 +49,6 @@ export function MenuApp({
   const [data, setData] = useState<AppData>(defaultAppData);
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState<string>("all");
-  const [filter, setFilter] = useState<"all" | "featured" | "popular" | "new" | "vegetarian" | "spicy">("all");
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -90,7 +85,6 @@ export function MenuApp({
     return data.menuItems
       .filter((item) => data.menu.showSoldOutItems || !item.isSoldOut)
       .filter((item) => categoryId === "all" || item.categoryId === categoryId)
-      .filter((item) => matchFilter(item, filter))
       .filter((item) => {
         if (!normalized) return true;
         const category = data.categories.find((entry) => entry.id === item.categoryId);
@@ -106,7 +100,7 @@ export function MenuApp({
         return haystack.includes(normalized);
       })
       .sort((a, b) => a.displayOrder - b.displayOrder);
-  }, [categoryId, data, filter, query]);
+  }, [categoryId, data, query]);
 
   const restaurantName = localized(data.general.restaurantName, locale);
   const description = localized(data.general.description, locale);
@@ -200,30 +194,6 @@ export function MenuApp({
       </nav>
 
       <section className="container grid gap-6 py-6">
-        {data.menu.enableFilters ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              <span dir={textDir}>{translate(locale, "menu.filters")}</span>
-            </span>
-            {(["all", "featured", "popular", "new", "vegetarian", "spicy"] as const).map((entry) => {
-              const FilterIcon = FILTER_ICONS[entry];
-              return (
-                <Button
-                  key={entry}
-                  size="sm"
-                  variant={filter === entry ? "secondary" : "outline"}
-                  className="rounded-full"
-                  onClick={() => setFilter(entry)}
-                >
-                  <FilterIcon className="h-3.5 w-3.5" aria-hidden />
-                  <span dir={textDir}>{entry === "all" ? translate(locale, "menu.all") : translate(locale, `menu.${entry}`)}</span>
-                </Button>
-              );
-            })}
-          </div>
-        ) : null}
-
         {error ? (
           <p dir={textDir} className="rounded-2xl border border-destructive bg-destructive/5 p-4 text-destructive">
             {error}
@@ -291,15 +261,6 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 function categoryIcon(slug: string): LucideIcon {
   return CATEGORY_ICONS[slug] ?? Utensils;
 }
-
-const FILTER_ICONS: Record<string, LucideIcon> = {
-  all: LayoutGrid,
-  featured: Star,
-  popular: TrendingUp,
-  new: Sparkles,
-  vegetarian: Leaf,
-  spicy: Flame
-};
 
 function CategoryPill({
   active,
@@ -573,14 +534,4 @@ function DetailPill({ children, tone = "primary" }: { children: React.ReactNode;
       {children}
     </span>
   );
-}
-
-function matchFilter(item: MenuItem, filter: "all" | "featured" | "popular" | "new" | "vegetarian" | "spicy") {
-  if (filter === "all") return true;
-  if (filter === "featured") return item.isFeatured;
-  if (filter === "popular") return item.isPopular;
-  if (filter === "new") return item.isNew;
-  if (filter === "vegetarian") return item.dietaryLabels.includes("vegetarian");
-  if (filter === "spicy") return Boolean(item.spicyLevel && item.spicyLevel > 0);
-  return true;
 }

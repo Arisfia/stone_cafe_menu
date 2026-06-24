@@ -216,7 +216,7 @@ export function SettingsManager() {
         <Card id="menu" className="settings-panel">
           <CardHeader><CardTitle>{text.menuSettings}</CardTitle></CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {Object.entries(menu).filter(([key]) => key !== "updatedAt").map(([key, value]) => (
+            {Object.entries(menu).filter(([key]) => key !== "updatedAt" && key !== "enableFilters").map(([key, value]) => (
               <div key={key} className="flex items-center justify-between rounded-md border p-3">
                 <span className="text-sm font-medium">{menuSettingLabel(key, text)}</span>
                 <Switch label={menuSettingLabel(key, text)} checked={Boolean(value)} onCheckedChange={(checked) => setMenu({ ...menu, [key]: checked })} />
