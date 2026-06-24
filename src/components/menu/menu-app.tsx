@@ -3,17 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import {
-  CircleCheck,
-  MapPin,
-  Phone,
   Search,
   UtensilsCrossed,
   X
 } from "lucide-react";
-import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CategoryIcon } from "@/components/menu/category-icon";
+import { AvailableIcon, LocationPinIcon, PhoneSignalIcon, WhatsappSendIcon } from "@/components/menu/menu-contact-icons";
 import { MenuItemCard } from "@/components/menu/menu-item-card";
 import { LanguageGlobe } from "@/components/menu/language-globe";
 import { MenuBackground } from "@/components/menu/menu-background";
@@ -174,24 +171,24 @@ export function MenuApp({
 
           <div className="flex max-w-full flex-wrap items-center gap-2 text-sm">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 font-medium text-primary">
-              <CircleCheck className="h-4 w-4" aria-hidden />
+              <AvailableIcon className="h-4 w-4" />
               <span dir={textDir}>{translate(locale, "menu.available")}</span>
             </span>
             {!loading && data.general.phone ? (
               <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`tel:${data.general.phone}`}>
-                <Phone className="h-4 w-4 text-primary" aria-hidden />
+                <PhoneSignalIcon className="h-4 w-4 text-primary" />
                 <span className="truncate">{data.general.phone}</span>
               </a>
             ) : null}
             {!loading && data.general.whatsapp ? (
               <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`https://wa.me/${data.general.whatsapp.replace(/\D/g, "")}`} target="_blank">
-                <WhatsappIcon className="h-4 w-4 text-primary" aria-hidden />
+                <WhatsappSendIcon className="h-4 w-4 text-primary" />
                 <span dir={textDir}>{translate(locale, "menu.whatsapp")}</span>
               </a>
             ) : null}
             {!loading && data.general.googleMapsUrl ? (
               <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={data.general.googleMapsUrl} target="_blank">
-                <MapPin className="h-4 w-4 text-primary" aria-hidden />
+                <LocationPinIcon className="h-4 w-4 text-primary" />
                 <span dir={textDir}>{translate(locale, "menu.openMaps")}</span>
               </a>
             ) : null}

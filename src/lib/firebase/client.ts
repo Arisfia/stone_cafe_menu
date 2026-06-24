@@ -10,6 +10,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
+export function getFirebaseConfig() {
+  return firebaseConfig;
+}
+
 export function hasFirebaseClientConfig() {
   return Boolean(
     firebaseConfig.apiKey &&

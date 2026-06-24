@@ -20,7 +20,7 @@ import { defaultAppData } from "@/data/default-data";
 import { getFirebaseDb } from "@/lib/firebase/client";
 import { removeImage } from "@/lib/supabase/storage";
 import { slugify } from "@/lib/utils/format";
-import type { AppData, Category, MenuItem, PosState, PosTableArea } from "@/types/models";
+import type { AdminPermissions, AdminProfile, AdminRole, AppData, Category, MenuItem, PosState, PosTableArea } from "@/types/models";
 
 function converter<T extends { id: string }>(): FirestoreDataConverter<T> {
   return {
@@ -119,6 +119,76 @@ export async function getAdminAppData(): Promise<AppData> {
     appearance: appearanceSnap.exists() ? { ...defaultAppData.appearance, ...appearanceSnap.data() } : defaultAppData.appearance,
     qr: qrSnap.exists() ? { ...defaultAppData.qr, ...qrSnap.data() } : defaultAppData.qr
   };
+}
+
+// --- Admin / employee user profiles ---
+
+function toAdminProfile(uid: string, data: Record<string, unknown>): AdminProfile {
+  return {
+    uid,
+    email: typeof data.email === "string" ? data.email : "",
+    displayName: typeof data.displayName === "string" ? data.displayName : undefined,
+    isAdmin: data.isAdmin === true,
+    role: data.role === "employee" ? "employee" : data.role === "admin" ? "admin" : undefined,
+    permissions: (data.permissions as AdminPermissions | undefined) || undefined,
+    disabled: data.disabled === true
+  };
+}
+
+export async function getAdminProfile(uid: string): Promise<AdminProfile | null> {
+  const db = getFirebaseDb();
+  if (!db) return null;
+  const snap = await getDoc(doc(db, "adminProfiles", uid));
+  if (!snap.exists()) return null;
+  return toAdminProfile(uid, snap.data());
+}
+
+export async function listAdminProfiles(): Promise<AdminProfile[]> {
+  const db = getFirebaseDb();
+  if (!db) return [];
+  const snap = await getDocs(collection(db, "adminProfiles"));
+  return snap.docs
+    .map((entry) => toAdminProfile(entry.id, entry.data()))
+    .sort((a, b) => a.email.localeCompare(b.email));
+}
+
+export async function saveAdminProfile(profile: {
+  uid: string;
+  email: string;
+  role: AdminRole;
+  permissions: AdminPermissions;
+  displayName?: string;
+  disabled?: boolean;
+}) {
+  const db = getFirebaseDb();
+  if (!db) throw new Error("Firestore is not configured.");
+  // isAdmin stays true for every staff member so the current Firestore rules
+  // grant them admin-data access; the role + permissions drive the UI gating.
+  await setDoc(
+    doc(db, "adminProfiles", profile.uid),
+    stripUndefined({
+      email: profile.email,
+      displayName: profile.displayName,
+      isAdmin: true,
+      role: profile.role,
+      permissions: profile.role === "employee" ? profile.permissions : {},
+      disabled: profile.disabled === true,
+      updatedAt: serverTimestamp()
+    }),
+    { merge: true }
+  );
+}
+
+export async function setAdminProfileDisabled(uid: string, disabled: boolean) {
+  const db = getFirebaseDb();
+  if (!db) throw new Error("Firestore is not configured.");
+  await updateDoc(doc(db, "adminProfiles", uid), { disabled, updatedAt: serverTimestamp() });
+}
+
+export async function deleteAdminProfile(uid: string) {
+  const db = getFirebaseDb();
+  if (!db) throw new Error("Firestore is not configured.");
+  await deleteDoc(doc(db, "adminProfiles", uid));
 }
 
 export async function saveCategory(category: Category) {

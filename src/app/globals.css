@@ -383,6 +383,58 @@ body.overflow-lock {
 }
 .cat-dust { animation: cat-dust 2.4s ease-in infinite; }
 
+/* Menu header contact chips */
+/* Available: draw the ring, then draw the tick inside it */
+@keyframes avl-ring {
+  0% { stroke-dashoffset: 100; }
+  35% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 0; }
+}
+.avl-ring { animation: avl-ring 2.8s ease-in-out infinite; }
+
+@keyframes avl-check {
+  0%, 38% { stroke-dashoffset: 14; }
+  62% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 0; }
+}
+.avl-check { animation: avl-check 2.8s ease-in-out infinite; }
+
+/* Phone: signal ripples broadcast outward */
+@keyframes sig-wave {
+  0% { opacity: 0; transform: scale(0.3); }
+  25% { opacity: 0.9; }
+  70% { opacity: 0; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+.sig-wave { transform-origin: 11px 12px; animation: sig-wave 1.8s ease-out infinite; }
+
+/* WhatsApp: a little message flies off to send */
+@keyframes msg-fly {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+  25% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(6px, -6px) scale(0.7); }
+}
+.msg-fly { animation: msg-fly 1.9s ease-in infinite; }
+
+/* Location: the pin drops onto the spot and a ground ring pings */
+@keyframes pin-drop {
+  0%, 12% { opacity: 0; transform: translateY(-5px); }
+  20% { opacity: 1; }
+  40% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+  60% { transform: translateY(0); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.pin-drop { transform-origin: center bottom; animation: pin-drop 2.4s ease-in-out infinite; }
+
+@keyframes pin-ping {
+  0%, 40% { opacity: 0; transform: scale(0.3); }
+  55% { opacity: 0.55; }
+  85% { opacity: 0; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+.pin-ping { transform-origin: center; animation: pin-ping 2.4s ease-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .steam-wisp,
   .bean-float,
@@ -409,7 +461,13 @@ body.overflow-lock {
   .cat-ring-draw,
   .cat-percent-in,
   .cat-bean-crumble,
-  .cat-dust {
+  .cat-dust,
+  .avl-ring,
+  .avl-check,
+  .sig-wave,
+  .msg-fly,
+  .pin-drop,
+  .pin-ping {
     animation: none;
   }
 }

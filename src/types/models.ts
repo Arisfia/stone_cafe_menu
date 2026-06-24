@@ -170,11 +170,19 @@ export type QrSettings = {
   updatedAt?: Timestamp;
 };
 
+export type AdminRole = "admin" | "employee";
+
+export type AdminFeature = "dashboard" | "categories" | "menuItems" | "pos" | "qrCode" | "settings";
+
+export type AdminPermissions = Partial<Record<AdminFeature, boolean>>;
+
 export type AdminProfile = {
   uid: string;
   email: string;
   displayName?: string;
   isAdmin: boolean;
+  role?: AdminRole;
+  permissions?: AdminPermissions;
   disabled?: boolean;
   createdAt?: Timestamp;
 };
