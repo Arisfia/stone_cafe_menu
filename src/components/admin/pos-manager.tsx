@@ -44,7 +44,6 @@ export function PosManager() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [tableToolsOpen, setTableToolsOpen] = useState(false);
   const [moveOrderOpen, setMoveOrderOpen] = useState(false);
-  const [moveTargetTableId, setMoveTargetTableId] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -101,7 +100,6 @@ export function PosManager() {
 
   useEffect(() => {
     setMoveOrderOpen(false);
-    setMoveTargetTableId("");
   }, [selectedTableId]);
 
   async function persist(nextPos: PosState, nextMessage?: string) {
@@ -131,6 +129,7 @@ export function PosManager() {
     setTableNameDraft(selectedTable?.name || nextDraftTables[0]?.name || "");
     setMessage("");
     setError("");
+    setMoveOrderOpen(false);
     setTableToolsOpen(true);
   }
 
@@ -303,16 +302,26 @@ export function PosManager() {
 
   function openMoveOrder() {
     if (!selectedTable || !selectedOrder?.lines.length) return;
-    const firstOpenTarget = tables.find((table) => table.id !== selectedTable.id && tableOrderLineCount(pos.orders[table.id]) === 0);
-    setMoveTargetTableId(firstOpenTarget?.id || "");
     setMoveOrderOpen((current) => !current);
     setMessage("");
     setError("");
   }
 
-  function moveOrderToTable() {
-    if (!selectedTable || !selectedOrder?.lines.length || !moveTargetTableId) return;
-    const targetTable = tables.find((table) => table.id === moveTargetTableId);
+  function pressTable(tableId: string) {
+    if (!moveOrderOpen) {
+      setSelectedTableId(tableId);
+      return;
+    }
+    moveOrderToTable(tableId);
+  }
+
+  function moveOrderToTable(targetTableId: string) {
+    if (!selectedTable || !selectedOrder?.lines.length) return;
+    if (targetTableId === selectedTable.id) {
+      setMoveOrderOpen(false);
+      return;
+    }
+    const targetTable = tables.find((table) => table.id === targetTableId);
     if (!targetTable) return;
     if (tableOrderLineCount(pos.orders[targetTable.id]) > 0) {
       setError(text.targetTableOccupied);
@@ -336,7 +345,6 @@ export function PosManager() {
       if (!saved) return;
       setSelectedTableId(targetTable.id);
       setMoveOrderOpen(false);
-      setMoveTargetTableId("");
     });
   }
 
@@ -385,25 +393,30 @@ export function PosManager() {
           {!tableToolsOpen ? (
             <div className="space-y-4">
               {tableSections.map((section, index) => (
-                <div key={section.area} className={cn(index > 0 && "border-t pt-4")}>
+                <div key={section.area} className={cn(index > 0 && "pt-2")}>
                   <TableAreaHeading area={section.area} text={text} textDir={textDir} />
                   {section.tables.length ? (
                     <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
                       {section.tables.map((table) => {
                         const order = pos.orders[table.id];
                         const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
+                        const selected = table.id === selectedTable?.id;
+                        const moveTarget = moveOrderOpen && !selected;
+                        const occupiedMoveTarget = moveTarget && count > 0;
                         return (
                           <button
                             key={table.id}
                             type="button"
-                            onClick={() => setSelectedTableId(table.id)}
+                            onClick={() => pressTable(table.id)}
                             className={cn(
                               "focus-ring min-h-20 rounded-lg border p-3 text-start transition-colors",
-                              table.id === selectedTable?.id ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted"
+                              selected ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted",
+                              moveTarget && "border-primary/50 ring-1 ring-primary/20",
+                              occupiedMoveTarget && "opacity-60"
                             )}
                           >
                             <span dir={textDir} className="block truncate text-base font-semibold">{table.name}</span>
-                            <span dir={textDir} className={cn("mt-2 block truncate text-xs", table.id === selectedTable?.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                            <span dir={textDir} className={cn("mt-2 block truncate text-xs", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
                               {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
                             </span>
                           </button>
@@ -422,7 +435,7 @@ export function PosManager() {
             <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
               <div className="space-y-4">
                 {draftTableSections.map((section, index) => (
-                  <div key={section.area} className={cn(index > 0 && "border-t pt-4")}>
+                  <div key={section.area} className={cn(index > 0 && "pt-2")}>
                     <TableAreaHeading area={section.area} text={text} textDir={textDir} />
                     {section.tables.length ? (
                       <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(8rem,1fr))] gap-2">
@@ -547,23 +560,10 @@ export function PosManager() {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <ReceiptText className="h-5 w-5 text-primary" aria-hidden />
-                {text.orderSummary}
-              </CardTitle>
-              <Button
-                type="button"
-                variant={moveOrderOpen ? "default" : "outline"}
-                size="icon"
-                aria-label={text.moveOrder}
-                title={text.moveOrder}
-                onClick={openMoveOrder}
-                disabled={!selectedOrder?.lines.length}
-              >
-                <ArrowRightLeft className="h-4 w-4" aria-hidden />
-              </Button>
-            </div>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ReceiptText className="h-5 w-5 text-primary" aria-hidden />
+              {text.orderSummary}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {selectedTable && selectedOrder && totals ? (
@@ -572,39 +572,6 @@ export function PosManager() {
                   <p dir={textDir} className="font-semibold">{selectedTable.name}</p>
                   <p className="text-xs text-muted-foreground">{new Date().toLocaleString(locale === "ckb" ? "ar-IQ" : locale)}</p>
                 </div>
-
-                {moveOrderOpen ? (
-                  <div className="grid gap-2 rounded-lg border bg-muted/20 p-3">
-                    <Field label={text.moveOrderToTable}>
-                      <Select value={moveTargetTableId} onChange={(event) => setMoveTargetTableId(event.target.value)}>
-                        <option value="">{text.noOpenTables}</option>
-                        {tableSections.map((section) => {
-                          const targetTables = section.tables.filter((table) => table.id !== selectedTable.id);
-                          return targetTables.length ? (
-                            <optgroup key={section.area} label={section.area === "outdoor" ? text.outdoorTables : text.indoorTables}>
-                              {targetTables.map((table) => {
-                                const occupied = tableOrderLineCount(pos.orders[table.id]) > 0;
-                                return (
-                                  <option key={table.id} value={table.id} disabled={occupied}>
-                                    {table.name}{occupied ? ` · ${text.occupied}` : ""}
-                                  </option>
-                                );
-                              })}
-                            </optgroup>
-                          ) : null;
-                        })}
-                      </Select>
-                    </Field>
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" size="icon" aria-label={text.cancel} title={text.cancel} onClick={() => setMoveOrderOpen(false)}>
-                        <X className="h-4 w-4" aria-hidden />
-                      </Button>
-                      <Button type="button" size="icon" aria-label={text.moveOrder} title={text.moveOrder} onClick={moveOrderToTable} disabled={!moveTargetTableId}>
-                        <ArrowRightLeft className="h-4 w-4" aria-hidden />
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
 
                 <div className="space-y-2">
                   {selectedOrder.lines.length ? selectedOrder.lines.map((line) => (
@@ -657,13 +624,25 @@ export function PosManager() {
                   <TotalRow label={text.total} value={formatMoney(totals.total, totals.currency, locale)} strong />
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                   <Button type="button" variant="outline" onClick={completeOrder} disabled={!selectedOrder.lines.length}>
                     {text.completeOrder}
                   </Button>
                   <Button type="button" onClick={printInvoice} disabled={!selectedOrder.lines.length}>
                     <Printer className="h-4 w-4" aria-hidden />
                     {text.printInvoice}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={moveOrderOpen ? "default" : "outline"}
+                    size="icon"
+                    aria-label={text.moveOrder}
+                    title={text.moveOrder}
+                    onClick={openMoveOrder}
+                    disabled={!selectedOrder.lines.length}
+                    className="justify-self-end"
+                  >
+                    <ArrowRightLeft className="h-4 w-4" aria-hidden />
                   </Button>
                 </div>
 
@@ -716,7 +695,7 @@ function TableAreaHeading({
       <span dir={textDir} className="text-sm font-semibold text-muted-foreground">
         {area === "outdoor" ? text.outdoorTables : text.indoorTables}
       </span>
-      <span className="h-px flex-1 bg-border" aria-hidden />
+      {area === "outdoor" ? <span className="h-px flex-1 bg-border" aria-hidden /> : null}
     </div>
   );
 }
