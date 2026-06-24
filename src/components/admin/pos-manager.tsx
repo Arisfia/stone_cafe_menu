@@ -391,43 +391,58 @@ export function PosManager() {
           </div>
 
           {!tableToolsOpen ? (
-            <div className="space-y-4">
-              {tableSections.map((section, index) => (
-                <div key={section.area} className={cn(index > 0 && "pt-2")}>
-                  <TableAreaHeading area={section.area} text={text} textDir={textDir} />
-                  {section.tables.length ? (
-                    <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
-                      {section.tables.map((table) => {
-                        const order = pos.orders[table.id];
-                        const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
-                        const selected = table.id === selectedTable?.id;
-                        const moveTarget = moveOrderOpen && !selected;
-                        const occupiedMoveTarget = moveTarget && count > 0;
-                        return (
-                          <button
-                            key={table.id}
-                            type="button"
-                            onClick={() => pressTable(table.id)}
-                            className={cn(
-                              "focus-ring min-h-20 rounded-lg border p-3 text-start transition-colors",
-                              selected ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted",
-                              moveTarget && "border-primary/50 ring-1 ring-primary/20",
-                              occupiedMoveTarget && "opacity-60"
-                            )}
-                          >
-                            <span dir={textDir} className="block truncate text-base font-semibold">{table.name}</span>
-                            <span dir={textDir} className={cn("mt-2 block truncate text-xs", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
-                              {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p dir={textDir} className="mt-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">{text.noTablesInArea}</p>
-                  )}
-                </div>
-              ))}
+            <div className="space-y-3">
+              <div className="space-y-4">
+                {tableSections.map((section, index) => (
+                  <div key={section.area} className={cn(index > 0 && "pt-2")}>
+                    <TableAreaHeading area={section.area} text={text} textDir={textDir} />
+                    {section.tables.length ? (
+                      <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
+                        {section.tables.map((table) => {
+                          const order = pos.orders[table.id];
+                          const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
+                          const selected = table.id === selectedTable?.id;
+                          const moveTarget = moveOrderOpen && !selected;
+                          const occupiedMoveTarget = moveTarget && count > 0;
+                          return (
+                            <button
+                              key={table.id}
+                              type="button"
+                              onClick={() => pressTable(table.id)}
+                              className={cn(
+                                "focus-ring min-h-20 rounded-lg border p-3 text-start transition-colors",
+                                selected ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted",
+                                moveTarget && "border-primary/50 ring-1 ring-primary/20",
+                                occupiedMoveTarget && "opacity-60"
+                              )}
+                            >
+                              <span dir={textDir} className="block truncate text-base font-semibold">{table.name}</span>
+                              <span dir={textDir} className={cn("mt-2 block truncate text-xs", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                                {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p dir={textDir} className="mt-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">{text.noTablesInArea}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant={moveOrderOpen ? "default" : "outline"}
+                  size="icon"
+                  aria-label={text.moveOrder}
+                  title={text.moveOrder}
+                  onClick={openMoveOrder}
+                  disabled={!selectedOrder?.lines.length}
+                >
+                  <ArrowRightLeft className="h-4 w-4" aria-hidden />
+                </Button>
+              </div>
             </div>
           ) : null}
 
@@ -624,25 +639,13 @@ export function PosManager() {
                   <TotalRow label={text.total} value={formatMoney(totals.total, totals.currency, locale)} strong />
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                <div className="grid gap-2 sm:grid-cols-2">
                   <Button type="button" variant="outline" onClick={completeOrder} disabled={!selectedOrder.lines.length}>
                     {text.completeOrder}
                   </Button>
                   <Button type="button" onClick={printInvoice} disabled={!selectedOrder.lines.length}>
                     <Printer className="h-4 w-4" aria-hidden />
                     {text.printInvoice}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={moveOrderOpen ? "default" : "outline"}
-                    size="icon"
-                    aria-label={text.moveOrder}
-                    title={text.moveOrder}
-                    onClick={openMoveOrder}
-                    disabled={!selectedOrder.lines.length}
-                    className="justify-self-end"
-                  >
-                    <ArrowRightLeft className="h-4 w-4" aria-hidden />
                   </Button>
                 </div>
 
