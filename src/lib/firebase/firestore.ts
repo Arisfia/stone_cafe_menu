@@ -20,7 +20,7 @@ import { defaultAppData } from "@/data/default-data";
 import { getFirebaseDb } from "@/lib/firebase/client";
 import { removeImage } from "@/lib/supabase/storage";
 import { slugify } from "@/lib/utils/format";
-import type { AppData, Category, MenuItem } from "@/types/models";
+import type { AppData, Category, MenuItem, PosState } from "@/types/models";
 
 function converter<T extends { id: string }>(): FirestoreDataConverter<T> {
   return {
@@ -37,6 +37,16 @@ function converter<T extends { id: string }>(): FirestoreDataConverter<T> {
 
 const categoryConverter = converter<Category>();
 const itemConverter = converter<MenuItem>();
+
+const defaultPosState: PosState = {
+  tables: Array.from({ length: 8 }, (_, index) => ({
+    id: `table-${index + 1}`,
+    name: `Table ${index + 1}`,
+    displayOrder: index,
+    isActive: true
+  })),
+  orders: {}
+};
 
 export async function getPublicAppData(): Promise<AppData> {
   const db = getFirebaseDb();
@@ -174,4 +184,51 @@ export async function saveSettings(section: "general" | "menu" | "appearance" | 
   await updateDoc(doc(db, "settings", section), { ...value, updatedAt: serverTimestamp() }).catch(async () => {
     await setDoc(doc(db, "settings", section), { ...value, updatedAt: serverTimestamp() });
   });
+}
+
+export async function getPosState(): Promise<PosState> {
+  const db = getFirebaseDb();
+  if (!db) return defaultPosState;
+  const snap = await getDoc(doc(db, "settings", "pos"));
+  if (!snap.exists()) return defaultPosState;
+  return normalizePosState(snap.data());
+}
+
+export async function savePosState(state: PosState) {
+  const db = getFirebaseDb();
+  if (!db) return;
+  await setDoc(doc(db, "settings", "pos"), { ...state, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+function normalizePosState(value: unknown): PosState {
+  const data = value && typeof value === "object" ? value as Partial<PosState> : {};
+  const tables = Array.isArray(data.tables) && data.tables.length ? data.tables : defaultPosState.tables;
+  const orders = data.orders && typeof data.orders === "object" ? data.orders : {};
+  return {
+    tables: tables
+      .filter((table) => table && typeof table.id === "string" && typeof table.name === "string")
+      .map((table, index) => ({
+        id: table.id,
+        name: table.name,
+        displayOrder: Number.isFinite(table.displayOrder) ? table.displayOrder : index,
+        isActive: table.isActive !== false
+      })),
+    orders: Object.fromEntries(
+      Object.entries(orders)
+        .filter((entry): entry is [string, PosState["orders"][string]] => {
+          const order = entry[1];
+          return Boolean(order && typeof order === "object" && Array.isArray(order.lines));
+        })
+        .map(([tableId, order]) => [
+          tableId,
+          {
+            tableId,
+            lines: order.lines.filter((line) => line && typeof line.id === "string" && typeof line.itemId === "string"),
+            discountType: order.discountType === "percent" ? "percent" : "amount",
+            discountValue: Number.isFinite(order.discountValue) ? Math.max(0, order.discountValue) : 0,
+            updatedAt: order.updatedAt
+          }
+        ])
+    )
+  };
 }

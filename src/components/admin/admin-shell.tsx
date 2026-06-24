@@ -18,6 +18,7 @@ import {
   QrCode,
   Settings,
   SlidersHorizontal,
+  Table2,
   type LucideIcon,
   UsersRound,
   X
@@ -33,6 +34,7 @@ const nav = [
   { href: "/admin/dashboard", labelKey: "dashboard", icon: BarChart3 },
   { href: "/admin/categories", labelKey: "categories", icon: ListTree },
   { href: "/admin/menu-items", labelKey: "menuItems", icon: MenuSquare },
+  { href: "/admin/pos", labelKey: "pos", icon: Table2 },
   { href: "/admin/qr-code", labelKey: "qrCode", icon: QrCode },
   { href: "/admin/settings", labelKey: "settings", icon: Settings }
 ] as const;

@@ -98,6 +98,38 @@ export type MenuSettings = {
   updatedAt?: Timestamp;
 };
 
+export type PosDiscountType = "amount" | "percent";
+
+export type PosTable = {
+  id: string;
+  name: string;
+  displayOrder: number;
+  isActive: boolean;
+};
+
+export type PosOrderLine = {
+  id: string;
+  itemId: string;
+  name: LocalizedText;
+  quantity: number;
+  unitPrice: number;
+  currency: Currency;
+};
+
+export type PosTableOrder = {
+  tableId: string;
+  lines: PosOrderLine[];
+  discountType: PosDiscountType;
+  discountValue: number;
+  updatedAt?: string;
+};
+
+export type PosState = {
+  tables: PosTable[];
+  orders: Record<string, PosTableOrder>;
+  updatedAt?: Timestamp;
+};
+
 export type AppearanceSettings = {
   primaryColor: string;
   secondaryColor: string;

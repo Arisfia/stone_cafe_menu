@@ -248,6 +248,11 @@ body.overflow-lock {
 }
 
 @media print {
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
+  }
+
   .no-print {
     display: none !important;
   }
@@ -255,5 +260,23 @@ body.overflow-lock {
   body {
     background: white !important;
     color: black !important;
+  }
+
+  body.pos-printing * {
+    visibility: hidden !important;
+  }
+
+  body.pos-printing .pos-print-area,
+  body.pos-printing .pos-print-area * {
+    visibility: visible !important;
+  }
+
+  body.pos-printing .pos-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 72mm !important;
+    border: 0 !important;
+    box-shadow: none !important;
   }
 }
