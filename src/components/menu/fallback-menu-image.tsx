@@ -21,7 +21,7 @@ export function FallbackMenuImage({ src, alt }: { src?: string; alt: string }) {
       loading="lazy"
       className={cn(
         "h-full w-full transition-transform duration-500 group-hover:scale-105",
-        isDefaultImage ? "object-contain p-8 sm:p-10" : "object-cover"
+        isDefaultImage ? "rounded-lg object-contain p-8 sm:p-10" : "object-cover"
       )}
       onError={() => setImageSrc(defaultMenuImage)}
     />

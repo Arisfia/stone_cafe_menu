@@ -1,4 +1,4 @@
-import { MousePointerClick } from "lucide-react";
+import { Pointer } from "lucide-react";
 import { dirForLocale, localized, translate } from "@/lib/i18n/config";
 import { formatMoney } from "@/lib/utils/format";
 import { FallbackMenuImage } from "@/components/menu/fallback-menu-image";
@@ -21,7 +21,10 @@ export function MenuItemCard({
   const hasDiscount = Boolean(item.discountPrice);
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-lg border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
+    <article
+      dir={textDir}
+      className="group relative flex flex-col overflow-hidden rounded-lg border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5"
+    >
       <div className="relative aspect-[5/4] overflow-hidden bg-gradient-to-br from-accent via-primary/5 to-secondary/10">
         <FallbackMenuImage src={item.imageUrl} alt={title} />
 
@@ -36,7 +39,7 @@ export function MenuItemCard({
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0" dir={textDir}>
+          <div className="min-w-0">
             <h3 className="text-lg font-semibold leading-tight">{title}</h3>
           </div>
           {settings.showPrices ? (
@@ -60,7 +63,7 @@ export function MenuItemCard({
         </div>
 
         {description ? (
-          <p dir={textDir} className="line-clamp-2 text-sm text-muted-foreground">
+          <p className="line-clamp-2 text-sm text-muted-foreground">
             {description}
           </p>
         ) : null}
@@ -71,8 +74,8 @@ export function MenuItemCard({
             onClick={() => onViewDetails?.(item)}
             className="focus-ring inline-flex items-center gap-1.5 rounded-md text-sm font-semibold text-primary transition-colors hover:text-primary/80"
           >
-            <span dir={textDir}>{translate(locale, "menu.viewDetails")}</span>
-            <MousePointerClick className="h-4 w-4" aria-hidden />
+            <span>{translate(locale, "menu.viewDetails")}</span>
+            <Pointer className="h-4 w-4" aria-hidden />
           </button>
         </div>
       </div>
