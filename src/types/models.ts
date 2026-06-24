@@ -124,9 +124,24 @@ export type PosTableOrder = {
   updatedAt?: string;
 };
 
+export type PosCompletedOrder = {
+  id: string;
+  tableId: string;
+  tableName: string;
+  lines: PosOrderLine[];
+  discountType: PosDiscountType;
+  discountValue: number;
+  subtotal: number;
+  discountAmount: number;
+  total: number;
+  currency: Currency;
+  completedAt: string;
+};
+
 export type PosState = {
   tables: PosTable[];
   orders: Record<string, PosTableOrder>;
+  completedOrders?: PosCompletedOrder[];
   updatedAt?: Timestamp;
 };
 

@@ -45,7 +45,8 @@ const defaultPosState: PosState = {
     displayOrder: index,
     isActive: true
   })),
-  orders: {}
+  orders: {},
+  completedOrders: []
 };
 
 export async function getPublicAppData(): Promise<AppData> {
@@ -204,6 +205,7 @@ function normalizePosState(value: unknown): PosState {
   const data = value && typeof value === "object" ? value as Partial<PosState> : {};
   const tables = Array.isArray(data.tables) && data.tables.length ? data.tables : defaultPosState.tables;
   const orders = data.orders && typeof data.orders === "object" ? data.orders : {};
+  const completedOrders = Array.isArray(data.completedOrders) ? data.completedOrders : [];
   return {
     tables: tables
       .filter((table) => table && typeof table.id === "string" && typeof table.name === "string")
@@ -229,6 +231,21 @@ function normalizePosState(value: unknown): PosState {
             updatedAt: order.updatedAt
           }
         ])
-    )
+    ),
+    completedOrders: completedOrders
+      .filter((order) => order && typeof order.id === "string" && typeof order.tableId === "string" && Array.isArray(order.lines))
+      .map((order) => ({
+        id: order.id,
+        tableId: order.tableId,
+        tableName: typeof order.tableName === "string" ? order.tableName : order.tableId,
+        lines: order.lines.filter((line) => line && typeof line.id === "string" && typeof line.itemId === "string"),
+        discountType: order.discountType === "percent" ? "percent" : "amount",
+        discountValue: Number.isFinite(order.discountValue) ? Math.max(0, order.discountValue) : 0,
+        subtotal: Number.isFinite(order.subtotal) ? Math.max(0, order.subtotal) : 0,
+        discountAmount: Number.isFinite(order.discountAmount) ? Math.max(0, order.discountAmount) : 0,
+        total: Number.isFinite(order.total) ? Math.max(0, order.total) : 0,
+        currency: order.currency || "IQD",
+        completedAt: typeof order.completedAt === "string" ? order.completedAt : new Date().toISOString()
+      }))
   };
 }

@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowDown,
-  ArrowUp,
   Minus,
+  Pencil,
   Plus,
   Printer,
   ReceiptText,
@@ -22,11 +21,12 @@ import { getAdminAppData, getPosState, savePosState } from "@/lib/firebase/fires
 import { localized } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
 import { formatMoney, normalizeSearch } from "@/lib/utils/format";
-import type { AppData, Currency, MenuItem, PosDiscountType, PosState, PosTable, PosTableOrder } from "@/types/models";
+import type { AppData, Currency, MenuItem, PosCompletedOrder, PosDiscountType, PosState, PosTable, PosTableOrder } from "@/types/models";
 
 const emptyPosState: PosState = {
   tables: [],
-  orders: {}
+  orders: {},
+  completedOrders: []
 };
 
 export function PosManager() {
@@ -37,6 +37,7 @@ export function PosManager() {
   const [tableNameDraft, setTableNameDraft] = useState("");
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [tableToolsOpen, setTableToolsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -88,6 +89,7 @@ export function PosManager() {
   }, [selectedTable, tables]);
 
   async function persist(nextPos: PosState, nextMessage?: string) {
+    const previousPos = pos;
     setPos(nextPos);
     setSaving(true);
     setMessage("");
@@ -96,6 +98,7 @@ export function PosManager() {
       await savePosState(nextPos);
       if (nextMessage) setMessage(nextMessage);
     } catch (err) {
+      setPos(previousPos);
       setError(err instanceof Error ? err.message : text.settingsSaveFailed);
     } finally {
       setSaving(false);
@@ -113,6 +116,7 @@ export function PosManager() {
     const nextPos = normalizeTableOrder({ ...pos, tables: [...tables, table] });
     setSelectedTableId(table.id);
     setTableNameDraft(table.name);
+    setTableToolsOpen(false);
     void persist(nextPos, text.tableSaved);
   }
 
@@ -123,6 +127,7 @@ export function PosManager() {
     delete nextOrders[selectedTable.id];
     const nextPos = normalizeTableOrder({ ...pos, tables: nextTables, orders: nextOrders });
     setSelectedTableId(nextPos.tables[0]?.id || "");
+    setTableToolsOpen(false);
     void persist(nextPos, text.tableRemoved);
   }
 
@@ -132,17 +137,8 @@ export function PosManager() {
       ...pos,
       tables: tables.map((table) => table.id === selectedTable.id ? { ...table, name: tableNameDraft.trim() } : table)
     };
+    setTableToolsOpen(false);
     void persist(nextPos, text.tableSaved);
-  }
-
-  function moveTable(direction: -1 | 1) {
-    if (!selectedTable) return;
-    const index = tables.findIndex((table) => table.id === selectedTable.id);
-    const nextIndex = index + direction;
-    if (index < 0 || nextIndex < 0 || nextIndex >= tables.length) return;
-    const nextTables = [...tables];
-    [nextTables[index], nextTables[nextIndex]] = [nextTables[nextIndex], nextTables[index]];
-    void persist(normalizeTableOrder({ ...pos, tables: nextTables }), text.tableSaved);
   }
 
   function updateOrder(updater: (order: PosTableOrder) => PosTableOrder) {
@@ -207,9 +203,30 @@ export function PosManager() {
     updateOrder((order) => ({ ...order, discountValue: Math.max(0, discountValue || 0) }));
   }
 
-  function clearTable() {
-    if (!selectedTable) return;
-    updateOrder(() => emptyOrder(selectedTable.id));
+  function completeOrder() {
+    if (!selectedTable || !selectedOrder || !selectedOrder.lines.length || !totals) return;
+    const completedOrder: PosCompletedOrder = {
+      id: crypto.randomUUID(),
+      tableId: selectedTable.id,
+      tableName: selectedTable.name,
+      lines: selectedOrder.lines,
+      discountType: selectedOrder.discountType,
+      discountValue: selectedOrder.discountValue,
+      subtotal: totals.subtotal,
+      discountAmount: totals.discountAmount,
+      total: totals.total,
+      currency: totals.currency,
+      completedAt: new Date().toISOString()
+    };
+
+    void persist({
+      ...pos,
+      completedOrders: [...(pos.completedOrders || []), completedOrder],
+      orders: {
+        ...pos.orders,
+        [selectedTable.id]: emptyOrder(selectedTable.id)
+      }
+    }, text.orderCompleted);
   }
 
   function printInvoice() {
@@ -235,16 +252,27 @@ export function PosManager() {
       {message ? <p className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm text-primary">{message}</p> : null}
       {error ? <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{adminErrorText(error, text)}</p> : null}
 
-      <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_380px]">
-        <Card>
-          <CardHeader>
+      <Card>
+        <CardContent className="space-y-3 p-4">
+          <div className="flex items-center justify-between gap-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Table2 className="h-5 w-5 text-primary" aria-hidden />
               {text.tables}
             </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant={tableToolsOpen ? "default" : "outline"}
+              size="icon"
+              aria-label={text.editTable}
+              title={text.editTable}
+              onClick={() => setTableToolsOpen((open) => !open)}
+            >
+              <Pencil className="h-4 w-4" aria-hidden />
+            </Button>
+          </div>
+
+          <div className="-mx-4 overflow-x-auto px-4 pb-1">
+            <div className="flex min-w-max gap-2">
               {tables.map((table) => {
                 const order = pos.orders[table.id];
                 const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
@@ -254,25 +282,26 @@ export function PosManager() {
                     type="button"
                     onClick={() => setSelectedTableId(table.id)}
                     className={cn(
-                      "focus-ring min-h-24 rounded-lg border p-3 text-start transition-colors",
+                      "focus-ring min-h-20 w-40 rounded-lg border p-3 text-start transition-colors",
                       table.id === selectedTable?.id ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted"
                     )}
                   >
-                    <span dir={textDir} className="block text-base font-semibold">{table.name}</span>
-                    <span dir={textDir} className={cn("mt-2 block text-xs", table.id === selectedTable?.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                    <span dir={textDir} className="block truncate text-base font-semibold">{table.name}</span>
+                    <span dir={textDir} className={cn("mt-2 block truncate text-xs", table.id === selectedTable?.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
                       {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
                     </span>
                   </button>
                 );
               })}
             </div>
+          </div>
 
-            <div className="space-y-3 rounded-lg border p-3">
-              <p className="text-sm font-semibold">{text.tableTools}</p>
+          {tableToolsOpen ? (
+            <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 md:grid-cols-[minmax(220px,1fr)_auto] md:items-end">
               <Field label={text.tableName}>
                 <Input value={tableNameDraft} onChange={(event) => setTableNameDraft(event.target.value)} />
               </Field>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                 <Button type="button" variant="outline" onClick={addTable}>
                   <Plus className="h-4 w-4" aria-hidden />
                   {text.addTable}
@@ -280,24 +309,25 @@ export function PosManager() {
                 <Button type="button" variant="outline" onClick={renameTable} disabled={!selectedTable}>
                   {text.saveTable}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => moveTable(-1)} disabled={!selectedTable}>
-                  <ArrowUp className="h-4 w-4" aria-hidden />
-                  {text.moveUp}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => moveTable(1)} disabled={!selectedTable}>
-                  <ArrowDown className="h-4 w-4" aria-hidden />
-                  {text.moveDown}
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  aria-label={text.removeTable}
+                  title={text.removeTable}
+                  onClick={removeTable}
+                  disabled={!selectedTable || tables.length <= 1}
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
                 </Button>
               </div>
-              <Button type="button" variant="destructive" className="w-full" onClick={removeTable} disabled={!selectedTable || tables.length <= 1}>
-                <Trash2 className="h-4 w-4" aria-hidden />
-                {text.removeTable}
-              </Button>
             </div>
-          </CardContent>
-        </Card>
+          ) : null}
+        </CardContent>
+      </Card>
 
-        <Card>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Card className="min-h-0">
           <CardHeader>
             <CardTitle className="text-lg">{text.menuPicker}</CardTitle>
           </CardHeader>
@@ -315,29 +345,31 @@ export function PosManager() {
                 ))}
               </Select>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {menuItems.map((item) => {
-                const title = localized(item.name, locale, item.name.en);
-                const price = item.discountPrice && item.discountPrice > 0 ? item.discountPrice : item.basePrice;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => addMenuItem(item)}
-                    className="focus-ring flex min-h-24 items-start justify-between gap-3 rounded-lg border bg-card p-3 text-start transition-colors hover:border-primary/40 hover:bg-muted/50"
-                  >
-                    <span className="min-w-0">
-                      <span dir={textDir} className="line-clamp-2 block font-semibold">{title}</span>
-                      <span dir={textDir} className="mt-1 line-clamp-1 block text-xs text-muted-foreground">
-                        {localized(data?.categories.find((category) => category.id === item.categoryId)?.name, locale, text.noCategory)}
+            <div className="max-h-[640px] overflow-y-auto pr-1 xl:max-h-[calc(100vh-21rem)]">
+              <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+                {menuItems.map((item) => {
+                  const title = localized(item.name, locale, item.name.en);
+                  const price = item.discountPrice && item.discountPrice > 0 ? item.discountPrice : item.basePrice;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => addMenuItem(item)}
+                      className="focus-ring flex min-h-24 items-start justify-between gap-3 rounded-lg border bg-card p-3 text-start transition-colors hover:border-primary/40 hover:bg-muted/50"
+                    >
+                      <span className="min-w-0">
+                        <span dir={textDir} className="line-clamp-2 block font-semibold">{title}</span>
+                        <span dir={textDir} className="mt-1 line-clamp-1 block text-xs text-muted-foreground">
+                          {localized(data?.categories.find((category) => category.id === item.categoryId)?.name, locale, text.noCategory)}
+                        </span>
                       </span>
-                    </span>
-                    <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                      {formatMoney(price, item.currency, locale)}
-                    </span>
-                  </button>
-                );
-              })}
+                      <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                        {formatMoney(price, item.currency, locale)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -401,9 +433,9 @@ export function PosManager() {
                   <TotalRow label={text.total} value={formatMoney(totals.total, totals.currency, locale)} strong />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" onClick={clearTable} disabled={!selectedOrder.lines.length}>
-                    {text.clearTable}
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button type="button" variant="outline" onClick={completeOrder} disabled={!selectedOrder.lines.length}>
+                    {text.completeOrder}
                   </Button>
                   <Button type="button" onClick={printInvoice} disabled={!selectedOrder.lines.length}>
                     <Printer className="h-4 w-4" aria-hidden />
