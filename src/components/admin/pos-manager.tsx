@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowRightLeft,
   Minus,
   Pencil,
   Plus,
@@ -42,6 +43,8 @@ export function PosManager() {
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [tableToolsOpen, setTableToolsOpen] = useState(false);
+  const [moveOrderOpen, setMoveOrderOpen] = useState(false);
+  const [moveTargetTableId, setMoveTargetTableId] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -95,6 +98,11 @@ export function PosManager() {
     }
     setTableNameDraft(selectedTable?.name || "");
   }, [selectedTable, tables, tableToolsOpen]);
+
+  useEffect(() => {
+    setMoveOrderOpen(false);
+    setMoveTargetTableId("");
+  }, [selectedTableId]);
 
   async function persist(nextPos: PosState, nextMessage?: string) {
     const previousPos = pos;
@@ -291,6 +299,45 @@ export function PosManager() {
         [selectedTable.id]: emptyOrder(selectedTable.id)
       }
     }, text.orderCompleted);
+  }
+
+  function openMoveOrder() {
+    if (!selectedTable || !selectedOrder?.lines.length) return;
+    const firstOpenTarget = tables.find((table) => table.id !== selectedTable.id && tableOrderLineCount(pos.orders[table.id]) === 0);
+    setMoveTargetTableId(firstOpenTarget?.id || "");
+    setMoveOrderOpen((current) => !current);
+    setMessage("");
+    setError("");
+  }
+
+  function moveOrderToTable() {
+    if (!selectedTable || !selectedOrder?.lines.length || !moveTargetTableId) return;
+    const targetTable = tables.find((table) => table.id === moveTargetTableId);
+    if (!targetTable) return;
+    if (tableOrderLineCount(pos.orders[targetTable.id]) > 0) {
+      setError(text.targetTableOccupied);
+      return;
+    }
+
+    const movedOrder: PosTableOrder = {
+      ...selectedOrder,
+      tableId: targetTable.id,
+      updatedAt: new Date().toISOString()
+    };
+
+    void persist({
+      ...pos,
+      orders: {
+        ...pos.orders,
+        [selectedTable.id]: emptyOrder(selectedTable.id),
+        [targetTable.id]: movedOrder
+      }
+    }, text.orderMoved).then((saved) => {
+      if (!saved) return;
+      setSelectedTableId(targetTable.id);
+      setMoveOrderOpen(false);
+      setMoveTargetTableId("");
+    });
   }
 
   function printInvoice() {
@@ -500,10 +547,23 @@ export function PosManager() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <ReceiptText className="h-5 w-5 text-primary" aria-hidden />
-              {text.orderSummary}
-            </CardTitle>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <ReceiptText className="h-5 w-5 text-primary" aria-hidden />
+                {text.orderSummary}
+              </CardTitle>
+              <Button
+                type="button"
+                variant={moveOrderOpen ? "default" : "outline"}
+                size="icon"
+                aria-label={text.moveOrder}
+                title={text.moveOrder}
+                onClick={openMoveOrder}
+                disabled={!selectedOrder?.lines.length}
+              >
+                <ArrowRightLeft className="h-4 w-4" aria-hidden />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {selectedTable && selectedOrder && totals ? (
@@ -512,6 +572,39 @@ export function PosManager() {
                   <p dir={textDir} className="font-semibold">{selectedTable.name}</p>
                   <p className="text-xs text-muted-foreground">{new Date().toLocaleString(locale === "ckb" ? "ar-IQ" : locale)}</p>
                 </div>
+
+                {moveOrderOpen ? (
+                  <div className="grid gap-2 rounded-lg border bg-muted/20 p-3">
+                    <Field label={text.moveOrderToTable}>
+                      <Select value={moveTargetTableId} onChange={(event) => setMoveTargetTableId(event.target.value)}>
+                        <option value="">{text.noOpenTables}</option>
+                        {tableSections.map((section) => {
+                          const targetTables = section.tables.filter((table) => table.id !== selectedTable.id);
+                          return targetTables.length ? (
+                            <optgroup key={section.area} label={section.area === "outdoor" ? text.outdoorTables : text.indoorTables}>
+                              {targetTables.map((table) => {
+                                const occupied = tableOrderLineCount(pos.orders[table.id]) > 0;
+                                return (
+                                  <option key={table.id} value={table.id} disabled={occupied}>
+                                    {table.name}{occupied ? ` · ${text.occupied}` : ""}
+                                  </option>
+                                );
+                              })}
+                            </optgroup>
+                          ) : null;
+                        })}
+                      </Select>
+                    </Field>
+                    <div className="flex justify-end gap-2">
+                      <Button type="button" variant="outline" size="icon" aria-label={text.cancel} title={text.cancel} onClick={() => setMoveOrderOpen(false)}>
+                        <X className="h-4 w-4" aria-hidden />
+                      </Button>
+                      <Button type="button" size="icon" aria-label={text.moveOrder} title={text.moveOrder} onClick={moveOrderToTable} disabled={!moveTargetTableId}>
+                        <ArrowRightLeft className="h-4 w-4" aria-hidden />
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="space-y-2">
                   {selectedOrder.lines.length ? selectedOrder.lines.map((line) => (
@@ -603,6 +696,10 @@ function groupTablesByArea(tables: PosTable[]) {
 
 function tableArea(table: PosTable): PosTableArea {
   return table.area === "outdoor" ? "outdoor" : "indoor";
+}
+
+function tableOrderLineCount(order: PosTableOrder | undefined) {
+  return order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
 }
 
 function TableAreaHeading({

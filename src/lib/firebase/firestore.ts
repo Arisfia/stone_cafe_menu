@@ -27,12 +27,30 @@ function converter<T extends { id: string }>(): FirestoreDataConverter<T> {
     toFirestore(modelObject: T) {
       const data = { ...modelObject } as Partial<T>;
       delete data.id;
-      return data;
+      return stripUndefined(data);
     },
     fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): T {
       return { id: snapshot.id, ...snapshot.data(options) } as T;
     }
   };
+}
+
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefined) as T;
+  }
+  if (!isPlainObject(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, entry]) => entry !== undefined)
+      .map(([key, entry]) => [key, stripUndefined(entry)])
+  ) as T;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== "object") return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 const categoryConverter = converter<Category>();
