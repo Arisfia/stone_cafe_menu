@@ -22,8 +22,9 @@ import { defaultAppData } from "@/data/default-data";
 import { cn } from "@/lib/utils/cn";
 
 export function WelcomeScreen() {
-  const { locale, setLocale, dir: textDir } = useLocale(defaultAppData.general.defaultLanguage, {
-    documentDirection: "ltr"
+  const { locale, setLocale, dir: textDir } = useLocale("ckb", {
+    documentDirection: "ltr",
+    readStored: false
   });
   const restaurantName = localized(defaultAppData.general.restaurantName, locale);
   const logoUrl = defaultAppData.general.logoUrl;

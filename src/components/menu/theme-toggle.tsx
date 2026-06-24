@@ -5,15 +5,25 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 
-const themeStorageKey = "ary-menu-theme";
-const themeChangeEvent = "ary-menu-theme-change";
+export const publicThemeStorageKey = "ary-menu-theme";
+export const publicThemeChangeEvent = "ary-menu-theme-change";
+export const adminThemeStorageKey = "stone-cafe-admin-theme";
+export const adminThemeChangeEvent = "stone-cafe-admin-theme-change";
 
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle({
+  className,
+  storageKey = publicThemeStorageKey,
+  changeEvent = publicThemeChangeEvent
+}: {
+  className?: string;
+  storageKey?: string;
+  changeEvent?: string;
+}) {
   const [dark, setDark] = useState(false);
   const [turns, setTurns] = useState(0);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(themeStorageKey);
+    const stored = window.localStorage.getItem(storageKey);
     const nextDark = stored === "dark";
     setDark(nextDark);
     document.documentElement.classList.toggle("dark", nextDark);
@@ -29,26 +39,26 @@ export function ThemeToggle({ className }: { className?: string }) {
     }
 
     function handleStorage(event: StorageEvent) {
-      if (event.key === themeStorageKey) applyTheme(event.newValue);
+      if (event.key === storageKey) applyTheme(event.newValue);
     }
 
-    window.addEventListener(themeChangeEvent, handleThemeChange);
+    window.addEventListener(changeEvent, handleThemeChange);
     window.addEventListener("storage", handleStorage);
 
     return () => {
-      window.removeEventListener(themeChangeEvent, handleThemeChange);
+      window.removeEventListener(changeEvent, handleThemeChange);
       window.removeEventListener("storage", handleStorage);
     };
-  }, []);
+  }, [changeEvent, storageKey]);
 
   function toggle() {
     const next = !dark;
     setDark(next);
     setTurns((value) => value + 1);
     const nextTheme = next ? "dark" : "light";
-    window.localStorage.setItem(themeStorageKey, nextTheme);
+    window.localStorage.setItem(storageKey, nextTheme);
     document.documentElement.classList.toggle("dark", next);
-    window.dispatchEvent(new CustomEvent(themeChangeEvent, { detail: nextTheme }));
+    window.dispatchEvent(new CustomEvent(changeEvent, { detail: nextTheme }));
   }
 
   return (

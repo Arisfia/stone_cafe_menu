@@ -1,8 +1,8 @@
 "use client";
 
 import { LanguageGlobe } from "@/components/menu/language-globe";
-import { ThemeToggle } from "@/components/menu/theme-toggle";
-import { useLocale } from "@/hooks/use-locale";
+import { adminThemeChangeEvent, adminThemeStorageKey, ThemeToggle } from "@/components/menu/theme-toggle";
+import { adminLocaleChangeEvent, adminLocaleStorageKey, useLocale } from "@/hooks/use-locale";
 import type { Locale } from "@/types/models";
 
 type AdminText = Record<string, string>;
@@ -670,7 +670,11 @@ export function adminErrorText(message: string | undefined, text: AdminText) {
 }
 
 export function useAdminLocale() {
-  const { locale, setLocale, dir } = useLocale("ckb", { documentDirection: "ltr" });
+  const { locale, setLocale, dir } = useLocale("ckb", {
+    documentDirection: "ltr",
+    storageKey: adminLocaleStorageKey,
+    changeEvent: adminLocaleChangeEvent
+  });
   return { locale, setLocale, dir, text: adminText[locale] };
 }
 
@@ -680,7 +684,7 @@ export function AdminPreferences({ compact = false }: { compact?: boolean }) {
   return (
     <div dir="ltr" className={compact ? "flex shrink-0 items-center gap-2" : "flex items-center gap-2"}>
       <LanguageGlobe locale={locale} onChange={setLocale} menuAlign="left" />
-      <ThemeToggle />
+      <ThemeToggle storageKey={adminThemeStorageKey} changeEvent={adminThemeChangeEvent} />
     </div>
   );
 }

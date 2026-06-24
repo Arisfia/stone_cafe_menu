@@ -4,17 +4,30 @@ import { useEffect, useState } from "react";
 import { dirForLocale, isLocale, type LocaleDirection } from "@/lib/i18n/config";
 import type { Locale } from "@/types/models";
 
-const localeStorageKey = "ary-menu-locale";
-const localeChangeEvent = "ary-menu-locale-change";
+export const publicLocaleStorageKey = "ary-menu-locale";
+export const publicLocaleChangeEvent = "ary-menu-locale-change";
+export const adminLocaleStorageKey = "stone-cafe-admin-locale";
+export const adminLocaleChangeEvent = "stone-cafe-admin-locale-change";
 
 type DocumentDirection = "locale" | LocaleDirection | false;
 
-export function useLocale(defaultLocale: Locale = "ckb", options: { documentDirection?: DocumentDirection } = {}) {
+export function useLocale(
+  defaultLocale: Locale = "ckb",
+  options: {
+    documentDirection?: DocumentDirection;
+    storageKey?: string;
+    changeEvent?: string;
+    readStored?: boolean;
+  } = {}
+) {
   const documentDirection = options.documentDirection ?? "locale";
+  const storageKey = options.storageKey ?? publicLocaleStorageKey;
+  const changeEvent = options.changeEvent ?? publicLocaleChangeEvent;
+  const readStored = options.readStored ?? true;
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(localeStorageKey);
+    const stored = readStored ? window.localStorage.getItem(storageKey) : null;
     if (isLocale(stored)) setLocaleState(stored);
 
     function handleLocaleChange(event: Event) {
@@ -23,19 +36,19 @@ export function useLocale(defaultLocale: Locale = "ckb", options: { documentDire
     }
 
     function handleStorage(event: StorageEvent) {
-      if (event.key === localeStorageKey && isLocale(event.newValue)) {
+      if (event.key === storageKey && isLocale(event.newValue)) {
         setLocaleState(event.newValue);
       }
     }
 
-    window.addEventListener(localeChangeEvent, handleLocaleChange);
+    window.addEventListener(changeEvent, handleLocaleChange);
     window.addEventListener("storage", handleStorage);
 
     return () => {
-      window.removeEventListener(localeChangeEvent, handleLocaleChange);
+      window.removeEventListener(changeEvent, handleLocaleChange);
       window.removeEventListener("storage", handleStorage);
     };
-  }, []);
+  }, [changeEvent, readStored, storageKey]);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -46,8 +59,8 @@ export function useLocale(defaultLocale: Locale = "ckb", options: { documentDire
 
   function setLocale(nextLocale: Locale) {
     setLocaleState(nextLocale);
-    window.localStorage.setItem(localeStorageKey, nextLocale);
-    window.dispatchEvent(new CustomEvent(localeChangeEvent, { detail: nextLocale }));
+    window.localStorage.setItem(storageKey, nextLocale);
+    window.dispatchEvent(new CustomEvent(changeEvent, { detail: nextLocale }));
   }
 
   return { locale, setLocale, dir: dirForLocale(locale) };
