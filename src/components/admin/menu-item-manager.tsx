@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type UseFormReturn } from "react-hook-form";
 import type { z } from "zod";
 import { ChevronDown, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,11 +60,11 @@ export function MenuItemManager() {
   const [imageUploading, setImageUploading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [statusSavingIds, setStatusSavingIds] = useState<string[]>([]);
   const form = useForm<MenuItemFormData>({ resolver: zodResolver(menuItemSchema), defaultValues: emptyItem });
-  const watchedItem = form.watch();
 
   async function refresh() {
     setData(await getAdminAppData());
@@ -116,6 +116,7 @@ export function MenuItemManager() {
       setData((current) => upsertMenuItem(current, item));
       form.reset(emptyItem);
       setFormOpen(false);
+      setEditingItemId(null);
       setExpandedItemId(id);
       setMessage(formatAdminText(text.menuItemSavedNamed, { name }));
     } catch (err) {
@@ -127,10 +128,12 @@ export function MenuItemManager() {
   }
 
   function edit(item: MenuItem) {
-    setFormOpen(true);
+    setFormOpen(false);
     setExpandedItemId(item.id);
+    setEditingItemId(item.id);
     setMessage("");
     setError("");
+    setImageUploading(false);
     form.reset({
       ...item,
       description: {
@@ -153,8 +156,16 @@ export function MenuItemManager() {
     form.reset(emptyItem);
     setMessage("");
     setError("");
+    setImageUploading(false);
+    setEditingItemId(null);
     setExpandedItemId(null);
     setFormOpen(true);
+  }
+
+  function cancelEdit() {
+    setEditingItemId(null);
+    setImageUploading(false);
+    form.reset(emptyItem);
   }
 
   async function remove(item: MenuItem) {
@@ -183,20 +194,6 @@ export function MenuItemManager() {
     }
   }
 
-  function addVariant() {
-    const variants = form.getValues("variants") || [];
-    form.setValue("variants", [
-      ...variants,
-      {
-        id: crypto.randomUUID(),
-        name: { en: "Regular", ar: "عادي", ckb: "ئاسایی" },
-        price: form.getValues("basePrice"),
-        isAvailable: true,
-        displayOrder: variants.length + 1
-      }
-    ]);
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -219,110 +216,16 @@ export function MenuItemManager() {
             <CardTitle>{text.menuItem}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-              <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-            <Field label={text.category} error={adminErrorText(form.formState.errors.categoryId?.message, text)}>
-              <Select {...form.register("categoryId")}>
-                <option value="">{text.chooseCategory}</option>
-                {(data?.categories || []).map((category) => (
-                  <option key={category.id} value={category.id}>{localized(category.name, locale, category.name.en)}</option>
-                ))}
-              </Select>
-            </Field>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label={text.englishName} error={adminErrorText(form.formState.errors.name?.en?.message, text)}><Input {...form.register("name.en")} /></Field>
-              <Field label={text.arabicName} error={adminErrorText(form.formState.errors.name?.ar?.message, text)}><Input dir="rtl" {...form.register("name.ar")} /></Field>
-              <Field label={text.kurdishName} error={adminErrorText(form.formState.errors.name?.ckb?.message, text)}><Input dir="rtl" {...form.register("name.ckb")} /></Field>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label={text.englishDescription}><Textarea {...form.register("description.en")} /></Field>
-              <Field label={text.arabicDescription}><Textarea dir="rtl" {...form.register("description.ar")} /></Field>
-              <Field label={text.kurdishDescription}><Textarea dir="rtl" {...form.register("description.ckb")} /></Field>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label={text.englishIngredients}><Input {...form.register("ingredients.en")} /></Field>
-              <Field label={text.arabicIngredients}><Input dir="rtl" {...form.register("ingredients.ar")} /></Field>
-              <Field label={text.kurdishIngredients}><Input dir="rtl" {...form.register("ingredients.ckb")} /></Field>
-            </div>
-            <div className="grid gap-4 md:grid-cols-4">
-              <Field label={text.basePrice}><Input type="number" {...form.register("basePrice")} /></Field>
-              <Field label={text.discountPrice}><Input type="number" {...form.register("discountPrice")} /></Field>
-              <Field label={text.currency}>
-                <Select {...form.register("currency")}>
-                  <option value="IQD">IQD</option>
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="TRY">TRY</option>
-                </Select>
-              </Field>
-              <Field label={text.displayOrder}><Input type="number" {...form.register("displayOrder")} /></Field>
-            </div>
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <span className="text-sm font-medium">{text.soldOut}</span>
-              <Switch
-                label={text.soldOut}
-                checked={Boolean(form.watch("isSoldOut"))}
-                onCheckedChange={(checked) => form.setValue("isSoldOut", checked)}
-              />
-            </div>
-            <ImageUploadField
-              label={text.itemImage}
-              text={text}
-              path={`menu-items/${form.watch("id") || "new"}`}
-              imageUrl={form.watch("imageUrl") || ""}
-              imageHistory={form.watch("imageHistory") || []}
-              onUploaded={(result) => {
-                form.setValue("imageHistory", addCurrentImageToHistory(form.getValues()), { shouldDirty: true });
-                form.setValue("imageUrl", result.imageUrl, { shouldDirty: true, shouldValidate: true });
-                form.setValue("imagePath", result.imagePath, { shouldDirty: true });
-              }}
-              onRemoved={() => {
-                form.setValue("imageHistory", addCurrentImageToHistory(form.getValues()), { shouldDirty: true });
-                form.setValue("imageUrl", "", { shouldDirty: true, shouldValidate: true });
-                form.setValue("imagePath", "", { shouldDirty: true });
-              }}
-              onRollback={(entry) => {
-                const values = form.getValues();
-                const history = addCurrentImageToHistory({
-                  imageUrl: values.imageUrl,
-                  imagePath: values.imagePath,
-                  imageHistory: (values.imageHistory || []).filter((item) => item.id !== entry.id)
-                });
-                form.setValue("imageUrl", entry.imageUrl, { shouldDirty: true, shouldValidate: true });
-                form.setValue("imagePath", entry.imagePath, { shouldDirty: true });
-                form.setValue("imageHistory", history, { shouldDirty: true });
-              }}
-              onUploadingChange={setImageUploading}
-            />
-            <div className="space-y-3 rounded-md border p-3">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="font-medium">{text.variants}</h3>
-                <Button type="button" variant="outline" size="sm" onClick={addVariant}>{text.addVariant}</Button>
-              </div>
-              {form.watch("variants").map((variant, index) => (
-                <div key={variant.id} className="grid gap-2 rounded-md bg-muted/50 p-3 md:grid-cols-5">
-                  <Input {...form.register(`variants.${index}.name.en`)} placeholder={text.english} />
-                  <Input dir="rtl" {...form.register(`variants.${index}.name.ar`)} placeholder={text.arabic} />
-                  <Input dir="rtl" {...form.register(`variants.${index}.name.ckb`)} placeholder={text.kurdish} />
-                  <Input type="number" {...form.register(`variants.${index}.price`)} placeholder={text.price} />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => form.setValue("variants", form.getValues("variants").filter((_, entryIndex) => entryIndex !== index))}
-                  >
-                    {text.remove}
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={saving || imageUploading}>{saving ? text.saving : text.saveItem}</Button>
-              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>{text.cancel}</Button>
-            </div>
-              </form>
-            <MenuItemAdminPreview
-              item={watchedItem}
+            <MenuItemEditorForm
+              form={form}
+              data={data}
               locale={locale}
               text={text}
+              saving={saving}
+              imageUploading={imageUploading}
+              onUploadingChange={setImageUploading}
+              onSubmit={onSubmit}
+              onCancel={() => setFormOpen(false)}
             />
           </CardContent>
         </Card>
@@ -382,17 +285,33 @@ export function MenuItemManager() {
                 </div>
                 {expanded ? (
                   <CardContent className="settings-panel border-t pt-5">
-                    <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-                      <MenuItemAdminPreview item={item} locale={locale} text={text} />
-                      <div className="flex flex-wrap content-start gap-2">
-                        <Button type="button" variant="outline" size="icon" aria-label={text.edit} title={text.edit} onClick={() => edit(item)}>
-                          <Pencil className="h-4 w-4" aria-hidden />
-                        </Button>
-                        <Button type="button" variant="destructive" size="icon" aria-label={text.delete} title={text.delete} onClick={() => remove(item)}>
-                          <Trash2 className="h-4 w-4" aria-hidden />
-                        </Button>
+                    {editingItemId === item.id ? (
+                      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+                        <MenuItemEditorForm
+                          form={form}
+                          data={data}
+                          locale={locale}
+                          text={text}
+                          saving={saving}
+                          imageUploading={imageUploading}
+                          onUploadingChange={setImageUploading}
+                          onSubmit={onSubmit}
+                          onCancel={cancelEdit}
+                        />
                       </div>
-                    </div>
+                    ) : (
+                      <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
+                        <MenuItemAdminPreview item={item} locale={locale} text={text} />
+                        <div className="flex flex-wrap content-start gap-2">
+                          <Button type="button" variant="outline" size="icon" aria-label={text.edit} title={text.edit} onClick={() => edit(item)}>
+                            <Pencil className="h-4 w-4" aria-hidden />
+                          </Button>
+                          <Button type="button" variant="destructive" size="icon" aria-label={text.delete} title={text.delete} onClick={() => remove(item)}>
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 ) : null}
               </Card>
@@ -401,6 +320,154 @@ export function MenuItemManager() {
         </div>
       </div>
     </div>
+  );
+}
+
+function MenuItemEditorForm({
+  form,
+  data,
+  locale,
+  text,
+  saving,
+  imageUploading,
+  onUploadingChange,
+  onSubmit,
+  onCancel
+}: {
+  form: UseFormReturn<MenuItemFormData>;
+  data: AppData | null;
+  locale: Locale;
+  text: Record<string, string>;
+  saving: boolean;
+  imageUploading: boolean;
+  onUploadingChange: (uploading: boolean) => void;
+  onSubmit: (values: MenuItemFormData) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const watchedItem = form.watch();
+  const variants = form.watch("variants") || [];
+
+  function addVariant() {
+    form.setValue("variants", [
+      ...variants,
+      {
+        id: crypto.randomUUID(),
+        name: { en: "Regular", ar: "عادي", ckb: "ئاسایی" },
+        price: form.getValues("basePrice"),
+        isAvailable: true,
+        displayOrder: variants.length + 1
+      }
+    ]);
+  }
+
+  return (
+    <>
+      <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <Field label={text.category} error={adminErrorText(form.formState.errors.categoryId?.message, text)}>
+          <Select {...form.register("categoryId")}>
+            <option value="">{text.chooseCategory}</option>
+            {(data?.categories || []).map((category) => (
+              <option key={category.id} value={category.id}>{localized(category.name, locale, category.name.en)}</option>
+            ))}
+          </Select>
+        </Field>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label={text.englishName} error={adminErrorText(form.formState.errors.name?.en?.message, text)}><Input {...form.register("name.en")} /></Field>
+          <Field label={text.arabicName} error={adminErrorText(form.formState.errors.name?.ar?.message, text)}><Input dir="rtl" {...form.register("name.ar")} /></Field>
+          <Field label={text.kurdishName} error={adminErrorText(form.formState.errors.name?.ckb?.message, text)}><Input dir="rtl" {...form.register("name.ckb")} /></Field>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label={text.englishDescription}><Textarea {...form.register("description.en")} /></Field>
+          <Field label={text.arabicDescription}><Textarea dir="rtl" {...form.register("description.ar")} /></Field>
+          <Field label={text.kurdishDescription}><Textarea dir="rtl" {...form.register("description.ckb")} /></Field>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label={text.englishIngredients}><Input {...form.register("ingredients.en")} /></Field>
+          <Field label={text.arabicIngredients}><Input dir="rtl" {...form.register("ingredients.ar")} /></Field>
+          <Field label={text.kurdishIngredients}><Input dir="rtl" {...form.register("ingredients.ckb")} /></Field>
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          <Field label={text.basePrice}><Input type="number" {...form.register("basePrice")} /></Field>
+          <Field label={text.discountPrice}><Input type="number" {...form.register("discountPrice")} /></Field>
+          <Field label={text.currency}>
+            <Select {...form.register("currency")}>
+              <option value="IQD">IQD</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="TRY">TRY</option>
+            </Select>
+          </Field>
+          <Field label={text.displayOrder}><Input type="number" {...form.register("displayOrder")} /></Field>
+        </div>
+        <div className="flex items-center justify-between rounded-md border p-3">
+          <span className="text-sm font-medium">{text.soldOut}</span>
+          <Switch
+            label={text.soldOut}
+            checked={Boolean(form.watch("isSoldOut"))}
+            onCheckedChange={(checked) => form.setValue("isSoldOut", checked)}
+          />
+        </div>
+        <ImageUploadField
+          label={text.itemImage}
+          text={text}
+          path={`menu-items/${form.watch("id") || "new"}`}
+          imageUrl={form.watch("imageUrl") || ""}
+          imageHistory={form.watch("imageHistory") || []}
+          onUploaded={(result) => {
+            form.setValue("imageHistory", addCurrentImageToHistory(form.getValues()), { shouldDirty: true });
+            form.setValue("imageUrl", result.imageUrl, { shouldDirty: true, shouldValidate: true });
+            form.setValue("imagePath", result.imagePath, { shouldDirty: true });
+          }}
+          onRemoved={() => {
+            form.setValue("imageHistory", addCurrentImageToHistory(form.getValues()), { shouldDirty: true });
+            form.setValue("imageUrl", "", { shouldDirty: true, shouldValidate: true });
+            form.setValue("imagePath", "", { shouldDirty: true });
+          }}
+          onRollback={(entry) => {
+            const values = form.getValues();
+            const history = addCurrentImageToHistory({
+              imageUrl: values.imageUrl,
+              imagePath: values.imagePath,
+              imageHistory: (values.imageHistory || []).filter((item) => item.id !== entry.id)
+            });
+            form.setValue("imageUrl", entry.imageUrl, { shouldDirty: true, shouldValidate: true });
+            form.setValue("imagePath", entry.imagePath, { shouldDirty: true });
+            form.setValue("imageHistory", history, { shouldDirty: true });
+          }}
+          onUploadingChange={onUploadingChange}
+        />
+        <div className="space-y-3 rounded-md border p-3">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="font-medium">{text.variants}</h3>
+            <Button type="button" variant="outline" size="sm" onClick={addVariant}>{text.addVariant}</Button>
+          </div>
+          {variants.map((variant, index) => (
+            <div key={variant.id} className="grid gap-2 rounded-md bg-muted/50 p-3 md:grid-cols-5">
+              <Input {...form.register(`variants.${index}.name.en`)} placeholder={text.english} />
+              <Input dir="rtl" {...form.register(`variants.${index}.name.ar`)} placeholder={text.arabic} />
+              <Input dir="rtl" {...form.register(`variants.${index}.name.ckb`)} placeholder={text.kurdish} />
+              <Input type="number" {...form.register(`variants.${index}.price`)} placeholder={text.price} />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => form.setValue("variants", form.getValues("variants").filter((_, entryIndex) => entryIndex !== index))}
+              >
+                {text.remove}
+              </Button>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" disabled={saving || imageUploading}>{saving ? text.saving : text.saveItem}</Button>
+          <Button type="button" variant="outline" onClick={onCancel}>{text.cancel}</Button>
+        </div>
+      </form>
+      <MenuItemAdminPreview
+        item={watchedItem}
+        locale={locale}
+        text={text}
+      />
+    </>
   );
 }
 

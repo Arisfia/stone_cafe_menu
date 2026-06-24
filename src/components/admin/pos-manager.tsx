@@ -22,7 +22,7 @@ import { getAdminAppData, getPosState, savePosState } from "@/lib/firebase/fires
 import { localized } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
 import { formatMoney, normalizeSearch } from "@/lib/utils/format";
-import type { AppData, Currency, MenuItem, PosCompletedOrder, PosDiscountType, PosState, PosTable, PosTableOrder } from "@/types/models";
+import type { AppData, Currency, MenuItem, PosCompletedOrder, PosDiscountType, PosState, PosTable, PosTableArea, PosTableOrder } from "@/types/models";
 
 const emptyPosState: PosState = {
   tables: [],
@@ -58,7 +58,10 @@ export function PosManager() {
   }, [text.settingsSaveFailed]);
 
   const tables = useMemo(() => [...pos.tables].sort((a, b) => a.displayOrder - b.displayOrder), [pos.tables]);
+  const tableSections = useMemo(() => groupTablesByArea(tables), [tables]);
+  const draftTableSections = useMemo(() => groupTablesByArea(draftTables), [draftTables]);
   const selectedTable = tables.find((table) => table.id === selectedTableId) || tables[0];
+  const selectedDraftTable = draftTables.find((table) => table.id === draftSelectedTableId);
   const selectedOrder = selectedTable ? pos.orders[selectedTable.id] || emptyOrder(selectedTable.id) : null;
   const categories = useMemo(
     () => (data?.categories || []).filter((category) => category.isActive).sort((a, b) => a.displayOrder - b.displayOrder),
@@ -142,11 +145,19 @@ export function PosManager() {
     setDraftTables((current) => current.map((table) => table.id === draftSelectedTableId ? { ...table, name } : table));
   }
 
-  function addDraftTable() {
-    const nextNumber = draftTables.length + 1;
+  function changeDraftTableArea(area: PosTableArea) {
+    setDraftTables((current) => normalizeTableOrder({
+      ...pos,
+      tables: current.map((table) => table.id === draftSelectedTableId ? { ...table, area } : table)
+    }).tables);
+  }
+
+  function addDraftTable(area: PosTableArea) {
+    const nextNumber = draftTables.filter((table) => tableArea(table) === area).length + 1;
     const table: PosTable = {
       id: crypto.randomUUID(),
-      name: `${text.table} ${nextNumber}`,
+      name: `${area === "outdoor" ? text.outdoorTable : text.indoorTable} ${nextNumber}`,
+      area,
       displayOrder: draftTables.length,
       isActive: true
     };
@@ -176,7 +187,7 @@ export function PosManager() {
       ...pos,
       tables: draftTables
         .filter((table) => table.name.trim())
-        .map((table) => ({ ...table, name: table.name.trim() }))
+        .map((table) => ({ ...table, name: table.name.trim(), area: tableArea(table) }))
     }).tables;
     if (!nextTables.length) return;
 
@@ -325,62 +336,96 @@ export function PosManager() {
           </div>
 
           {!tableToolsOpen ? (
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
-              {tables.map((table) => {
-                const order = pos.orders[table.id];
-                const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
-                return (
-                  <button
-                    key={table.id}
-                    type="button"
-                    onClick={() => setSelectedTableId(table.id)}
-                    className={cn(
-                      "focus-ring min-h-20 rounded-lg border p-3 text-start transition-colors",
-                      table.id === selectedTable?.id ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted"
-                    )}
-                  >
-                    <span dir={textDir} className="block truncate text-base font-semibold">{table.name}</span>
-                    <span dir={textDir} className={cn("mt-2 block truncate text-xs", table.id === selectedTable?.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
-                      {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="space-y-4">
+              {tableSections.map((section, index) => (
+                <div key={section.area} className={cn(index > 0 && "border-t pt-4")}>
+                  <TableAreaHeading area={section.area} text={text} textDir={textDir} />
+                  {section.tables.length ? (
+                    <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
+                      {section.tables.map((table) => {
+                        const order = pos.orders[table.id];
+                        const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
+                        return (
+                          <button
+                            key={table.id}
+                            type="button"
+                            onClick={() => setSelectedTableId(table.id)}
+                            className={cn(
+                              "focus-ring min-h-20 rounded-lg border p-3 text-start transition-colors",
+                              table.id === selectedTable?.id ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted"
+                            )}
+                          >
+                            <span dir={textDir} className="block truncate text-base font-semibold">{table.name}</span>
+                            <span dir={textDir} className={cn("mt-2 block truncate text-xs", table.id === selectedTable?.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                              {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p dir={textDir} className="mt-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">{text.noTablesInArea}</p>
+                  )}
+                </div>
+              ))}
             </div>
           ) : null}
 
           {tableToolsOpen ? (
             <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(8rem,1fr))] gap-2">
-                {draftTables.map((table) => {
-                  const order = draftOrders[table.id];
-                  const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
-                  return (
-                    <button
-                      key={table.id}
-                      type="button"
-                      onClick={() => selectDraftTable(table.id)}
-                      className={cn(
-                        "focus-ring min-h-16 rounded-lg border p-2 text-start transition-colors",
-                        table.id === draftSelectedTableId ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted"
-                      )}
-                    >
-                      <span dir={textDir} className="block truncate text-sm font-semibold">{table.name}</span>
-                      <span dir={textDir} className={cn("mt-1 block truncate text-xs", table.id === draftSelectedTableId ? "text-primary-foreground/80" : "text-muted-foreground")}>
-                        {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="space-y-4">
+                {draftTableSections.map((section, index) => (
+                  <div key={section.area} className={cn(index > 0 && "border-t pt-4")}>
+                    <TableAreaHeading area={section.area} text={text} textDir={textDir} />
+                    {section.tables.length ? (
+                      <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(8rem,1fr))] gap-2">
+                        {section.tables.map((table) => {
+                          const order = draftOrders[table.id];
+                          const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
+                          return (
+                            <button
+                              key={table.id}
+                              type="button"
+                              onClick={() => selectDraftTable(table.id)}
+                              className={cn(
+                                "focus-ring min-h-16 rounded-lg border p-2 text-start transition-colors",
+                                table.id === draftSelectedTableId ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted"
+                              )}
+                            >
+                              <span dir={textDir} className="block truncate text-sm font-semibold">{table.name}</span>
+                              <span dir={textDir} className={cn("mt-1 block truncate text-xs", table.id === draftSelectedTableId ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                                {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p dir={textDir} className="mt-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">{text.noTablesInArea}</p>
+                    )}
+                  </div>
+                ))}
               </div>
 
-              <Field label={text.tableName}>
-                <Input value={tableNameDraft} onChange={(event) => renameDraftTable(event.target.value)} disabled={!draftSelectedTableId} />
-              </Field>
-              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
-                <Button type="button" variant="outline" onClick={addDraftTable}>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem]">
+                <Field label={text.tableName}>
+                  <Input value={tableNameDraft} onChange={(event) => renameDraftTable(event.target.value)} disabled={!draftSelectedTableId} />
+                </Field>
+                <Field label={text.tableArea}>
+                  <Select value={selectedDraftTable?.area || "indoor"} onChange={(event) => changeDraftTableArea(event.target.value as PosTableArea)} disabled={!draftSelectedTableId}>
+                    <option value="indoor">{text.indoor}</option>
+                    <option value="outdoor">{text.outdoor}</option>
+                  </Select>
+                </Field>
+              </div>
+              <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+                <Button type="button" variant="outline" onClick={() => addDraftTable("indoor")}>
                   <Plus className="h-4 w-4" aria-hidden />
-                  {text.addTable}
+                  {text.addIndoorTable}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => addDraftTable("outdoor")}>
+                  <Plus className="h-4 w-4" aria-hidden />
+                  {text.addOutdoorTable}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => void saveTableChanges()} disabled={!draftTables.length}>
                   {text.saveTable}
@@ -547,6 +592,38 @@ export function PosManager() {
   );
 }
 
+const tableAreas: PosTableArea[] = ["indoor", "outdoor"];
+
+function groupTablesByArea(tables: PosTable[]) {
+  return tableAreas.map((area) => ({
+    area,
+    tables: tables.filter((table) => tableArea(table) === area)
+  }));
+}
+
+function tableArea(table: PosTable): PosTableArea {
+  return table.area === "outdoor" ? "outdoor" : "indoor";
+}
+
+function TableAreaHeading({
+  area,
+  text,
+  textDir
+}: {
+  area: PosTableArea;
+  text: Record<string, string>;
+  textDir: "ltr" | "rtl";
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span dir={textDir} className="text-sm font-semibold text-muted-foreground">
+        {area === "outdoor" ? text.outdoorTables : text.indoorTables}
+      </span>
+      <span className="h-px flex-1 bg-border" aria-hidden />
+    </div>
+  );
+}
+
 function TotalRow({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className={cn("flex items-center justify-between gap-3 text-sm", strong && "border-t pt-3 text-lg font-bold")}>
@@ -637,7 +714,7 @@ function normalizeTableOrder(state: PosState): PosState {
   return {
     ...state,
     tables: [...state.tables]
-      .sort((a, b) => a.displayOrder - b.displayOrder)
-      .map((table, index) => ({ ...table, displayOrder: index }))
+      .sort((a, b) => tableAreas.indexOf(tableArea(a)) - tableAreas.indexOf(tableArea(b)) || a.displayOrder - b.displayOrder)
+      .map((table, index) => ({ ...table, area: tableArea(table), displayOrder: index }))
   };
 }

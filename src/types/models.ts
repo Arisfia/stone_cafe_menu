@@ -99,10 +99,12 @@ export type MenuSettings = {
 };
 
 export type PosDiscountType = "amount" | "percent";
+export type PosTableArea = "indoor" | "outdoor";
 
 export type PosTable = {
   id: string;
   name: string;
+  area: PosTableArea;
   displayOrder: number;
   isActive: boolean;
 };

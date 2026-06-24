@@ -20,7 +20,7 @@ import { defaultAppData } from "@/data/default-data";
 import { getFirebaseDb } from "@/lib/firebase/client";
 import { removeImage } from "@/lib/supabase/storage";
 import { slugify } from "@/lib/utils/format";
-import type { AppData, Category, MenuItem, PosState } from "@/types/models";
+import type { AppData, Category, MenuItem, PosState, PosTableArea } from "@/types/models";
 
 function converter<T extends { id: string }>(): FirestoreDataConverter<T> {
   return {
@@ -41,7 +41,8 @@ const itemConverter = converter<MenuItem>();
 const defaultPosState: PosState = {
   tables: Array.from({ length: 8 }, (_, index) => ({
     id: `table-${index + 1}`,
-    name: `Table ${index + 1}`,
+    name: index < 6 ? `Indoor ${index + 1}` : `Outdoor ${index - 5}`,
+    area: index < 6 ? "indoor" : "outdoor",
     displayOrder: index,
     isActive: true
   })),
@@ -212,6 +213,7 @@ function normalizePosState(value: unknown): PosState {
       .map((table, index) => ({
         id: table.id,
         name: table.name,
+        area: normalizeTableArea(table.area),
         displayOrder: Number.isFinite(table.displayOrder) ? table.displayOrder : index,
         isActive: table.isActive !== false
       })),
@@ -248,6 +250,10 @@ function normalizePosState(value: unknown): PosState {
         completedAt: typeof order.completedAt === "string" ? order.completedAt : new Date().toISOString()
       }))
   };
+}
+
+function normalizeTableArea(value: unknown): PosTableArea {
+  return value === "outdoor" ? "outdoor" : "indoor";
 }
 
 function serializePosState(state: PosState) {

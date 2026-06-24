@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type UseFormReturn } from "react-hook-form";
 import type { z } from "zod";
 import { ChevronDown, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,13 +39,13 @@ export function CategoryManager() {
   const [saving, setSaving] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [statusSavingIds, setStatusSavingIds] = useState<string[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [moveTarget, setMoveTarget] = useState("");
   const form = useForm<CategoryFormData>({ resolver: zodResolver(categorySchema), defaultValues: emptyCategory });
-  const watchedCategory = form.watch();
 
   async function refresh() {
     setData(await getAdminAppData());
@@ -73,6 +73,7 @@ export function CategoryManager() {
     await refresh();
     setMessage(text.categorySaved);
     setFormOpen(false);
+    setEditingCategoryId(null);
     setExpandedCategoryId(id);
     setSaving(false);
   }
@@ -93,8 +94,9 @@ export function CategoryManager() {
   }
 
   function edit(category: Category) {
-    setFormOpen(true);
+    setFormOpen(false);
     setExpandedCategoryId(category.id);
+    setEditingCategoryId(category.id);
     setMessage("");
     setError("");
     form.reset({
@@ -115,8 +117,14 @@ export function CategoryManager() {
     form.reset(emptyCategory);
     setMessage("");
     setError("");
+    setEditingCategoryId(null);
     setFormOpen(true);
     setExpandedCategoryId(null);
+  }
+
+  function cancelEdit() {
+    setEditingCategoryId(null);
+    form.reset(emptyCategory);
   }
 
   async function toggleCategoryActive(category: Category, isActive: boolean) {
@@ -163,47 +171,14 @@ export function CategoryManager() {
             <CardTitle>{text.category}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="grid gap-4 md:grid-cols-3">
-                <Field label={text.englishName} error={adminErrorText(form.formState.errors.name?.en?.message, text)}>
-                  <Input {...form.register("name.en")} onBlur={(event) => !form.getValues("slug") && form.setValue("slug", slugify(event.target.value))} />
-                </Field>
-                <Field label={text.arabicName} error={adminErrorText(form.formState.errors.name?.ar?.message, text)}>
-                  <Input dir="rtl" {...form.register("name.ar")} />
-                </Field>
-                <Field label={text.kurdishName} error={adminErrorText(form.formState.errors.name?.ckb?.message, text)}>
-                  <Input dir="rtl" {...form.register("name.ckb")} />
-                </Field>
-              </div>
-              <div className="grid gap-4 md:grid-cols-3">
-                <Field label={text.englishDescription}>
-                  <Textarea {...form.register("description.en")} />
-                </Field>
-                <Field label={text.arabicDescription}>
-                  <Textarea dir="rtl" {...form.register("description.ar")} />
-                </Field>
-                <Field label={text.kurdishDescription}>
-                  <Textarea dir="rtl" {...form.register("description.ckb")} />
-                </Field>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={text.slug} error={adminErrorText(form.formState.errors.slug?.message, text)}>
-                  <Input {...form.register("slug")} />
-                </Field>
-                <Field label={text.displayOrder}>
-                  <Input type="number" {...form.register("displayOrder")} />
-                </Field>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button type="submit" disabled={saving}>{saving ? text.saving : text.saveCategory}</Button>
-                <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>{text.cancel}</Button>
-              </div>
-            </form>
-            <CategoryAdminPreview
-              category={watchedCategory}
-              itemCount={data?.menuItems.filter((item) => item.categoryId === watchedCategory.id).length || 0}
-              locale={locale}
+            <CategoryEditorForm
+              form={form}
+              saving={saving}
               text={text}
+              locale={locale}
+              itemCount={0}
+              onSubmit={onSubmit}
+              onCancel={() => setFormOpen(false)}
             />
           </CardContent>
         </Card>
@@ -255,17 +230,31 @@ export function CategoryManager() {
                 </div>
                 {expanded ? (
                   <CardContent className="settings-panel border-t pt-5">
-                    <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-                      <CategoryAdminPreview category={category} itemCount={itemCount} locale={locale} text={text} />
-                      <div className="flex flex-wrap content-start gap-2">
-                        <Button type="button" variant="outline" size="icon" aria-label={text.edit} title={text.edit} onClick={() => edit(category)}>
-                          <Pencil className="h-4 w-4" aria-hidden />
-                        </Button>
-                        <Button type="button" variant="destructive" size="icon" aria-label={text.delete} title={text.delete} onClick={() => setDeleteTarget(category)}>
-                          <Trash2 className="h-4 w-4" aria-hidden />
-                        </Button>
+                    {editingCategoryId === category.id ? (
+                      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+                        <CategoryEditorForm
+                          form={form}
+                          saving={saving}
+                          text={text}
+                          locale={locale}
+                          itemCount={itemCount}
+                          onSubmit={onSubmit}
+                          onCancel={cancelEdit}
+                        />
                       </div>
-                    </div>
+                    ) : (
+                      <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
+                        <CategoryAdminPreview category={category} itemCount={itemCount} locale={locale} text={text} />
+                        <div className="flex flex-wrap content-start gap-2">
+                          <Button type="button" variant="outline" size="icon" aria-label={text.edit} title={text.edit} onClick={() => edit(category)}>
+                            <Pencil className="h-4 w-4" aria-hidden />
+                          </Button>
+                          <Button type="button" variant="destructive" size="icon" aria-label={text.delete} title={text.delete} onClick={() => setDeleteTarget(category)}>
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 ) : null}
               </Card>
@@ -305,6 +294,73 @@ export function CategoryManager() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function CategoryEditorForm({
+  form,
+  saving,
+  text,
+  locale,
+  itemCount,
+  onSubmit,
+  onCancel
+}: {
+  form: UseFormReturn<CategoryFormData>;
+  saving: boolean;
+  text: Record<string, string>;
+  locale: Locale;
+  itemCount: number;
+  onSubmit: (values: CategoryFormData) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const watchedCategory = form.watch();
+
+  return (
+    <>
+      <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label={text.englishName} error={adminErrorText(form.formState.errors.name?.en?.message, text)}>
+            <Input {...form.register("name.en")} onBlur={(event) => !form.getValues("slug") && form.setValue("slug", slugify(event.target.value))} />
+          </Field>
+          <Field label={text.arabicName} error={adminErrorText(form.formState.errors.name?.ar?.message, text)}>
+            <Input dir="rtl" {...form.register("name.ar")} />
+          </Field>
+          <Field label={text.kurdishName} error={adminErrorText(form.formState.errors.name?.ckb?.message, text)}>
+            <Input dir="rtl" {...form.register("name.ckb")} />
+          </Field>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label={text.englishDescription}>
+            <Textarea {...form.register("description.en")} />
+          </Field>
+          <Field label={text.arabicDescription}>
+            <Textarea dir="rtl" {...form.register("description.ar")} />
+          </Field>
+          <Field label={text.kurdishDescription}>
+            <Textarea dir="rtl" {...form.register("description.ckb")} />
+          </Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={text.slug} error={adminErrorText(form.formState.errors.slug?.message, text)}>
+            <Input {...form.register("slug")} />
+          </Field>
+          <Field label={text.displayOrder}>
+            <Input type="number" {...form.register("displayOrder")} />
+          </Field>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" disabled={saving}>{saving ? text.saving : text.saveCategory}</Button>
+          <Button type="button" variant="outline" onClick={onCancel}>{text.cancel}</Button>
+        </div>
+      </form>
+      <CategoryAdminPreview
+        category={watchedCategory}
+        itemCount={itemCount}
+        locale={locale}
+        text={text}
+      />
+    </>
   );
 }
 
