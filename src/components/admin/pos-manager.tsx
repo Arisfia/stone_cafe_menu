@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRightLeft,
+  Merge,
   Minus,
   Pencil,
   Plus,
@@ -23,7 +24,7 @@ import { getAdminAppData, getPosState, savePosState } from "@/lib/firebase/fires
 import { localized } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
 import { formatMoney, normalizeSearch } from "@/lib/utils/format";
-import type { AppData, Currency, MenuItem, PosCompletedOrder, PosDiscountType, PosState, PosTable, PosTableArea, PosTableOrder } from "@/types/models";
+import type { AppData, Currency, MenuItem, PosCompletedOrder, PosDiscountType, PosOrderLine, PosState, PosTable, PosTableArea, PosTableOrder } from "@/types/models";
 
 const emptyPosState: PosState = {
   tables: [],
@@ -43,10 +44,11 @@ export function PosManager() {
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [tableToolsOpen, setTableToolsOpen] = useState(false);
-  const [moveOrderOpen, setMoveOrderOpen] = useState(false);
+  const [tableAction, setTableAction] = useState<"move" | "merge" | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const menuPickerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     Promise.all([getAdminAppData(), getPosState()])
@@ -99,7 +101,7 @@ export function PosManager() {
   }, [selectedTable, tables, tableToolsOpen]);
 
   useEffect(() => {
-    setMoveOrderOpen(false);
+    setTableAction(null);
   }, [selectedTableId]);
 
   async function persist(nextPos: PosState, nextMessage?: string) {
@@ -129,7 +131,7 @@ export function PosManager() {
     setTableNameDraft(selectedTable?.name || nextDraftTables[0]?.name || "");
     setMessage("");
     setError("");
-    setMoveOrderOpen(false);
+    setTableAction(null);
     setTableToolsOpen(true);
   }
 
@@ -300,25 +302,34 @@ export function PosManager() {
     }, text.orderCompleted);
   }
 
-  function openMoveOrder() {
+  function scrollToMenuPicker() {
+    menuPickerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function toggleTableAction(action: "move" | "merge") {
     if (!selectedTable || !selectedOrder?.lines.length) return;
-    setMoveOrderOpen((current) => !current);
+    setTableAction((current) => (current === action ? null : action));
     setMessage("");
     setError("");
   }
 
   function pressTable(tableId: string) {
-    if (!moveOrderOpen) {
-      setSelectedTableId(tableId);
+    if (tableAction === "move") {
+      moveOrderToTable(tableId);
       return;
     }
-    moveOrderToTable(tableId);
+    if (tableAction === "merge") {
+      mergeOrderIntoTable(tableId);
+      return;
+    }
+    setSelectedTableId(tableId);
+    scrollToMenuPicker();
   }
 
   function moveOrderToTable(targetTableId: string) {
     if (!selectedTable || !selectedOrder?.lines.length) return;
     if (targetTableId === selectedTable.id) {
-      setMoveOrderOpen(false);
+      setTableAction(null);
       return;
     }
     const targetTable = tables.find((table) => table.id === targetTableId);
@@ -344,7 +355,39 @@ export function PosManager() {
     }, text.orderMoved).then((saved) => {
       if (!saved) return;
       setSelectedTableId(targetTable.id);
-      setMoveOrderOpen(false);
+      setTableAction(null);
+    });
+  }
+
+  function mergeOrderIntoTable(targetTableId: string) {
+    if (!selectedTable || !selectedOrder?.lines.length) return;
+    if (targetTableId === selectedTable.id) {
+      setTableAction(null);
+      return;
+    }
+    const targetTable = tables.find((table) => table.id === targetTableId);
+    if (!targetTable) return;
+
+    const targetOrder = pos.orders[targetTable.id] || emptyOrder(targetTable.id);
+    const mergedOrder: PosTableOrder = {
+      ...targetOrder,
+      tableId: targetTable.id,
+      lines: mergeOrderLines(targetOrder.lines, selectedOrder.lines),
+      updatedAt: new Date().toISOString()
+    };
+
+    void persist({
+      ...pos,
+      orders: {
+        ...pos.orders,
+        [selectedTable.id]: emptyOrder(selectedTable.id),
+        [targetTable.id]: mergedOrder
+      }
+    }, text.orderMerged).then((saved) => {
+      if (!saved) return;
+      setSelectedTableId(targetTable.id);
+      setTableAction(null);
+      scrollToMenuPicker();
     });
   }
 
@@ -401,9 +444,11 @@ export function PosManager() {
                         {section.tables.map((table) => {
                           const order = pos.orders[table.id];
                           const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
+                          const occupied = count > 0;
                           const selected = table.id === selectedTable?.id;
-                          const moveTarget = moveOrderOpen && !selected;
-                          const occupiedMoveTarget = moveTarget && count > 0;
+                          const actionTarget = tableAction !== null && !selected;
+                          // In move mode an occupied destination is blocked; in merge mode it is a valid target.
+                          const blockedTarget = actionTarget && tableAction === "move" && occupied;
                           return (
                             <button
                               key={table.id}
@@ -411,9 +456,13 @@ export function PosManager() {
                               onClick={() => pressTable(table.id)}
                               className={cn(
                                 "focus-ring min-h-20 rounded-lg border p-3 text-start transition-colors",
-                                selected ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-muted",
-                                moveTarget && "border-primary/50 ring-1 ring-primary/20",
-                                occupiedMoveTarget && "opacity-60"
+                                selected
+                                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                                  : occupied
+                                    ? "border-secondary bg-secondary/10 ring-1 ring-inset ring-secondary/40 hover:bg-secondary/20"
+                                    : "bg-card hover:bg-muted",
+                                actionTarget && "border-primary/60 ring-2 ring-primary/30",
+                                blockedTarget && "opacity-60"
                               )}
                             >
                               <span dir={textDir} className="block truncate text-base font-semibold">{table.name}</span>
@@ -430,14 +479,25 @@ export function PosManager() {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-end">
+              <div className="flex items-center justify-end gap-2">
                 <Button
                   type="button"
-                  variant={moveOrderOpen ? "default" : "outline"}
+                  variant={tableAction === "merge" ? "default" : "outline"}
+                  size="icon"
+                  aria-label={text.mergeOrder}
+                  title={text.mergeOrder}
+                  onClick={() => toggleTableAction("merge")}
+                  disabled={!selectedOrder?.lines.length}
+                >
+                  <Merge className="h-4 w-4" aria-hidden />
+                </Button>
+                <Button
+                  type="button"
+                  variant={tableAction === "move" ? "default" : "outline"}
                   size="icon"
                   aria-label={text.moveOrder}
                   title={text.moveOrder}
-                  onClick={openMoveOrder}
+                  onClick={() => toggleTableAction("move")}
                   disabled={!selectedOrder?.lines.length}
                 >
                   <ArrowRightLeft className="h-4 w-4" aria-hidden />
@@ -526,6 +586,7 @@ export function PosManager() {
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div ref={menuPickerRef} className="min-h-0 scroll-mt-20">
         <Card className="min-h-0">
           <CardHeader>
             <CardTitle className="text-lg">{text.menuPicker}</CardTitle>
@@ -572,6 +633,7 @@ export function PosManager() {
             </div>
           </CardContent>
         </Card>
+        </div>
 
         <Card>
           <CardHeader>
@@ -682,6 +744,19 @@ function tableArea(table: PosTable): PosTableArea {
 
 function tableOrderLineCount(order: PosTableOrder | undefined) {
   return order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
+}
+
+function mergeOrderLines(baseLines: PosOrderLine[], addedLines: PosOrderLine[]): PosOrderLine[] {
+  const lines = baseLines.map((line) => ({ ...line }));
+  for (const addedLine of addedLines) {
+    const existing = lines.find((line) => line.itemId === addedLine.itemId && line.unitPrice === addedLine.unitPrice);
+    if (existing) {
+      existing.quantity += addedLine.quantity;
+    } else {
+      lines.push({ ...addedLine, id: crypto.randomUUID() });
+    }
+  }
+  return lines;
 }
 
 function TableAreaHeading({
