@@ -233,8 +233,6 @@ export function MenuApp({
           item={activeItem}
           category={data.categories.find((category) => category.id === activeItem.categoryId)}
           settings={data.menu}
-          restaurantName={restaurantName}
-          whatsapp={data.general.whatsapp}
           locale={locale}
           textDir={textDir}
           onClose={() => setActiveItem(null)}
@@ -304,8 +302,6 @@ function MenuItemDetailModal({
   item,
   category,
   settings,
-  restaurantName,
-  whatsapp,
   locale,
   textDir,
   onClose
@@ -313,8 +309,6 @@ function MenuItemDetailModal({
   item: MenuItem;
   category?: Category;
   settings: MenuSettings;
-  restaurantName: string;
-  whatsapp?: string;
   locale: Locale;
   textDir: "ltr" | "rtl";
   onClose: () => void;
@@ -324,7 +318,6 @@ function MenuItemDetailModal({
   const ingredients = localized(item.ingredients, locale);
   const hasDiscount = Boolean(item.discountPrice);
   const variants = item.variants.filter((variant) => variant.isAvailable);
-  const whatsappDigits = whatsapp?.replace(/\D/g, "");
 
   return (
     <div
@@ -436,16 +429,6 @@ function MenuItemDetailModal({
               </DetailSection>
             ) : null}
 
-            {whatsappDigits ? (
-              <a
-                href={`https://wa.me/${whatsappDigits}?text=${encodeURIComponent(`${restaurantName} - ${title}`)}`}
-                target="_blank"
-                className="focus-ring mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
-              >
-                <WhatsappIcon className="h-5 w-5" aria-hidden />
-                <span dir={textDir}>{translate(locale, "menu.orderWhatsapp")}</span>
-              </a>
-            ) : null}
           </div>
         </article>
       </div>

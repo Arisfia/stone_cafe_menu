@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
-import { ChevronDown, Copy, ExternalLink, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { ChevronDown, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
@@ -149,10 +149,6 @@ export function MenuItemManager() {
     });
   }
 
-  function duplicate(item: MenuItem) {
-    edit({ ...item, id: "", imageHistory: [], name: { ...item.name, en: `${item.name.en} Copy` }, displayOrder: item.displayOrder + 1 });
-  }
-
   function newItem() {
     form.reset(emptyItem);
     setMessage("");
@@ -260,20 +256,13 @@ export function MenuItemManager() {
               </Field>
               <Field label={text.displayOrder}><Input type="number" {...form.register("displayOrder")} /></Field>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                ["isAvailable", text.available],
-                ["isSoldOut", text.soldOut]
-              ].map(([name, label]) => (
-                <div key={name} className="flex items-center justify-between rounded-md border p-3">
-                  <span className="text-sm font-medium">{label}</span>
-                  <Switch
-                    label={label}
-                    checked={Boolean(form.watch(name as keyof MenuItemFormData))}
-                    onCheckedChange={(checked) => form.setValue(name as keyof MenuItemFormData, checked as never)}
-                  />
-                </div>
-              ))}
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <span className="text-sm font-medium">{text.soldOut}</span>
+              <Switch
+                label={text.soldOut}
+                checked={Boolean(form.watch("isSoldOut"))}
+                onCheckedChange={(checked) => form.setValue("isSoldOut", checked)}
+              />
             </div>
             <ImageUploadField
               label={text.itemImage}
@@ -396,10 +385,12 @@ export function MenuItemManager() {
                     <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
                       <MenuItemAdminPreview item={item} locale={locale} text={text} />
                       <div className="flex flex-wrap content-start gap-2">
-                        <Button variant="outline" onClick={() => edit(item)}><Pencil className="h-4 w-4" aria-hidden /> {text.edit}</Button>
-                        <Button variant="outline" onClick={() => duplicate(item)}><Copy className="h-4 w-4" aria-hidden /> {text.duplicate}</Button>
-                        <Button variant="outline" onClick={() => window.open(`/menu/item/${item.id}`, "_blank")}><ExternalLink className="h-4 w-4" aria-hidden /> {text.preview}</Button>
-                        <Button variant="destructive" onClick={() => remove(item)}><Trash2 className="h-4 w-4" aria-hidden /> {text.delete}</Button>
+                        <Button type="button" variant="outline" size="icon" aria-label={text.edit} title={text.edit} onClick={() => edit(item)}>
+                          <Pencil className="h-4 w-4" aria-hidden />
+                        </Button>
+                        <Button type="button" variant="destructive" size="icon" aria-label={text.delete} title={text.delete} onClick={() => remove(item)}>
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

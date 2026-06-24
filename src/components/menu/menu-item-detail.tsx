@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { ThemeToggle } from "@/components/menu/theme-toggle";
 import { LanguageGlobe } from "@/components/menu/language-globe";
 import { MenuBackground } from "@/components/menu/menu-background";
@@ -41,7 +40,6 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
   const ingredients = item ? localized(item.ingredients, locale) : "";
   const hasDiscount = Boolean(item?.discountPrice);
   const variants = (item?.variants || []).filter((variant) => variant.isAvailable);
-  const whatsappDigits = data.general.whatsapp?.replace(/\D/g, "");
 
   return (
     <main dir="ltr" className="relative min-h-screen">
@@ -158,16 +156,6 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
                 </Section>
               ) : null}
 
-              {whatsappDigits ? (
-                <a
-                  href={`https://wa.me/${whatsappDigits}?text=${encodeURIComponent(`${localized(data.general.restaurantName, locale)} — ${title}`)}`}
-                  target="_blank"
-                  className="focus-ring mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
-                >
-                  <WhatsappIcon className="h-5 w-5" aria-hidden />
-                  <span dir={textDir}>{translate(locale, "menu.orderWhatsapp")}</span>
-                </a>
-              ) : null}
             </div>
           </article>
         )}

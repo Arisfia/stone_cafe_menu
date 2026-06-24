@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
-import { ChevronDown, ExternalLink, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { ChevronDown, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
@@ -194,10 +194,6 @@ export function CategoryManager() {
                   <Input type="number" {...form.register("displayOrder")} />
                 </Field>
               </div>
-              <div className="flex items-center justify-between rounded-md border p-3">
-                <span className="text-sm font-medium">{text.active}</span>
-                <Switch label={text.active} checked={form.watch("isActive")} onCheckedChange={(checked) => form.setValue("isActive", checked)} />
-              </div>
               <div className="flex flex-wrap gap-2">
                 <Button type="submit" disabled={saving}>{saving ? text.saving : text.saveCategory}</Button>
                 <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>{text.cancel}</Button>
@@ -262,9 +258,12 @@ export function CategoryManager() {
                     <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
                       <CategoryAdminPreview category={category} itemCount={itemCount} locale={locale} text={text} />
                       <div className="flex flex-wrap content-start gap-2">
-                        <Button type="button" variant="outline" onClick={() => edit(category)}><Pencil className="h-4 w-4" aria-hidden /> {text.edit}</Button>
-                        <Button type="button" variant="outline" onClick={() => window.open(`/menu/category/${category.slug}`, "_blank")}><ExternalLink className="h-4 w-4" aria-hidden /> {text.preview}</Button>
-                        <Button type="button" variant="destructive" onClick={() => setDeleteTarget(category)}><Trash2 className="h-4 w-4" aria-hidden /> {text.delete}</Button>
+                        <Button type="button" variant="outline" size="icon" aria-label={text.edit} title={text.edit} onClick={() => edit(category)}>
+                          <Pencil className="h-4 w-4" aria-hidden />
+                        </Button>
+                        <Button type="button" variant="destructive" size="icon" aria-label={text.delete} title={text.delete} onClick={() => setDeleteTarget(category)}>
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
