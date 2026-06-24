@@ -190,9 +190,13 @@ body.overflow-lock {
   animation: cup-bob 5s ease-in-out infinite;
 }
 
-/* Language globe: continuous slow rotation + an orbiting accent dot */
+/* Language globe: continuous slow rotation + orbiting multilingual glyphs */
 @keyframes globe-spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes globe-counter-spin {
+  to { transform: rotate(-360deg); }
 }
 
 .globe-spin {
@@ -202,6 +206,45 @@ body.overflow-lock {
 .globe-orbit {
   transform-origin: center;
   animation: globe-spin 6s linear infinite;
+}
+
+.globe-glyph {
+  position: absolute;
+  display: inline-flex;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--primary) / 0.35);
+  border-radius: 9999px;
+  background: hsl(var(--background));
+  box-shadow: 0 4px 10px hsl(var(--foreground) / 0.12);
+  color: hsl(var(--primary));
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.globe-glyph-character {
+  animation: globe-counter-spin 6s linear infinite;
+}
+
+.globe-glyph-en {
+  top: -0.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.globe-glyph-ar {
+  top: 62%;
+  right: -0.25rem;
+  transform: translateY(-50%);
+}
+
+.globe-glyph-ckb {
+  top: 62%;
+  left: -0.25rem;
+  transform: translateY(-50%);
 }
 
 /* Dropdown entrance */
@@ -241,6 +284,7 @@ body.overflow-lock {
   .cup-bob,
   .globe-spin,
   .globe-orbit,
+  .globe-glyph-character,
   .pop-in,
   .settings-panel {
     animation: none;

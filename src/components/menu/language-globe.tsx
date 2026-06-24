@@ -6,6 +6,26 @@ import { dirForLocale, localeLabels, locales } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
 import type { Locale } from "@/types/models";
 
+const defaultGlobeGlyphs: Record<Locale, string> = {
+  en: "A",
+  ar: "ع",
+  ckb: "ک"
+};
+
+const globeGlyphChoices: Record<Locale, string[]> = {
+  en: ["A", "B", "C", "M", "S", "T"],
+  ar: ["ا", "ع", "ق", "م", "ن", "س"],
+  ckb: ["ک", "گ", "ڕ", "چ", "پ", "ژ"]
+};
+
+function randomGlobeGlyphs() {
+  return locales.reduce((glyphs, entry) => {
+    const choices = globeGlyphChoices[entry];
+    glyphs[entry] = choices[Math.floor(Math.random() * choices.length)];
+    return glyphs;
+  }, { ...defaultGlobeGlyphs });
+}
+
 export function LanguageGlobe({
   locale,
   onChange,
@@ -17,6 +37,7 @@ export function LanguageGlobe({
 }) {
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 160 });
+  const [globeGlyphs, setGlobeGlyphs] = useState(defaultGlobeGlyphs);
   const ref = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -65,6 +86,11 @@ export function LanguageGlobe({
     };
   }, [open, updateMenuPosition]);
 
+  useEffect(() => {
+    const interval = window.setInterval(() => setGlobeGlyphs(randomGlobeGlyphs()), 1400);
+    return () => window.clearInterval(interval);
+  }, []);
+
   return (
     <div ref={ref} dir="ltr" className="relative">
       <button
@@ -80,9 +106,12 @@ export function LanguageGlobe({
         className="focus-ring relative flex h-10 w-10 items-center justify-center rounded-full border bg-card text-primary shadow-sm transition-colors hover:bg-muted"
       >
         <Globe2 className="globe-spin h-5 w-5" aria-hidden />
-        {/* Accent dot orbiting the globe */}
-        <span className="globe-orbit pointer-events-none absolute inset-1.5" aria-hidden>
-          <span className="absolute -top-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-primary shadow-sm" />
+        <span className="globe-orbit pointer-events-none absolute inset-0" aria-hidden>
+          {locales.map((entry) => (
+            <span key={entry} className={cn("globe-glyph", `globe-glyph-${entry}`)} lang={entry} dir={dirForLocale(entry)}>
+              <span className="globe-glyph-character">{globeGlyphs[entry]}</span>
+            </span>
+          ))}
         </span>
       </button>
 
