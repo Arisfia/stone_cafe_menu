@@ -324,6 +324,65 @@ body.overflow-lock {
 }
 .cat-steam { transform-origin: center bottom; animation: cat-steam 2.4s ease-in-out infinite; }
 
+/* Breakfast: fried egg jiggles like jelly, yolk pulses */
+@keyframes cat-egg-jelly {
+  0%, 100% { transform: scale(1, 1); }
+  30% { transform: scale(1.07, 0.93); }
+  60% { transform: scale(0.97, 1.03); }
+}
+.cat-egg-jelly { transform-origin: center bottom; animation: cat-egg-jelly 2.2s ease-in-out infinite; }
+
+@keyframes cat-yolk {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+.cat-yolk { transform-origin: center; animation: cat-yolk 2.2s ease-in-out infinite; }
+
+/* Main meals: knife saws back and forth, fork counter-rocks */
+@keyframes cat-cut {
+  0%, 100% { transform: rotate(-9deg); }
+  50% { transform: rotate(9deg); }
+}
+.cat-cut { transform-origin: 16px 21px; animation: cat-cut 1s ease-in-out infinite; }
+
+@keyframes cat-fork {
+  0%, 100% { transform: rotate(5deg); }
+  50% { transform: rotate(-5deg); }
+}
+.cat-fork { transform-origin: 8px 21px; animation: cat-fork 1s ease-in-out infinite; }
+
+/* Special offer: draw the ring, then reveal the % inside */
+@keyframes cat-ring-draw {
+  0% { stroke-dashoffset: 100; }
+  45% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 0; }
+}
+.cat-ring-draw { animation: cat-ring-draw 2.6s ease-in-out infinite; }
+
+@keyframes cat-percent-in {
+  0%, 42% { opacity: 0; transform: scale(0.3); }
+  56% { opacity: 1; transform: scale(1.12); }
+  68%, 90% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.6); }
+}
+.cat-percent-in { transform-origin: center; animation: cat-percent-in 2.6s ease-in-out infinite; }
+
+/* Coffee: bean crumbles, dust scatters, then it reforms */
+@keyframes cat-bean-crumble {
+  0%, 42% { opacity: 1; transform: scale(1) rotate(0deg); }
+  48% { transform: scale(1.06) rotate(-5deg); }
+  70% { opacity: 0; transform: scale(0.25) rotate(10deg); }
+  100% { opacity: 0; transform: scale(0.25); }
+}
+.cat-bean-crumble { transform-origin: center; animation: cat-bean-crumble 2.4s ease-in-out infinite; }
+
+@keyframes cat-dust {
+  0%, 45% { opacity: 0; transform: translate(0px, 0px) scale(0.4); }
+  58% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(1); }
+}
+.cat-dust { animation: cat-dust 2.4s ease-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .steam-wisp,
   .bean-float,
@@ -342,7 +401,15 @@ body.overflow-lock {
   .cat-sway,
   .cat-boil,
   .cat-bubble,
-  .cat-steam {
+  .cat-steam,
+  .cat-egg-jelly,
+  .cat-yolk,
+  .cat-cut,
+  .cat-fork,
+  .cat-ring-draw,
+  .cat-percent-in,
+  .cat-bean-crumble,
+  .cat-dust {
     animation: none;
   }
 }
