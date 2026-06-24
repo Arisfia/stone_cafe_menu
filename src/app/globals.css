@@ -18,6 +18,14 @@
   font-weight: 700;
 }
 
+@font-face {
+  font-family: "StoneCafeKJino";
+  src: url("/fonts/KJino.TTF") format("truetype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 700;
+}
+
 :root {
   --background: 210 40% 98%;
   --foreground: 222 47% 11%;
@@ -87,6 +95,22 @@ h6 {
 
 .font-medium,
 .font-semibold {
+  font-weight: 700 !important;
+}
+
+html[lang="ckb"] body,
+html[lang="ckb"] button,
+html[lang="ckb"] input,
+html[lang="ckb"] select,
+html[lang="ckb"] textarea,
+html[lang="ckb"] h1,
+html[lang="ckb"] h2,
+html[lang="ckb"] h3,
+html[lang="ckb"] h4,
+html[lang="ckb"] h5,
+html[lang="ckb"] h6,
+:lang(ckb) {
+  font-family: "StoneCafeKJino", "StoneCafeCairo", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-weight: 700 !important;
 }
 
