@@ -75,7 +75,7 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
             </Link>
           </div>
         ) : (
-          <article className="overflow-hidden rounded-lg border bg-card shadow-sm">
+          <article dir={textDir} className="overflow-hidden rounded-lg border bg-card shadow-sm">
             {settings.showImages ? (
               <div className="group relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-accent via-primary/5 to-secondary/10 sm:aspect-[16/10]">
                 <FallbackMenuImage src={item.imageUrl} alt={title} />
@@ -91,7 +91,7 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
 
             <div className="flex flex-col gap-5 p-4 sm:gap-6 sm:p-7">
               <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
-                <div className="min-w-0" dir={textDir}>
+                <div className="min-w-0">
                   {category ? (
                     <p className="text-xs font-semibold uppercase tracking-wide text-primary">{localized(category.name, locale)}</p>
                   ) : null}
@@ -116,14 +116,14 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
               </div>
 
               {description ? (
-                <p dir={textDir} className="text-base leading-relaxed text-muted-foreground">
+                <p className="text-base leading-relaxed text-muted-foreground">
                   {description}
                 </p>
               ) : null}
 
               {settings.showIngredients && ingredients ? (
                 <Section title={translate(locale, "menu.ingredients")} textDir={textDir}>
-                  <p dir={textDir} className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {ingredients}
                   </p>
                 </Section>
@@ -146,7 +146,7 @@ export function MenuItemDetail({ itemId }: { itemId: string }) {
                   <ul className="divide-y rounded-2xl border">
                     {variants.map((variant) => (
                       <li key={variant.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                        <span dir={textDir} className="text-sm font-medium">
+                        <span className="text-sm font-medium">
                           {localized(variant.name, locale)}
                         </span>
                         {settings.showPrices ? (

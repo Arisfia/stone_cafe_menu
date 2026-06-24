@@ -336,6 +336,7 @@ function MenuItemDetailModal({
     >
       <div className="flex min-h-full items-center justify-center">
         <article
+          dir={textDir}
           className="pop-in relative max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-y-auto rounded-lg border bg-card shadow-2xl sm:max-h-none sm:overflow-hidden"
           onClick={(event) => event.stopPropagation()}
         >
@@ -344,7 +345,10 @@ function MenuItemDetailModal({
             size="icon"
             variant="outline"
             aria-label={translate(locale, "menu.backToMenu")}
-            className="absolute right-3 top-3 z-10 rounded-full bg-card/90 shadow-sm backdrop-blur sm:right-4 sm:top-4"
+            className={cn(
+              "absolute top-3 z-10 rounded-full bg-card/90 shadow-sm backdrop-blur sm:top-4",
+              textDir === "rtl" ? "left-3 sm:left-4" : "right-3 sm:right-4"
+            )}
             onClick={onClose}
           >
             <X className="h-4 w-4" aria-hidden />
@@ -365,7 +369,7 @@ function MenuItemDetailModal({
 
           <div className="flex flex-col gap-5 p-4 sm:gap-6 sm:p-7">
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
-              <div className="min-w-0" dir={textDir}>
+              <div className="min-w-0">
                 {category ? (
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary">{localized(category.name, locale)}</p>
                 ) : null}
@@ -390,14 +394,14 @@ function MenuItemDetailModal({
             </div>
 
             {description ? (
-              <p dir={textDir} className="text-base leading-relaxed text-muted-foreground">
+              <p className="text-base leading-relaxed text-muted-foreground">
                 {description}
               </p>
             ) : null}
 
             {settings.showIngredients && ingredients ? (
               <DetailSection title={translate(locale, "menu.ingredients")} textDir={textDir}>
-                <p dir={textDir} className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   {ingredients}
                 </p>
               </DetailSection>
@@ -420,7 +424,7 @@ function MenuItemDetailModal({
                 <ul className="divide-y rounded-2xl border">
                   {variants.map((variant) => (
                     <li key={variant.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                      <span dir={textDir} className="text-sm font-medium">
+                      <span className="text-sm font-medium">
                         {localized(variant.name, locale)}
                       </span>
                       {settings.showPrices ? (
