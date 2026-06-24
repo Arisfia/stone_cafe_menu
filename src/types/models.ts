@@ -179,6 +179,7 @@ export type AdminPermissions = Partial<Record<AdminFeature, boolean>>;
 export type AdminProfile = {
   uid: string;
   email: string;
+  username?: string;
   displayName?: string;
   isAdmin: boolean;
   role?: AdminRole;

@@ -42,6 +42,13 @@ service cloud.firestore {
       allow list, create, update, delete: if isApprovedAdmin();
     }
 
+    // Public username -> email lookup so the login screen can resolve a username
+    // to its email before the user is signed in. Only stores { email, uid }.
+    match /usernames/{username} {
+      allow get: if true;
+      allow list, create, update, delete: if isApprovedAdmin();
+    }
+
     match /auditLogs/{logId} {
       allow read, create: if isApprovedAdmin();
       allow update, delete: if false;

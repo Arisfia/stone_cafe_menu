@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { sendAdminPasswordReset, signInAdmin } from "@/lib/firebase/auth";
+import { resolveLoginEmail, sendAdminPasswordReset, signInAdmin } from "@/lib/firebase/auth";
 import { hasFirebaseClientConfig } from "@/lib/firebase/client";
 import { AdminPreferences, useAdminLocale } from "@/components/admin/admin-preferences";
 
 export function LoginForm() {
   const router = useRouter();
   const { text, dir: textDir } = useAdminLocale();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
@@ -27,7 +27,7 @@ export function LoginForm() {
     setError("");
     setMessage("");
     try {
-      await signInAdmin(email, password);
+      await signInAdmin(identifier, password);
       router.replace("/admin/dashboard");
     } catch (err) {
       setError(err instanceof Error ? friendlyAuthError(err.message, text) : text.loginFailed);
@@ -39,11 +39,12 @@ export function LoginForm() {
   async function handlePasswordReset() {
     setError("");
     setMessage("");
-    if (!email) {
+    if (!identifier) {
       setError(text.enterEmailFirst);
       return;
     }
     try {
+      const email = await resolveLoginEmail(identifier);
       await sendAdminPasswordReset(email);
       setMessage(text.resetSent);
     } catch (err) {
@@ -66,8 +67,8 @@ export function LoginForm() {
             </p>
           ) : null}
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <Field label={text.email} labelDir={textDir} htmlFor="email">
-              <Input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            <Field label={text.usernameOrEmail} labelDir={textDir} htmlFor="identifier">
+              <Input id="identifier" type="text" autoComplete="username" value={identifier} onChange={(event) => setIdentifier(event.target.value)} required />
             </Field>
             <Field label={text.password} labelDir={textDir} htmlFor="password">
               <div className="flex gap-2">

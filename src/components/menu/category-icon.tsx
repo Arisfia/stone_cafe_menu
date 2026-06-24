@@ -1,5 +1,6 @@
 import { type CSSProperties } from "react";
 import {
+  BadgePercent,
   CakeSlice,
   CupSoda,
   LayoutGrid,
@@ -19,6 +20,7 @@ const SLUG_ICON: Record<string, { Icon: LucideIcon; anim: string }> = {
   desserts: { Icon: CakeSlice, anim: "cat-bob" },
   sandwiches: { Icon: Sandwich, anim: "cat-bob" },
   "main-meals": { Icon: UtensilsCrossed, anim: "cat-wiggle" },
+  "special-offers": { Icon: BadgePercent, anim: "cat-pulse" },
   all: { Icon: LayoutGrid, anim: "cat-sway" }
 };
 

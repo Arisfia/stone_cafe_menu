@@ -127,12 +127,53 @@ function toAdminProfile(uid: string, data: Record<string, unknown>): AdminProfil
   return {
     uid,
     email: typeof data.email === "string" ? data.email : "",
+    username: typeof data.username === "string" ? data.username : undefined,
     displayName: typeof data.displayName === "string" ? data.displayName : undefined,
     isAdmin: data.isAdmin === true,
     role: data.role === "employee" ? "employee" : data.role === "admin" ? "admin" : undefined,
     permissions: (data.permissions as AdminPermissions | undefined) || undefined,
     disabled: data.disabled === true
   };
+}
+
+export function normalizeUsername(username: string) {
+  return username.trim().toLowerCase();
+}
+
+// Public username -> email lookup so the login screen can resolve a username to
+// an email before the user is authenticated. Requires the `usernames` rule in
+// firestore.rules to be deployed.
+export async function getUsernameEmail(username: string): Promise<string | null> {
+  const db = getFirebaseDb();
+  if (!db) return null;
+  const snap = await getDoc(doc(db, "usernames", normalizeUsername(username)));
+  if (!snap.exists()) return null;
+  const email = snap.data().email;
+  return typeof email === "string" ? email : null;
+}
+
+export async function isUsernameAvailable(username: string, exceptUid?: string): Promise<boolean> {
+  const db = getFirebaseDb();
+  if (!db) return true;
+  try {
+    const snap = await getDoc(doc(db, "usernames", normalizeUsername(username)));
+    if (!snap.exists()) return true;
+    return snap.data().uid === exceptUid;
+  } catch {
+    return true; // can't verify (rules not deployed yet) — don't block creation
+  }
+}
+
+export async function claimUsername(username: string, email: string, uid: string) {
+  const db = getFirebaseDb();
+  if (!db || !username) return;
+  await setDoc(doc(db, "usernames", normalizeUsername(username)), { email, uid });
+}
+
+export async function releaseUsername(username: string) {
+  const db = getFirebaseDb();
+  if (!db || !username) return;
+  await deleteDoc(doc(db, "usernames", normalizeUsername(username)));
 }
 
 export async function getAdminProfile(uid: string): Promise<AdminProfile | null> {
@@ -157,6 +198,7 @@ export async function saveAdminProfile(profile: {
   email: string;
   role: AdminRole;
   permissions: AdminPermissions;
+  username?: string;
   displayName?: string;
   disabled?: boolean;
 }) {
@@ -168,6 +210,7 @@ export async function saveAdminProfile(profile: {
     doc(db, "adminProfiles", profile.uid),
     stripUndefined({
       email: profile.email,
+      username: profile.username ? normalizeUsername(profile.username) : undefined,
       displayName: profile.displayName,
       isAdmin: true,
       role: profile.role,

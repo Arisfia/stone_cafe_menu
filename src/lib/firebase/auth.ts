@@ -10,9 +10,25 @@ import {
 import { doc, getDoc } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase/client";
 
-export async function signInAdmin(email: string, password: string) {
+// Accepts either an email (contains "@") or a username. Usernames are resolved
+// to their email through the public `usernames` lookup collection.
+export async function resolveLoginEmail(identifier: string): Promise<string> {
+  const value = identifier.trim();
+  if (!value) throw new Error("auth/invalid-credential");
+  if (value.includes("@")) return value;
+  const db = getFirebaseDb();
+  if (!db) throw new Error("Firebase Authentication is not configured.");
+  const snap = await getDoc(doc(db, "usernames", value.toLowerCase()));
+  if (!snap.exists()) throw new Error("auth/invalid-credential");
+  const email = snap.data().email;
+  if (typeof email !== "string") throw new Error("auth/invalid-credential");
+  return email;
+}
+
+export async function signInAdmin(identifier: string, password: string) {
   const auth = getFirebaseAuth();
   if (!auth) throw new Error("Firebase Authentication is not configured.");
+  const email = await resolveLoginEmail(identifier);
   const credential = await signInWithEmailAndPassword(auth, email, password);
   const isAdmin = await verifyApprovedAdmin(credential.user.uid);
   if (!isAdmin) {

@@ -10,8 +10,11 @@ import { Switch } from "@/components/ui/switch";
 import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import {
+  claimUsername,
   deleteAdminProfile,
+  isUsernameAvailable,
   listAdminProfiles,
+  releaseUsername,
   saveAdminProfile,
   setAdminProfileDisabled
 } from "@/lib/firebase/firestore";
@@ -19,6 +22,8 @@ import { createStaffAuthUser } from "@/lib/firebase/user-admin";
 import { ADMIN_FEATURES, emptyPermissions, roleOf } from "@/lib/admin/permissions";
 import { cn } from "@/lib/utils/cn";
 import type { AdminPermissions, AdminProfile, AdminRole } from "@/types/models";
+
+const USERNAME_PATTERN = /^[a-z0-9._-]{3,20}$/;
 
 export function UserManager() {
   const { text, dir: textDir } = useAdminLocale();
@@ -32,6 +37,7 @@ export function UserManager() {
 
   // Add-user form state
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<AdminRole>("employee");
@@ -49,6 +55,7 @@ export function UserManager() {
 
   function resetForm() {
     setEmail("");
+    setUsername("");
     setPassword("");
     setDisplayName("");
     setRole("employee");
@@ -59,12 +66,21 @@ export function UserManager() {
     setMessage("");
     setError("");
     const trimmedEmail = email.trim().toLowerCase();
+    const cleanUsername = username.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       setError(text.invalidEmail);
       return;
     }
     if (password.length < 6) {
       setError(text.weakPassword);
+      return;
+    }
+    if (cleanUsername && !USERNAME_PATTERN.test(cleanUsername)) {
+      setError(text.usernameInvalid);
+      return;
+    }
+    if (cleanUsername && !(await isUsernameAvailable(cleanUsername))) {
+      setError(text.usernameTaken);
       return;
     }
 
@@ -74,17 +90,66 @@ export function UserManager() {
       await saveAdminProfile({
         uid,
         email: trimmedEmail,
+        username: cleanUsername || undefined,
         role,
         permissions,
         displayName: displayName.trim() || undefined
       });
+      let mappingFailed = false;
+      if (cleanUsername) {
+        try {
+          await claimUsername(cleanUsername, trimmedEmail, uid);
+        } catch {
+          mappingFailed = true;
+        }
+      }
       await refresh();
       resetForm();
-      setMessage(text.userCreated);
+      setMessage(mappingFailed ? text.deployRulesForUsername : text.userCreated);
     } catch (err) {
       setError(mapAuthError(err, text));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveUsername(profile: AdminProfile, rawUsername: string) {
+    setMessage("");
+    setError("");
+    const next = rawUsername.trim().toLowerCase();
+    const previous = profile.username || "";
+    if (next === previous) return;
+    if (next && !USERNAME_PATTERN.test(next)) {
+      setError(text.usernameInvalid);
+      return;
+    }
+    if (next && !(await isUsernameAvailable(next, profile.uid))) {
+      setError(text.usernameTaken);
+      return;
+    }
+
+    setUsers((current) => current.map((entry) => (entry.uid === profile.uid ? { ...entry, username: next || undefined } : entry)));
+    try {
+      await saveAdminProfile({
+        uid: profile.uid,
+        email: profile.email,
+        role: roleOf(profile),
+        permissions: profile.permissions ?? emptyPermissions(),
+        username: next || undefined,
+        displayName: profile.displayName,
+        disabled: profile.disabled
+      });
+      let mappingFailed = false;
+      try {
+        if (previous && previous !== next) await releaseUsername(previous);
+        if (next) await claimUsername(next, profile.email, profile.uid);
+      } catch {
+        mappingFailed = true;
+      }
+      setMessage(mappingFailed ? text.deployRulesForUsername : text.usernameSaved);
+    } catch (err) {
+      await refresh();
+      setError(err instanceof Error ? err.message : text.settingsSaveFailed);
     }
   }
 
@@ -133,6 +198,7 @@ export function UserManager() {
     setMessage("");
     setError("");
     try {
+      if (removeTarget.username) await releaseUsername(removeTarget.username).catch(() => {});
       await deleteAdminProfile(removeTarget.uid);
       setRemoveTarget(null);
       await refresh();
@@ -175,13 +241,19 @@ export function UserManager() {
             <Field label={text.email}>
               <Input type="email" autoComplete="off" value={email} onChange={(event) => setEmail(event.target.value)} />
             </Field>
+            <Field label={text.username}>
+              <Input autoComplete="off" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="e.g. sara" />
+              <p dir={textDir} className="mt-1 text-xs text-muted-foreground">{text.usernameHint}</p>
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={text.password}>
               <Input type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} />
             </Field>
+            <Field label={text.displayName}>
+              <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+            </Field>
           </div>
-          <Field label={text.displayName}>
-            <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
-          </Field>
 
           <div className="grid gap-2" dir={textDir}>
             <span className="text-sm font-medium">{text.role}</span>
@@ -240,6 +312,7 @@ export function UserManager() {
               isSelf={profile.uid === auth.user?.uid}
               onUpdate={updateUser}
               onToggleDisabled={toggleDisabled}
+              onSaveUsername={saveUsername}
               onRemove={() => setRemoveTarget(profile)}
             />
           ))
@@ -317,6 +390,7 @@ function UserRow({
   isSelf,
   onUpdate,
   onToggleDisabled,
+  onSaveUsername,
   onRemove
 }: {
   profile: AdminProfile;
@@ -325,9 +399,11 @@ function UserRow({
   isSelf: boolean;
   onUpdate: (profile: AdminProfile, changes: { role?: AdminRole; permissions?: AdminPermissions }) => void;
   onToggleDisabled: (profile: AdminProfile, disabled: boolean) => void;
+  onSaveUsername: (profile: AdminProfile, username: string) => void;
   onRemove: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [usernameDraft, setUsernameDraft] = useState(profile.username || "");
   const role = roleOf(profile);
 
   return (
@@ -347,7 +423,7 @@ function UserRow({
             {profile.disabled ? <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">{text.accountDisabled}</span> : null}
           </span>
           <span className="block truncate text-xs text-muted-foreground">
-            {profile.email} · {role === "admin" ? text.roleAdmin : text.roleEmployee}
+            {profile.username ? `@${profile.username} · ` : ""}{profile.email} · {role === "admin" ? text.roleAdmin : text.roleEmployee}
           </span>
         </span>
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
@@ -360,6 +436,21 @@ function UserRow({
               {text.cannotEditSelf}
             </p>
           ) : null}
+
+          <Field label={text.username}>
+            <div className="flex gap-2">
+              <Input value={usernameDraft} onChange={(event) => setUsernameDraft(event.target.value)} placeholder="e.g. sara" />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onSaveUsername(profile, usernameDraft)}
+                disabled={usernameDraft.trim().toLowerCase() === (profile.username || "")}
+              >
+                {text.save}
+              </Button>
+            </div>
+            <p dir={textDir} className="mt-1 text-xs text-muted-foreground">{text.usernameHint}</p>
+          </Field>
 
           <div className="grid gap-2" dir={textDir}>
             <span className="text-sm font-medium">{text.role}</span>
