@@ -57,9 +57,9 @@ function SpecialOfferIcon({ className }: { className?: string }) {
         />
       </g>
       <g className="cat-percent-in" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-        <line x1="9" y1="15" x2="15" y2="9" />
-        <circle cx="9.4" cy="9.4" r="1.3" fill="currentColor" stroke="none" />
-        <circle cx="14.6" cy="14.6" r="1.3" fill="currentColor" stroke="none" />
+        <line x1="10" y1="14" x2="14" y2="10" />
+        <circle cx="10.2" cy="10.2" r="1.15" fill="currentColor" stroke="none" />
+        <circle cx="13.8" cy="13.8" r="1.15" fill="currentColor" stroke="none" />
       </g>
     </svg>
   );

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BadgePercent, ListOrdered, Receipt, ShoppingBag, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { adminErrorText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { getPosState } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
@@ -10,14 +11,16 @@ import { formatMoney } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import type { Currency, PosCompletedOrder } from "@/types/models";
 
-type RangeKey = "today" | "7d" | "30d" | "all";
+type Mode = "daily" | "monthly" | "all";
 
 export function ReportsManager() {
   const { locale, text, dir: textDir } = useAdminLocale();
   const [orders, setOrders] = useState<PosCompletedOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [range, setRange] = useState<RangeKey>("7d");
+  const [mode, setMode] = useState<Mode>("daily");
+  const [day, setDay] = useState(() => todayKey());
+  const [month, setMonth] = useState(() => todayKey().slice(0, 7));
 
   useEffect(() => {
     getPosState()
@@ -27,22 +30,15 @@ export function ReportsManager() {
   }, [text.settingsSaveFailed]);
 
   const filtered = useMemo(() => {
-    const now = Date.now();
-    const windows: Record<RangeKey, number> = {
-      today: 24 * 60 * 60 * 1000,
-      "7d": 7 * 24 * 60 * 60 * 1000,
-      "30d": 30 * 24 * 60 * 60 * 1000,
-      all: Number.POSITIVE_INFINITY
-    };
-    const span = windows[range];
     return orders
       .filter((order) => {
-        if (span === Number.POSITIVE_INFINITY) return true;
-        const time = Date.parse(order.completedAt);
-        return Number.isFinite(time) && now - time <= span;
+        if (mode === "all") return true;
+        const key = localDateKey(order.completedAt);
+        if (!key) return false;
+        return mode === "daily" ? key === day : key.slice(0, 7) === month;
       })
       .sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt));
-  }, [orders, range]);
+  }, [orders, mode, day, month]);
 
   const currency: Currency = filtered[0]?.currency || orders[0]?.currency || "IQD";
 
@@ -73,10 +69,9 @@ export function ReportsManager() {
 
   const avgOrder = filtered.length ? Math.round(totals.revenue / filtered.length) : 0;
 
-  const ranges: { key: RangeKey; label: string }[] = [
-    { key: "today", label: text.today },
-    { key: "7d", label: text.last7days },
-    { key: "30d", label: text.last30days },
+  const modes: { key: Mode; label: string }[] = [
+    { key: "daily", label: text.daily },
+    { key: "monthly", label: text.monthly },
     { key: "all", label: text.allTime }
   ];
 
@@ -87,20 +82,28 @@ export function ReportsManager() {
           <h1 className="text-3xl font-semibold">{text.reports}</h1>
           <p dir={textDir} className="text-muted-foreground">{text.reportsDesc}</p>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {ranges.map((entry) => (
-            <button
-              key={entry.key}
-              type="button"
-              onClick={() => setRange(entry.key)}
-              className={cn(
-                "focus-ring rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-                range === entry.key ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"
-              )}
-            >
-              {entry.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-1.5">
+            {modes.map((entry) => (
+              <button
+                key={entry.key}
+                type="button"
+                onClick={() => setMode(entry.key)}
+                className={cn(
+                  "focus-ring rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+                  mode === entry.key ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"
+                )}
+              >
+                {entry.label}
+              </button>
+            ))}
+          </div>
+          {mode === "daily" ? (
+            <Input type="date" value={day} max={todayKey()} onChange={(event) => setDay(event.target.value)} className="h-9 w-auto" aria-label={text.daily} />
+          ) : null}
+          {mode === "monthly" ? (
+            <Input type="month" value={month} max={todayKey().slice(0, 7)} onChange={(event) => setMonth(event.target.value)} className="h-9 w-auto" aria-label={text.monthly} />
+          ) : null}
         </div>
       </div>
 
@@ -174,6 +177,20 @@ export function ReportsManager() {
       </Card>
     </div>
   );
+}
+
+// Local-time YYYY-MM-DD so a day/month picked in the admin's timezone matches.
+function localDateKey(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function todayKey(): string {
+  return localDateKey(new Date().toISOString());
 }
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
