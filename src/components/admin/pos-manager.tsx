@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import {
   Armchair,
   ArrowRightLeft,
@@ -794,8 +795,6 @@ export function PosManager() {
                   order={selectedOrder}
                   totals={totals}
                   locale={locale}
-                  text={text}
-                  textDir={textDir}
                 />
               </>
             ) : null}
@@ -903,45 +902,124 @@ function ReceiptPreview({
   table,
   order,
   totals,
-  locale,
-  text,
-  textDir
+  locale
 }: {
   restaurantName: string;
   table: PosTable;
   order: PosTableOrder;
   totals: PosTotals;
   locale: "en" | "ar" | "ckb";
-  text: Record<string, string>;
-  textDir: "ltr" | "rtl";
 }) {
+  const receiptLocale: "en" | "ckb" = locale === "ckb" ? "ckb" : "en";
+  const receiptDir = receiptLocale === "ckb" ? "rtl" : "ltr";
+  const issuedAt = formatReceiptDateTime(new Date());
+  const receiptName = restaurantName.trim() || "Stone Cafe";
+
   return (
-    <div className="pos-print-area rounded-lg border bg-white p-4 text-black shadow-sm">
+    <div className="pos-print-area pos-receipt rounded-lg border bg-white p-5 font-mono text-black shadow-sm">
       <div className="text-center">
-        <h2 className="text-lg font-bold">{restaurantName}</h2>
-        <p dir={textDir} className="text-xs">{text.receipt} · {table.name}</p>
-        <p className="text-[11px]">{new Date().toLocaleString(locale === "ckb" ? "ar-IQ" : locale)}</p>
+        <Image src="/stone-cafe-logo.jpg" alt="Stone Cafe logo" width={64} height={64} className="pos-receipt-logo mx-auto h-16 w-16 rounded-full object-cover" />
+        <h2 className="mt-2 text-2xl font-black uppercase tracking-[0.14em]">STONE CAFE</h2>
+        <p className="text-[11px] uppercase tracking-[0.2em]">{receiptName}</p>
+        <p className="mt-2 text-base font-black uppercase">Dine In</p>
+        <p dir="rtl" className="text-sm font-bold">لە ناو کافێدا</p>
       </div>
-      <div className="my-3 border-t border-dashed border-black" />
-      <div className="space-y-2">
+
+      <ReceiptRule />
+
+      <div className="grid grid-cols-2 text-sm font-bold tabular-nums">
+        <span>{issuedAt.date}</span>
+        <span className="text-right">{issuedAt.time}</span>
+      </div>
+      <div className="mt-2 grid grid-cols-[1fr_auto] items-end gap-4 text-sm">
+        <ReceiptLabel en="Table" ckb="مێز" />
+        <span className="font-black">{table.name}</span>
+      </div>
+
+      <ReceiptRule />
+
+      <div className="grid grid-cols-[1fr_auto] gap-4 text-base font-black">
+        <ReceiptLabel en="Item" ckb="بڕگە" />
+        <ReceiptLabel en="Rate" ckb="نرخ" align="end" />
+      </div>
+
+      <div className="mt-2 space-y-2">
         {order.lines.map((line) => (
-          <div key={line.id} className="grid grid-cols-[1fr_auto] gap-2 text-xs">
+          <div key={line.id} className="grid grid-cols-[1fr_auto] gap-4 text-sm">
             <div className="min-w-0">
-              <p dir={textDir} className="font-bold">{localized(line.name, locale)}</p>
-              <p>{line.quantity} x {formatMoney(line.unitPrice, line.currency, locale)}</p>
+              <p dir={receiptDir} className="break-words font-bold leading-tight">{localized(line.name, receiptLocale, line.name.en)}</p>
+              <p className="text-[11px] tabular-nums">{line.quantity} x {formatMoney(line.unitPrice, line.currency, receiptLocale)}</p>
             </div>
-            <p className="font-bold">{formatMoney(line.quantity * line.unitPrice, line.currency, locale)}</p>
+            <p className="font-black tabular-nums">{formatMoney(line.quantity * line.unitPrice, line.currency, receiptLocale)}</p>
           </div>
         ))}
       </div>
-      <div className="my-3 border-t border-dashed border-black" />
-      <div className="space-y-1 text-xs">
-        <TotalRow label={text.subtotal} value={formatMoney(totals.subtotal, totals.currency, locale)} />
-        <TotalRow label={text.discount} value={`-${formatMoney(totals.discountAmount, totals.currency, locale)}`} />
-        <TotalRow label={text.total} value={formatMoney(totals.total, totals.currency, locale)} strong />
+
+      <ReceiptRule />
+
+      <div className="space-y-2 text-sm">
+        <ReceiptTotalRow en="Subtotal" ckb="کۆی لاوەکی" value={formatMoney(totals.subtotal, totals.currency, receiptLocale)} />
+        {totals.discountAmount > 0 ? (
+          <ReceiptTotalRow en="Discount" ckb="داشکاندن" value={`-${formatMoney(totals.discountAmount, totals.currency, receiptLocale)}`} />
+        ) : null}
+        <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-4 border-t-2 border-dashed border-black pt-3">
+          <ReceiptLabel en="Total" ckb="کۆی گشتی" className="text-base font-black" />
+          <span className="text-2xl font-black tabular-nums">{formatMoney(totals.total, totals.currency, receiptLocale)}</span>
+        </div>
+      </div>
+
+      <ReceiptRule />
+
+      <div className="text-center">
+        <p className="text-base font-black">Thank You and Visit Again</p>
+        <p dir="rtl" className="mt-1 text-base font-black">سوپاس، جارێکی تر سەردانمان بکەنەوە</p>
       </div>
     </div>
   );
+}
+
+function ReceiptRule() {
+  return <div className="my-3 border-t-2 border-dashed border-black" aria-hidden />;
+}
+
+function ReceiptLabel({
+  en,
+  ckb,
+  align = "start",
+  className
+}: {
+  en: string;
+  ckb: string;
+  align?: "start" | "end";
+  className?: string;
+}) {
+  return (
+    <span className={cn("leading-tight", align === "end" && "text-right", className)}>
+      <span className="block">{en}</span>
+      <span dir="rtl" className="block text-[0.78em] font-bold">{ckb}</span>
+    </span>
+  );
+}
+
+function ReceiptTotalRow({ en, ckb, value }: { en: string; ckb: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[1fr_auto] items-end gap-4">
+      <ReceiptLabel en={en} ckb={ckb} />
+      <span className="font-bold tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+function formatReceiptDateTime(date: Date) {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return {
+    date: `${day}-${month}-${year}`,
+    time: `${hours}:${minutes}`
+  };
 }
 
 type PosTotals = {

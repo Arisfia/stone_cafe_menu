@@ -620,7 +620,21 @@ body.overflow-lock {
     left: 0 !important;
     top: 0 !important;
     width: 72mm !important;
+    max-width: 72mm !important;
     border: 0 !important;
+    border-radius: 0 !important;
     box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  body.pos-printing .pos-receipt {
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+
+  body.pos-printing .pos-receipt-logo {
+    height: 18mm !important;
+    width: 18mm !important;
   }
 }
