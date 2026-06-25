@@ -199,29 +199,66 @@ export function ExpenseManager() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form className="grid gap-4 lg:grid-cols-4" onSubmit={handleCreate}>
+            <form className="space-y-5" onSubmit={handleCreate}>
               <Field label={text.expenseTitle}>
-                <Input value={title} onChange={(event) => setTitle(event.target.value)} />
+                <Input value={title} onChange={(event) => setTitle(event.target.value)} autoFocus />
               </Field>
-              <Field label={text.date}>
-                <Input type="date" value={date} max={todayKey()} onChange={(event) => setDate(event.target.value)} />
-              </Field>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label={`${text.amount} (${currency})`}>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    step={1}
+                    placeholder="0"
+                    className="text-lg font-semibold"
+                    value={amount}
+                    onChange={(event) => setAmount(event.target.value)}
+                    onFocus={(event) => event.target.select()}
+                  />
+                </Field>
+                <Field label={text.date}>
+                  <Input type="date" value={date} max={todayKey()} onChange={(event) => setDate(event.target.value)} />
+                </Field>
+              </div>
+
               <Field label={text.category}>
                 <Input list="expense-categories" value={category} onChange={(event) => setCategory(event.target.value)} />
                 <datalist id="expense-categories">
                   {categoryOptions.map((option) => <option key={option} value={option} />)}
                 </datalist>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {expenseCategoryKeys.map((key) => {
+                    const label = text[key];
+                    if (!label) return null;
+                    const active = category === label;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setCategory(active ? "" : label)}
+                        className={cn(
+                          "focus-ring rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                          active ? "border-primary bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </Field>
-              <Field label={text.amount}>
-                <Input type="number" min={0} step={1} value={amount} onChange={(event) => setAmount(event.target.value)} />
-              </Field>
+
               <Field label={text.byWho}>
                 <Input value={byWho} onChange={(event) => setByWho(event.target.value)} />
               </Field>
+
               <Field label={text.note}>
-                <Textarea value={note} onChange={(event) => setNote(event.target.value)} />
+                <Textarea rows={3} value={note} onChange={(event) => setNote(event.target.value)} />
               </Field>
-              <div className="flex items-end gap-2 lg:col-span-2">
+
+              <div className="flex flex-wrap items-center gap-2 border-t pt-4">
                 <Button type="submit" disabled={saving}>{saving ? text.saving : text.saveExpense}</Button>
                 <Button type="button" variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>{text.cancel}</Button>
               </div>
@@ -250,14 +287,38 @@ export function ExpenseManager() {
         {mode === "monthly" ? <Input type="month" value={month} max={todayKey().slice(0, 7)} onChange={(event) => setMonth(event.target.value)} className="h-9 w-auto" aria-label={text.monthly} /> : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={<TrendingDown className="h-5 w-5" aria-hidden />} label={text.totalExpenses} value={formatMoney(totals.expenses, currency, locale)} tone="destructive" />
-        <StatCard icon={<TrendingUp className="h-5 w-5" aria-hidden />} label={text.totalRevenue} value={formatMoney(totals.sales, currency, locale)} tone="primary" />
-        <StatCard icon={<Scale className="h-5 w-5" aria-hidden />} label={text.netAfterExpenses} value={formatMoney(totals.net, currency, locale)} tone={totals.net >= 0 ? "primary" : "destructive"} />
-        <StatCard icon={<ReceiptText className="h-5 w-5" aria-hidden />} label={text.expensesCount} value={String(totals.count)} />
-      </div>
+      {/* Headline: sales minus expenses = total sale after expense */}
+      <Card className="overflow-hidden">
+        <CardContent dir="ltr" className="flex flex-col items-stretch gap-3 p-5 sm:flex-row sm:items-center sm:gap-4">
+          <SummaryFigure
+            icon={<TrendingUp className="h-4 w-4" aria-hidden />}
+            label={text.totalSales}
+            value={formatMoney(totals.sales, currency, locale)}
+            tone="positive"
+            textDir={textDir}
+          />
+          <Operator>−</Operator>
+          <SummaryFigure
+            icon={<TrendingDown className="h-4 w-4" aria-hidden />}
+            label={text.totalExpenses}
+            value={formatMoney(totals.expenses, currency, locale)}
+            tone="negative"
+            textDir={textDir}
+          />
+          <Operator>=</Operator>
+          <SummaryFigure
+            icon={<Scale className="h-4 w-4" aria-hidden />}
+            label={text.saleAfterExpense}
+            value={formatMoney(totals.net, currency, locale)}
+            tone={totals.net >= 0 ? "positive" : "negative"}
+            emphasized
+            textDir={textDir}
+          />
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatCard icon={<ReceiptText className="h-5 w-5" aria-hidden />} label={text.expensesCount} value={String(totals.count)} />
         <StatCard icon={<Wallet className="h-5 w-5" aria-hidden />} label={text.avgExpense} value={formatMoney(totals.average, currency, locale)} />
         <StatCard icon={<Wallet className="h-5 w-5" aria-hidden />} label={text.largestExpense} value={formatMoney(totals.largest, currency, locale)} />
       </div>
@@ -359,6 +420,52 @@ function StatCard({
         </span>
       </CardContent>
     </Card>
+  );
+}
+
+function SummaryFigure({
+  icon,
+  label,
+  value,
+  tone,
+  emphasized = false,
+  textDir
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tone: "positive" | "negative";
+  emphasized?: boolean;
+  textDir: "ltr" | "rtl";
+}) {
+  const accent = tone === "negative" ? "text-destructive" : "text-primary";
+  return (
+    <div
+      className={cn(
+        "flex-1 rounded-xl border p-4",
+        emphasized
+          ? tone === "negative"
+            ? "border-destructive/40 bg-destructive/10"
+            : "border-primary/40 bg-primary/10"
+          : "bg-card"
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", tone === "negative" ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary")}>
+          {icon}
+        </span>
+        <span dir={textDir} className="text-xs font-medium text-muted-foreground">{label}</span>
+      </div>
+      <p className={cn("mt-2 font-bold tabular-nums", accent, emphasized ? "text-2xl sm:text-3xl" : "text-xl")}>{value}</p>
+    </div>
+  );
+}
+
+function Operator({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="shrink-0 select-none text-center text-xl font-bold text-muted-foreground sm:text-2xl" aria-hidden>
+      {children}
+    </span>
   );
 }
 
