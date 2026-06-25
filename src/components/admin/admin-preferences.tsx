@@ -440,6 +440,7 @@ export const adminText: Record<Locale, AdminText> = {
     uploading: "Uploading {progress}%",
     configureStorage: "Configure Supabase Storage to enable uploads.",
     imageUploadFailed: "Image upload failed.",
+    gifBucketNotAllowed: "Supabase Storage is blocking GIFs. Add image/gif to the bucket allowed MIME types, then upload again.",
     invalidImageType: "Use a JPG, PNG, WebP, or GIF image.",
     imageTooLarge: "Images must be 10 MB or smaller.",
     englishRequired: "English is required.",
@@ -763,6 +764,7 @@ export const adminText: Record<Locale, AdminText> = {
     uploading: "جار الرفع {progress}%",
     configureStorage: "قم بإعداد Supabase Storage لتفعيل الرفع.",
     imageUploadFailed: "فشل رفع الصورة.",
+    gifBucketNotAllowed: "Supabase Storage يمنع ملفات GIF. أضف image/gif إلى أنواع MIME المسموحة في الحاوية ثم ارفعها مرة أخرى.",
     invalidImageType: "استخدم صورة JPG أو PNG أو WebP أو GIF.",
     imageTooLarge: "يجب أن تكون الصور 10 MB أو أقل.",
     englishRequired: "الإنجليزية مطلوبة.",
@@ -1086,6 +1088,7 @@ export const adminText: Record<Locale, AdminText> = {
     uploading: "بارکردن {progress}%",
     configureStorage: "Supabase Storage ڕێکبخە بۆ چالاککردنی بارکردن.",
     imageUploadFailed: "بارکردنی وێنە سەرکەوتوو نەبوو.",
+    gifBucketNotAllowed: "Supabase Storage ڕێگە بە GIF نادات. image/gif زیاد بکە بۆ MIME type ـە ڕێگەپێدراوەکانی bucket و دووبارە باربکە.",
     invalidImageType: "وێنەی JPG، PNG، WebP یان GIF بەکاربهێنە.",
     imageTooLarge: "وێنەکان دەبێت ١٠ MB یان بچووکتر بن.",
     englishRequired: "ئینگلیزی پێویستە.",
@@ -1102,6 +1105,7 @@ export function formatAdminText(template: string, values: Record<string, string 
 
 export function adminErrorText(message: string | undefined, text: AdminText) {
   if (!message) return undefined;
+  if (message.includes("mime type image/gif is not supported")) return text.gifBucketNotAllowed;
   if (message.includes("English is required")) return text.englishRequired;
   if (message.includes("Arabic is required")) return text.arabicRequired;
   if (message.includes("Kurdish is required")) return text.kurdishRequired;
