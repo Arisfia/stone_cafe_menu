@@ -37,6 +37,9 @@ const emptyPosState: PosState = {
   completedOrders: []
 };
 
+const SERVICE_FEE_RATE = 0.1;
+const SERVICE_FEE_PERCENT = 10;
+
 export function PosManager() {
   const { locale, text, dir: textDir } = useAdminLocale();
   const auth = useAdminAuth();
@@ -319,6 +322,8 @@ export function PosManager() {
       discountValue: selectedOrder.discountValue,
       subtotal: totals.subtotal,
       discountAmount: totals.discountAmount,
+      serviceFeeRate: SERVICE_FEE_RATE,
+      serviceFeeAmount: totals.serviceFeeAmount,
       total: totals.total,
       currency: totals.currency,
       completedAt: new Date().toISOString()
@@ -518,7 +523,11 @@ export function PosManager() {
                               >
                                 <div className="flex items-start justify-between gap-2">
                                   <span dir={textDir} className="min-w-0 truncate text-base font-semibold">{table.name}</span>
-                                  <Coffee className={cn("h-4 w-4 shrink-0", selected ? "text-primary-foreground/90" : occupied ? "text-secondary" : "text-muted-foreground/30")} aria-hidden />
+                                  {occupied ? (
+                                    <SteamingCupIcon className={cn("h-5 w-5 shrink-0", selected ? "text-primary-foreground" : "text-secondary")} />
+                                  ) : (
+                                    <Coffee className="h-4 w-4 shrink-0 text-muted-foreground/30" aria-hidden />
+                                  )}
                                 </div>
                                 <div className="mt-2 flex items-center justify-between gap-2">
                                   {occupied ? (
@@ -776,6 +785,7 @@ export function PosManager() {
                   </div>
                   <TotalRow label={text.subtotal} value={formatMoney(totals.subtotal, totals.currency, locale)} />
                   <TotalRow label={text.discount} value={`-${formatMoney(totals.discountAmount, totals.currency, locale)}`} />
+                  <TotalRow label={serviceFeeLabel(locale)} value={formatMoney(totals.serviceFeeAmount, totals.currency, locale)} />
                   <TotalRow label={text.total} value={formatMoney(totals.total, totals.currency, locale)} strong />
                 </div>
 
@@ -833,6 +843,23 @@ function mergeOrderLines(baseLines: PosOrderLine[], addedLines: PosOrderLine[]):
     }
   }
   return lines;
+}
+
+// Coffee cup with big billowing vapor — used only on occupied tables. Color
+// comes from `currentColor` (set by the parent's text-* class).
+function SteamingCupIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden focusable="false">
+      <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" fill="none">
+        <path className="pos-steam" style={{ animationDelay: "0s" }} d="M7.5 11.5c-2.1-2.3 2.1-3.9 0-6.6" />
+        <path className="pos-steam" style={{ animationDelay: "0.5s" }} d="M12 11.5c-2.1-2.3 2.1-3.9 0-6.6" />
+        <path className="pos-steam" style={{ animationDelay: "1s" }} d="M16.5 11.5c-2.1-2.3 2.1-3.9 0-6.6" />
+      </g>
+      <path d="M4.5 12.5h11v3a4.5 4.5 0 0 1-4.5 4.5H9a4.5 4.5 0 0 1-4.5-4.5z" fill="currentColor" opacity="0.18" />
+      <path d="M4.5 12.5h11v3a4.5 4.5 0 0 1-4.5 4.5H9a4.5 4.5 0 0 1-4.5-4.5z" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M15.5 13.5h1.8a2.5 2.5 0 0 1 0 5h-1.8" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
 }
 
 function TableAreaHeading({
@@ -918,7 +945,7 @@ function ReceiptPreview({
   return (
     <div className="pos-print-area pos-receipt rounded-lg border bg-white p-5 font-mono text-black shadow-sm">
       <div className="text-center">
-        <Image src="/stone-cafe-logo.jpg" alt="Stone Cafe logo" width={64} height={64} className="pos-receipt-logo mx-auto h-16 w-16 rounded-full object-cover" />
+        <Image src="/stone-cafe-receipt-logo.png" alt="Stone Cafe logo" width={260} height={115} className="pos-receipt-logo mx-auto h-auto w-44 object-contain" />
         <h2 className="mt-2 text-2xl font-black uppercase tracking-[0.14em]">STONE CAFE</h2>
         <p className="text-[11px] uppercase tracking-[0.2em]">{receiptName}</p>
         <p className="mt-2 text-base font-black uppercase">Dine In</p>
@@ -962,6 +989,7 @@ function ReceiptPreview({
         {totals.discountAmount > 0 ? (
           <ReceiptTotalRow en="Discount" ckb="داشکاندن" value={`-${formatMoney(totals.discountAmount, totals.currency, receiptLocale)}`} />
         ) : null}
+        <ReceiptTotalRow en={`Service fee ${SERVICE_FEE_PERCENT}%`} ckb={`خزمەتگوزاری ${SERVICE_FEE_PERCENT}%`} value={formatMoney(totals.serviceFeeAmount, totals.currency, receiptLocale)} />
         <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-4 border-t-2 border-dashed border-black pt-3">
           <ReceiptLabel en="Total" ckb="کۆی گشتی" className="text-base font-black" />
           <span className="text-2xl font-black tabular-nums">{formatMoney(totals.total, totals.currency, receiptLocale)}</span>
@@ -1025,6 +1053,7 @@ function formatReceiptDateTime(date: Date) {
 type PosTotals = {
   subtotal: number;
   discountAmount: number;
+  serviceFeeAmount: number;
   total: number;
   currency: Currency;
 };
@@ -1045,12 +1074,19 @@ function calculateTotals(order: PosTableOrder, fallbackCurrency: Currency): PosT
     ? Math.round(subtotal * Math.min(order.discountValue, 100) / 100)
     : order.discountValue;
   const discountAmount = Math.min(subtotal, Math.max(0, rawDiscount));
+  const serviceBase = subtotal - discountAmount;
+  const serviceFeeAmount = Math.round(serviceBase * SERVICE_FEE_RATE);
   return {
     subtotal,
     discountAmount,
-    total: subtotal - discountAmount,
+    serviceFeeAmount,
+    total: serviceBase + serviceFeeAmount,
     currency
   };
+}
+
+function serviceFeeLabel(locale: "en" | "ar" | "ckb") {
+  return locale === "ckb" ? `خزمەتگوزاری ${SERVICE_FEE_PERCENT}%` : `Service fee ${SERVICE_FEE_PERCENT}%`;
 }
 
 function normalizeTableOrder(state: PosState): PosState {

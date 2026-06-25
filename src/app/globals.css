@@ -489,6 +489,19 @@ body.overflow-lock {
 }
 .pos-tile-pop { animation: pos-tile-pop 0.32s ease-out; }
 
+.pos-receipt-logo {
+  filter: grayscale(1) invert(1) contrast(2);
+}
+
+/* POS: big billowing vapor rising off an occupied table's coffee cup */
+@keyframes pos-steam {
+  0% { transform: translateY(3px) scale(0.6); opacity: 0; }
+  25% { opacity: 0.95; }
+  65% { opacity: 0.55; }
+  100% { transform: translateY(-6px) scale(1.4); opacity: 0; }
+}
+.pos-steam { transform-origin: center bottom; animation: pos-steam 2.4s ease-in-out infinite; }
+
 /* Menu header contact chips */
 /* Available: draw the ring, then draw the tick inside it */
 @keyframes avl-ring {
@@ -553,6 +566,7 @@ body.overflow-lock {
   .settings-panel,
   .pos-tile-glow,
   .pos-tile-pop,
+  .pos-steam,
   .cat-bob,
   .cat-spin,
   .cat-pulse,
@@ -634,7 +648,7 @@ body.overflow-lock {
   }
 
   body.pos-printing .pos-receipt-logo {
-    height: 18mm !important;
-    width: 18mm !important;
+    height: auto !important;
+    width: 42mm !important;
   }
 }

@@ -136,6 +136,8 @@ export type PosCompletedOrder = {
   discountValue: number;
   subtotal: number;
   discountAmount: number;
+  serviceFeeRate?: number;
+  serviceFeeAmount?: number;
   total: number;
   currency: Currency;
   completedAt: string;

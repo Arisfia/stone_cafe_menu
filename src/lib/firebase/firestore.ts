@@ -405,6 +405,8 @@ function normalizePosState(value: unknown): PosState {
         discountValue: Number.isFinite(order.discountValue) ? Math.max(0, order.discountValue) : 0,
         subtotal: Number.isFinite(order.subtotal) ? Math.max(0, order.subtotal) : 0,
         discountAmount: Number.isFinite(order.discountAmount) ? Math.max(0, order.discountAmount) : 0,
+        serviceFeeRate: typeof order.serviceFeeRate === "number" && Number.isFinite(order.serviceFeeRate) ? Math.max(0, order.serviceFeeRate) : 0,
+        serviceFeeAmount: typeof order.serviceFeeAmount === "number" && Number.isFinite(order.serviceFeeAmount) ? Math.max(0, order.serviceFeeAmount) : 0,
         total: Number.isFinite(order.total) ? Math.max(0, order.total) : 0,
         currency: order.currency || "IQD",
         completedAt: typeof order.completedAt === "string" ? order.completedAt : new Date().toISOString()
