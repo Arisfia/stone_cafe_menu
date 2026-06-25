@@ -1,15 +1,14 @@
-import { type CSSProperties, type ReactNode } from "react";
+"use client";
+
+import { useId, type CSSProperties, type ReactNode } from "react";
 import {
-  Cake,
   CakeSlice,
   Coffee,
-  Cookie,
   Croissant,
   CupSoda,
   Donut,
   Flame,
   GlassWater,
-  IceCreamCone,
   LayoutGrid,
   Martini,
   Milk,
@@ -53,9 +52,9 @@ export const CATEGORY_ICONS: CategoryIconDef[] = [
   { key: "mocktail", label: "Mocktail", Icon: Martini, anim: "cat-sway" },
   { key: "pastry", label: "Pastry", Icon: Croissant, anim: "cat-bob" },
   { key: "donut", label: "Donut", Icon: Donut, anim: "cat-roll" },
-  { key: "cookie", label: "Cookie", Icon: Cookie, anim: "cat-spin" },
-  { key: "cake", label: "Cake", Icon: Cake, anim: "cat-pulse" },
-  { key: "ice-cream", label: "Ice cream", Icon: IceCreamCone, anim: "cat-drip" },
+  { key: "cookie", label: "Cookie", Custom: CookieBiteIcon },
+  { key: "cake", label: "Cake", Custom: CakeCandleIcon },
+  { key: "ice-cream", label: "Ice cream", Custom: IceCreamDripIcon },
   { key: "desserts", label: "Desserts", Icon: CakeSlice, anim: "cat-bob" },
   { key: "sandwiches", label: "Sandwiches", Icon: Sandwich, anim: "cat-bob" },
   { key: "main-meals", label: "Main meals", Icon: UtensilsCrossed, anim: "cat-wiggle" },
@@ -196,6 +195,61 @@ function CoffeeDustIcon({ className }: { className?: string }) {
           />
         ))}
       </g>
+    </svg>
+  );
+}
+
+// Cookie that keeps getting bitten: a bite chunk chomps in and out of the edge
+// (a masked circle removes part of the cookie).
+function CookieBiteIcon({ className }: { className?: string }) {
+  const maskId = useId();
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden focusable="false">
+      <mask id={maskId}>
+        <rect x="0" y="0" width="24" height="24" fill="white" />
+        <circle className="cat-bite" cx="18.4" cy="6.2" r="4.6" fill="black" />
+      </mask>
+      <g mask={`url(#${maskId})`}>
+        <circle cx="12" cy="12.5" r="8.4" fill="currentColor" opacity="0.18" />
+        <circle cx="12" cy="12.5" r="8.4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      </g>
+      <g fill="currentColor">
+        <circle cx="9.5" cy="10.5" r="1" />
+        <circle cx="13" cy="14" r="1" />
+        <circle cx="9" cy="15" r="0.9" />
+      </g>
+    </svg>
+  );
+}
+
+// Ice cream cone that melts: the scoop softly squashes while drops drip down.
+function IceCreamDripIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden focusable="false">
+      <g className="cat-drip">
+        <circle cx="12" cy="8" r="4.8" fill="currentColor" opacity="0.18" />
+        <circle cx="12" cy="8" r="4.8" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M7.4 11 12 20.6 16.6 11" fill="currentColor" opacity="0.12" />
+        <path d="M7.4 11 12 20.6 16.6 11" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+      </g>
+      <g fill="currentColor">
+        <circle className="cat-drop" cx="9" cy="12" r="1" opacity="0" style={{ animationDelay: "0s" }} />
+        <circle className="cat-drop" cx="15" cy="12.4" r="0.9" opacity="0" style={{ animationDelay: "1.1s" }} />
+      </g>
+    </svg>
+  );
+}
+
+// Birthday cake whose candle gets blown out: the flame flickers, snuffs to
+// nothing, and a wisp of smoke rises before it relights.
+function CakeCandleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden focusable="false">
+      <path className="cat-candle-smoke" d="M12 7.4c-1.1-1.2 1.1-2 0-3.4" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0" />
+      <path className="cat-candle-flame" d="M12 5.2c1.5 1.2 1.5 3.4 0 4.1c-1.5-0.7-1.5-2.9 0-4.1z" fill="currentColor" />
+      <line x1="12" y1="9.4" x2="12" y2="12.8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M4.8 12.8h14.4v4.2a2.5 2.5 0 0 1-2.5 2.5H7.3a2.5 2.5 0 0 1-2.5-2.5z" fill="currentColor" opacity="0.18" />
+      <path d="M4.8 12.8h14.4v4.2a2.5 2.5 0 0 1-2.5 2.5H7.3a2.5 2.5 0 0 1-2.5-2.5z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
     </svg>
   );
 }

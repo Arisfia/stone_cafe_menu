@@ -25,10 +25,6 @@ import type { AppData, Category, Locale } from "@/types/models";
 
 type CategoryFormData = z.infer<typeof categorySchema>;
 
-// "Special" in each language, so a new category's default name is filled in all
-// three locales (the name is required in every language).
-const SPECIAL_BASE: Record<Locale, string> = { en: "Special", ar: "خاص", ckb: "تایبەت" };
-
 const emptyCategory: CategoryFormData = {
   id: "",
   name: { en: "", ar: "", ckb: "" },
@@ -144,16 +140,8 @@ export function CategoryManager() {
   }
 
   function newCategory() {
-    const existing = data?.categories || [];
-    const nextOrder = nextDisplayOrder(existing);
-    const n = nextSpecialNumber(existing);
-    form.reset({
-      ...emptyCategory,
-      name: { en: `${SPECIAL_BASE.en} ${n}`, ar: `${SPECIAL_BASE.ar} ${n}`, ckb: `${SPECIAL_BASE.ckb} ${n}` },
-      slug: `special-${n}`,
-      icon: DEFAULT_CATEGORY_ICON,
-      displayOrder: nextOrder
-    });
+    const nextOrder = nextDisplayOrder(data?.categories || []);
+    form.reset({ ...emptyCategory, icon: DEFAULT_CATEGORY_ICON, displayOrder: nextOrder });
     setMessage("");
     setError("");
     setEditingCategoryId(null);
@@ -621,19 +609,6 @@ function missingLocalizedFields(value: Record<Locale, string> | Partial<Record<L
 
 function nextDisplayOrder(entries: { displayOrder: number }[]) {
   return entries.length ? Math.max(...entries.map((entry) => entry.displayOrder)) + 1 : 1;
-}
-
-// Next free "Special N" number, based on existing English names and slugs, so
-// new categories auto-name Special 1, Special 2, ... without colliding.
-function nextSpecialNumber(categories: Category[]) {
-  let max = 0;
-  for (const category of categories) {
-    const byName = /^special\s+(\d+)$/i.exec((category.name?.en || "").trim());
-    const bySlug = /^special-(\d+)$/i.exec(category.slug || "");
-    if (byName) max = Math.max(max, Number(byName[1]));
-    if (bySlug) max = Math.max(max, Number(bySlug[1]));
-  }
-  return max + 1;
 }
 
 function replaceCategory(data: AppData | null, category: Category): AppData | null {

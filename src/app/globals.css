@@ -400,12 +400,12 @@ body.overflow-lock {
 }
 .cat-warm { transform-origin: center bottom; animation: cat-warm 2.2s ease-in-out infinite; }
 
-/* Donut / round things: rolls back and forth */
+/* Donut: spins in a full continuous circle */
 @keyframes cat-roll {
-  0%, 100% { transform: rotate(-14deg); }
-  50% { transform: rotate(14deg); }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
-.cat-roll { transform-origin: center; animation: cat-roll 2s ease-in-out infinite; }
+.cat-roll { transform-origin: center; animation: cat-roll 2.6s linear infinite; }
 
 /* Ice cream: slow downward drip with a soft squash */
 @keyframes cat-drip {
@@ -436,6 +436,42 @@ body.overflow-lock {
   50% { transform: scaleY(1.02) rotate(3deg); }
 }
 .cat-grow { transform-origin: center bottom; animation: cat-grow 2.8s ease-in-out infinite; }
+
+/* Cookie: a bite chunk chomps in, holds, then heals and repeats */
+@keyframes cat-bite {
+  0% { transform: scale(0); }
+  22% { transform: scale(1); }
+  82% { transform: scale(1); }
+  100% { transform: scale(0); }
+}
+.cat-bite { transform-box: fill-box; transform-origin: center; animation: cat-bite 1.8s ease-in-out infinite; }
+
+/* Ice cream: a drop forms then falls away under gravity */
+@keyframes cat-drop {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(7px); opacity: 0; }
+}
+.cat-drop { transform-box: fill-box; animation: cat-drop 2.2s ease-in infinite; }
+
+/* Cake candle: flame flickers, gets snuffed out, then relights */
+@keyframes cat-candle-flame {
+  0%, 38% { opacity: 1; transform: scaleY(1) skewX(0deg); }
+  44% { opacity: 1; transform: scaleY(1.25) skewX(14deg); }
+  52% { opacity: 0; transform: scaleY(0.15) skewX(26deg); }
+  92% { opacity: 0; transform: scaleY(0.15); }
+  100% { opacity: 1; transform: scaleY(1); }
+}
+.cat-candle-flame { transform-box: fill-box; transform-origin: center bottom; animation: cat-candle-flame 3s ease-in-out infinite; }
+
+/* Cake candle: smoke rises right after the flame is blown out */
+@keyframes cat-candle-smoke {
+  0%, 48% { opacity: 0; transform: translateY(0) scale(0.6); }
+  58% { opacity: 0.75; }
+  88% { opacity: 0; transform: translateY(-7px) scale(1.05); }
+  100% { opacity: 0; }
+}
+.cat-candle-smoke { transform-box: fill-box; transform-origin: center bottom; animation: cat-candle-smoke 3s ease-in-out infinite; }
 
 /* Menu header contact chips */
 /* Available: draw the ring, then draw the tick inside it */
@@ -523,6 +559,10 @@ body.overflow-lock {
   .cat-pour,
   .cat-flicker,
   .cat-grow,
+  .cat-bite,
+  .cat-drop,
+  .cat-candle-flame,
+  .cat-candle-smoke,
   .avl-ring,
   .avl-check,
   .sig-wave,
