@@ -3,7 +3,8 @@
 import QRCode from "qrcode";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Copy, Download, ExternalLink, Printer, QrCode, RotateCcw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Copy, Download, ExternalLink, Palette, Printer, QrCode, RotateCcw, Save, type LucideIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
@@ -12,16 +13,18 @@ import { Switch } from "@/components/ui/switch";
 import { useAdminLocale } from "@/components/admin/admin-preferences";
 import { getAdminAppData, saveSettings } from "@/lib/firebase/firestore";
 import { hasSafeQrContrast } from "@/lib/utils/qr";
+import { cn } from "@/lib/utils/cn";
 import { defaultQrSettings } from "@/data/default-data";
 import type { QrSettings } from "@/types/models";
 
 export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
-  const { text } = useAdminLocale();
+  const { text, dir: textDir } = useAdminLocale();
   const [settings, setSettings] = useState<QrSettings>(defaultQrSettings);
   const [dataUrl, setDataUrl] = useState("");
   const [svg, setSvg] = useState("");
-  const [designOpen, setDesignOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const menuUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/menu`;
 
   useEffect(() => {
@@ -31,27 +34,59 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
   }, [menuUrl]);
 
   useEffect(() => {
-    QRCode.toDataURL(settings.menuUrl, {
-      errorCorrectionLevel: settings.includeLogo ? "H" : "Q",
-      margin: 4,
-      width: 640,
-      color: { dark: settings.foregroundColor, light: settings.backgroundColor }
-    }).then(setDataUrl);
-    QRCode.toString(settings.menuUrl, {
-      type: "svg",
-      errorCorrectionLevel: settings.includeLogo ? "H" : "Q",
-      margin: 4,
-      color: { dark: settings.foregroundColor, light: settings.backgroundColor }
-    }).then(setSvg);
-  }, [settings]);
+    let active = true;
+    Promise.all([
+      QRCode.toDataURL(settings.menuUrl, {
+        errorCorrectionLevel: settings.includeLogo ? "H" : "Q",
+        margin: 4,
+        width: 640,
+        color: { dark: settings.foregroundColor, light: settings.backgroundColor }
+      }),
+      QRCode.toString(settings.menuUrl, {
+        type: "svg",
+        errorCorrectionLevel: settings.includeLogo ? "H" : "Q",
+        margin: 4,
+        color: { dark: settings.foregroundColor, light: settings.backgroundColor }
+      })
+    ])
+      .then(([nextDataUrl, nextSvg]) => {
+        if (!active) return;
+        setDataUrl(nextDataUrl);
+        setSvg(nextSvg);
+      })
+      .catch(() => {
+        if (!active) return;
+        setDataUrl("");
+        setSvg("");
+        setError(text.qrGenerationFailed);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [settings, text.qrGenerationFailed]);
 
   async function saveQr() {
-    await saveSettings("qr", settings as unknown as Record<string, unknown>);
-    setMessage(text.qrSettingsSaved);
+    setMessage("");
+    setError("");
+    if (!validMenuUrl) {
+      setError(text.invalidUrl);
+      return;
+    }
+    setSaving(true);
+    try {
+      await saveSettings("qr", settings as unknown as Record<string, unknown>);
+      setMessage(text.qrSettingsSaved);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : text.settingsSaveFailed);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function copyQr() {
     setMessage("");
+    setError("");
     try {
       if ("ClipboardItem" in window && dataUrl) {
         const blob = await (await fetch(dataUrl)).blob();
@@ -62,30 +97,44 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
       await navigator.clipboard.writeText(settings.menuUrl);
       setMessage(text.qrImageUnsupported);
     } catch {
-      await navigator.clipboard.writeText(settings.menuUrl);
-      setMessage(text.qrImageCopyFailed);
+      try {
+        await navigator.clipboard.writeText(settings.menuUrl);
+        setMessage(text.qrImageCopyFailed);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : text.settingsSaveFailed);
+      }
     }
   }
 
-  function copyUrl() {
-    navigator.clipboard.writeText(settings.menuUrl);
-    setMessage(text.menuUrlCopied);
+  async function copyUrl() {
+    setMessage("");
+    setError("");
+    try {
+      await navigator.clipboard.writeText(settings.menuUrl);
+      setMessage(text.menuUrlCopied);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : text.settingsSaveFailed);
+    }
   }
 
   function downloadPng() {
-    download(dataUrl, "ary-menu-qr.png");
+    download(dataUrl, "stone-cafe-menu-qr.png");
   }
 
   function downloadSvg() {
     const blob = new Blob([svg], { type: "image/svg+xml" });
-    download(URL.createObjectURL(blob), "ary-menu-qr.svg");
+    download(URL.createObjectURL(blob), "stone-cafe-menu-qr.svg");
   }
 
   function reset() {
     setSettings({ ...defaultQrSettings, menuUrl });
+    setMessage("");
+    setError("");
   }
 
   const safeContrast = hasSafeQrContrast(settings.foregroundColor, settings.backgroundColor);
+  const validMenuUrl = isValidUrl(settings.menuUrl);
+  const readyToScan = validMenuUrl && safeContrast && Boolean(dataUrl);
 
   if (printMode) {
     return (
@@ -102,80 +151,148 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">{text.mainMenuQrCode}</h1>
-        <p className="text-muted-foreground">{text.qrDescription}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold">{text.mainMenuQrCode}</h1>
+          <p dir={textDir} className="text-muted-foreground">{text.qrDescription}</p>
+        </div>
+        <Badge className={readyToScan ? "border-primary/30 bg-primary/10 text-primary" : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"}>
+          {readyToScan ? text.readyToScan : text.needsAttention}
+        </Badge>
       </div>
 
-      <Button
-        type="button"
-        variant={designOpen ? "default" : "outline"}
-        aria-expanded={designOpen}
-        onClick={() => setDesignOpen((value) => !value)}
-        className="h-auto min-h-16 justify-start rounded-lg p-4 text-start transition-all duration-200"
-      >
-        <QrCode className="h-5 w-5 shrink-0" aria-hidden />
-        <span>{text.qrDesign}</span>
-      </Button>
+      {message ? <p className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm text-primary">{message}</p> : null}
+      {error ? <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</p> : null}
 
-      {designOpen ? (
+      <div className="grid gap-4 lg:grid-cols-3">
+        <QrHealthCard icon={validMenuUrl ? CheckCircle2 : AlertTriangle} label={text.menuUrl} value={validMenuUrl ? text.ready : text.invalidUrl} good={validMenuUrl} />
+        <QrHealthCard icon={safeContrast ? CheckCircle2 : AlertTriangle} label={text.scanContrast} value={safeContrast ? text.goodContrast : text.needsAttention} good={safeContrast} />
+        <QrHealthCard icon={settings.includeLogo ? CheckCircle2 : QrCode} label={text.logoProtection} value={settings.includeLogo ? text.enabled : text.disabled} good />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card className="settings-panel">
-          <CardHeader><CardTitle>{text.qrDesign}</CardTitle></CardHeader>
-          <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="space-y-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Palette className="h-5 w-5 text-primary" aria-hidden />
+              {text.qrDesign}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <section className="space-y-3 rounded-lg border bg-muted/15 p-4">
+              <h3 className="text-sm font-semibold">{text.destination}</h3>
               <Field label={text.menuUrl}>
-                <Input value={settings.menuUrl} onChange={(e) => setSettings({ ...settings, menuUrl: e.target.value })} />
+                <Input value={settings.menuUrl} onChange={(e) => setSettings({ ...settings, menuUrl: e.target.value.trim() })} />
               </Field>
+            </section>
+
+            <section className="space-y-3 rounded-lg border bg-muted/15 p-4">
+              <h3 className="text-sm font-semibold">{text.colors}</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label={text.foregroundColor}><Input type="color" value={settings.foregroundColor} onChange={(e) => setSettings({ ...settings, foregroundColor: e.target.value })} /></Field>
                 <Field label={text.backgroundColor}><Input type="color" value={settings.backgroundColor} onChange={(e) => setSettings({ ...settings, backgroundColor: e.target.value })} /></Field>
               </div>
-              {!safeContrast ? <p className="rounded-md border border-destructive p-3 text-sm text-destructive">{text.poorQrContrast}</p> : null}
-              <div className="flex items-center justify-between rounded-md border p-3">
+              {!safeContrast ? <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{text.poorQrContrast}</p> : null}
+              <div className="flex items-center justify-between rounded-md border bg-background p-3">
                 <span className="text-sm font-medium">{text.includeLogo}</span>
                 <Switch label={text.includeLogo} checked={settings.includeLogo} onCheckedChange={(checked) => setSettings({ ...settings, includeLogo: checked })} />
               </div>
+            </section>
+
+            <section className="space-y-3 rounded-lg border bg-muted/15 p-4">
+              <h3 className="text-sm font-semibold">{text.printTitles}</h3>
               <div className="grid gap-4">
                 <Field label={text.titleEnglish}><Input value={settings.title.en} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, en: e.target.value } })} /></Field>
                 <Field label={text.titleArabic}><Input dir="rtl" value={settings.title.ar} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, ar: e.target.value } })} /></Field>
                 <Field label={text.titleKurdish}><Input dir="rtl" value={settings.title.ckb} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, ckb: e.target.value } })} /></Field>
               </div>
-              {message ? <p className="text-sm text-primary">{message}</p> : null}
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={saveQr}>{text.save}</Button>
-                <Button variant="outline" onClick={reset}><RotateCcw className="h-4 w-4" aria-hidden /> {text.reset}</Button>
-              </div>
-            </div>
+            </section>
 
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={saveQr} disabled={saving || !readyToScan}>
+                <Save className="h-4 w-4" aria-hidden />
+                {saving ? text.saving : text.save}
+              </Button>
+              <Button variant="outline" onClick={reset}><RotateCcw className="h-4 w-4" aria-hidden /> {text.reset}</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="settings-panel">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <QrCode className="h-5 w-5 text-primary" aria-hidden />
+              {text.preview}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="rounded-lg border bg-muted/25 p-4">
               <div className="flex flex-col items-center gap-4 text-center">
-                <h2 className="text-xl font-semibold">{settings.title.en}</h2>
+                <div>
+                  <h2 className="text-xl font-semibold">{settings.title.en}</h2>
+                  <p dir="rtl" className="text-sm text-muted-foreground">{settings.title.ar}</p>
+                  <p dir="rtl" className="text-sm text-muted-foreground">{settings.title.ckb}</p>
+                </div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 {dataUrl ? <img src={dataUrl} alt={text.menuQrCode} className="h-72 w-72 rounded-md border bg-white p-3" /> : null}
                 <p className="break-all text-sm text-muted-foreground">{settings.menuUrl}</p>
               </div>
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 <Button onClick={copyUrl}><Copy className="h-4 w-4" aria-hidden /> {text.copyUrl}</Button>
-                <Button variant="secondary" onClick={copyQr}><Copy className="h-4 w-4" aria-hidden /> {text.copyQr}</Button>
-                <Button variant="outline" onClick={downloadPng}><Download className="h-4 w-4" aria-hidden /> PNG</Button>
-                <Button variant="outline" onClick={downloadSvg}><Download className="h-4 w-4" aria-hidden /> SVG</Button>
+                <Button variant="secondary" onClick={copyQr} disabled={!dataUrl}><Copy className="h-4 w-4" aria-hidden /> {text.copyQr}</Button>
+                <Button variant="outline" onClick={downloadPng} disabled={!dataUrl}><Download className="h-4 w-4" aria-hidden /> PNG</Button>
+                <Button variant="outline" onClick={downloadSvg} disabled={!svg}><Download className="h-4 w-4" aria-hidden /> SVG</Button>
                 <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" aria-hidden /> {text.print}</Button>
                 <Button asChild variant="outline">
                   <Link href="/admin/qr-code/print" target="_blank"><Printer className="h-4 w-4" aria-hidden /> {text.printPage}</Link>
                 </Button>
-                <Button asChild variant="outline">
-                  <Link href={settings.menuUrl} target="_blank"><ExternalLink className="h-4 w-4" aria-hidden /> {text.testLink}</Link>
-                </Button>
+                {validMenuUrl ? (
+                  <Button asChild variant="outline" className="sm:col-span-2">
+                    <Link href={settings.menuUrl} target="_blank"><ExternalLink className="h-4 w-4" aria-hidden /> {text.testLink}</Link>
+                  </Button>
+                ) : null}
               </div>
             </div>
           </CardContent>
         </Card>
-      ) : null}
+      </div>
     </div>
   );
 }
 
+function QrHealthCard({
+  icon: Icon,
+  label,
+  value,
+  good
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  good: boolean;
+}) {
+  return (
+    <div className={cn("rounded-lg border bg-card p-4", good ? "border-primary/30 bg-primary/5" : "border-amber-500/30 bg-amber-500/5")}>
+      <div className="flex items-center gap-2">
+        <Icon className={cn("h-4 w-4", good ? "text-primary" : "text-amber-600 dark:text-amber-300")} aria-hidden />
+        <p className="text-sm font-medium">{label}</p>
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">{value}</p>
+    </div>
+  );
+}
+
+function isValidUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function download(href: string, filename: string) {
+  if (!href) return;
   const anchor = document.createElement("a");
   anchor.href = href;
   anchor.download = filename;

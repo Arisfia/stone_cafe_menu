@@ -409,8 +409,8 @@ export const adminText: Record<Locale, AdminText> = {
     uploading: "Uploading {progress}%",
     configureStorage: "Configure Supabase Storage to enable uploads.",
     imageUploadFailed: "Image upload failed.",
-    invalidImageType: "Use a JPG, PNG, or WebP image.",
-    imageTooLarge: "Images must be 5 MB or smaller.",
+    invalidImageType: "Use a JPG, PNG, WebP, or GIF image.",
+    imageTooLarge: "Images must be 10 MB or smaller.",
     englishRequired: "English is required.",
     arabicRequired: "Arabic is required.",
     kurdishRequired: "Kurdish is required.",
@@ -710,8 +710,8 @@ export const adminText: Record<Locale, AdminText> = {
     uploading: "جار الرفع {progress}%",
     configureStorage: "قم بإعداد Supabase Storage لتفعيل الرفع.",
     imageUploadFailed: "فشل رفع الصورة.",
-    invalidImageType: "استخدم صورة JPG أو PNG أو WebP.",
-    imageTooLarge: "يجب أن تكون الصور 5 MB أو أقل.",
+    invalidImageType: "استخدم صورة JPG أو PNG أو WebP أو GIF.",
+    imageTooLarge: "يجب أن تكون الصور 10 MB أو أقل.",
     englishRequired: "الإنجليزية مطلوبة.",
     arabicRequired: "العربية مطلوبة.",
     kurdishRequired: "الكردية مطلوبة.",
@@ -1011,8 +1011,8 @@ export const adminText: Record<Locale, AdminText> = {
     uploading: "بارکردن {progress}%",
     configureStorage: "Supabase Storage ڕێکبخە بۆ چالاککردنی بارکردن.",
     imageUploadFailed: "بارکردنی وێنە سەرکەوتوو نەبوو.",
-    invalidImageType: "وێنەی JPG، PNG یان WebP بەکاربهێنە.",
-    imageTooLarge: "وێنەکان دەبێت ٥ MB یان بچووکتر بن.",
+    invalidImageType: "وێنەی JPG، PNG، WebP یان GIF بەکاربهێنە.",
+    imageTooLarge: "وێنەکان دەبێت ١٠ MB یان بچووکتر بن.",
     englishRequired: "ئینگلیزی پێویستە.",
     arabicRequired: "عەرەبی پێویستە.",
     kurdishRequired: "کوردی پێویستە.",
@@ -1033,7 +1033,7 @@ export function adminErrorText(message: string | undefined, text: AdminText) {
   if (message.includes("Slug is required")) return text.slugRequired;
   if (message.includes("Category is required")) return text.categoryRequired;
   if (message.includes("Use a JPG")) return text.invalidImageType;
-  if (message.includes("5 MB")) return text.imageTooLarge;
+  if (message.includes("10 MB")) return text.imageTooLarge;
   if (message.includes("Storage is not configured")) return text.configureStorage;
   return message;
 }

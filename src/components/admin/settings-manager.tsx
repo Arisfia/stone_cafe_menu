@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Building2, KeyRound, Palette, SlidersHorizontal, type LucideIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Building2, CheckCircle2, KeyRound, Palette, Save, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { changeAdminPassword, sendAdminPasswordReset } from "@/lib/firebase/auth";
 import { getAdminAppData, saveSettings } from "@/lib/firebase/firestore";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
@@ -25,7 +26,8 @@ export function SettingsManager() {
   const [general, setGeneral] = useState<GeneralSettings>(defaultGeneralSettings);
   const [menu, setMenu] = useState<MenuSettings>(defaultMenuSettings);
   const [appearance, setAppearance] = useState<AppearanceSettings>(defaultAppearanceSettings);
-  const [activeSection, setActiveSection] = useState<SettingsSection | null>(null);
+  const [activeSection, setActiveSection] = useState<SettingsSection>("general");
+  const [savedSignature, setSavedSignature] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -38,12 +40,13 @@ export function SettingsManager() {
       setGeneral(data.general);
       setMenu(data.menu);
       setAppearance(data.appearance);
+      setSavedSignature(settingsSignature(data.general, data.menu, data.appearance));
     });
   }, []);
 
   useEffect(() => {
     function syncSectionFromHash() {
-      setActiveSection(sectionFromHash(window.location.hash));
+      setActiveSection(sectionFromHash(window.location.hash) || "general");
     }
 
     syncSectionFromHash();
@@ -59,13 +62,9 @@ export function SettingsManager() {
   }, [activeSection]);
 
   function toggleSection(section: SettingsSection) {
-    setActiveSection((current) => {
-      const next = current === section ? null : section;
-      const baseUrl = `${window.location.pathname}${window.location.search}`;
-      const nextUrl = next ? `${baseUrl}#${next}` : baseUrl;
-      window.history.replaceState(null, "", nextUrl);
-      return next;
-    });
+    const baseUrl = `${window.location.pathname}${window.location.search}`;
+    window.history.replaceState(null, "", `${baseUrl}#${section}`);
+    setActiveSection(section);
   }
 
   async function saveAll() {
@@ -78,6 +77,7 @@ export function SettingsManager() {
         saveSettings("menu", menu as unknown as Record<string, unknown>),
         saveSettings("appearance", appearance as unknown as Record<string, unknown>)
       ]);
+      setSavedSignature(settingsSignature(general, menu, appearance));
       setMessage(text.settingsSaved);
     } catch (err) {
       setError(err instanceof Error ? err.message : text.settingsSaveFailed);
@@ -121,11 +121,33 @@ export function SettingsManager() {
     setMessage(text.resetSent);
   }
 
+  const currentSignature = useMemo(() => settingsSignature(general, menu, appearance), [appearance, general, menu]);
+  const hasUnsavedChanges = savedSignature ? currentSignature !== savedSignature : false;
+  const contactCount = [general.phone, general.whatsapp, general.email, general.googleMapsUrl].filter(Boolean).length;
+  const menuEnabledCount = Object.entries(menu).filter(([key, value]) => key !== "updatedAt" && key !== "enableFilters" && Boolean(value)).length;
+  const appearanceSummary = `${appearance.defaultTheme} · ${appearance.menuLayout}`;
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">{text.settings}</h1>
-        <p className="text-muted-foreground">{text.settingsDescription}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-3xl font-semibold">{text.settings}</h1>
+            {hasUnsavedChanges ? (
+              <Badge className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300">{text.unsavedChanges}</Badge>
+            ) : (
+              <Badge className="border-primary/30 bg-primary/10 text-primary">
+                <CheckCircle2 className="me-1 h-3 w-3" aria-hidden />
+                {text.saved}
+              </Badge>
+            )}
+          </div>
+          <p className="text-muted-foreground">{text.settingsDescription}</p>
+        </div>
+        <Button onClick={saveAll} disabled={saving || !hasUnsavedChanges}>
+          <Save className="h-4 w-4" aria-hidden />
+          {saving ? text.saving : text.saveSettings}
+        </Button>
       </div>
       {message ? <p className="rounded-md border border-primary p-3 text-primary">{message}</p> : null}
       {error ? <p className="rounded-md border border-destructive p-3 text-destructive">{error}</p> : null}
@@ -134,24 +156,28 @@ export function SettingsManager() {
         <SettingsSectionButton
           icon={Building2}
           label={text.generalSettings}
+          summary={`${contactCount}/4 ${text.contact}`}
           active={activeSection === "general"}
           onClick={() => toggleSection("general")}
         />
         <SettingsSectionButton
           icon={SlidersHorizontal}
           label={text.menuSettings}
+          summary={`${menuEnabledCount} ${text.enabled}`}
           active={activeSection === "menu"}
           onClick={() => toggleSection("menu")}
         />
         <SettingsSectionButton
           icon={Palette}
           label={text.appearanceSettings}
+          summary={appearanceSummary}
           active={activeSection === "appearance"}
           onClick={() => toggleSection("appearance")}
         />
         <SettingsSectionButton
           icon={KeyRound}
           label={text.accountSettings}
+          summary={text.accountSecurity}
           active={activeSection === "account"}
           onClick={() => toggleSection("account")}
         />
@@ -161,52 +187,62 @@ export function SettingsManager() {
         <Card id="general" className="settings-panel">
           <CardHeader><CardTitle>{text.generalSettings}</CardTitle></CardHeader>
           <CardContent className="grid gap-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label={text.restaurantNameEnglish}><Input value={general.restaurantName.en} onChange={(e) => setGeneral({ ...general, restaurantName: { ...general.restaurantName, en: e.target.value } })} /></Field>
-              <Field label={text.restaurantNameArabic}><Input dir="rtl" value={general.restaurantName.ar} onChange={(e) => setGeneral({ ...general, restaurantName: { ...general.restaurantName, ar: e.target.value } })} /></Field>
-              <Field label={text.restaurantNameKurdish}><Input dir="rtl" value={general.restaurantName.ckb} onChange={(e) => setGeneral({ ...general, restaurantName: { ...general.restaurantName, ckb: e.target.value } })} /></Field>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label={text.englishDescription}><Textarea value={general.description.en || ""} onChange={(e) => setGeneral({ ...general, description: { ...general.description, en: e.target.value } })} /></Field>
-              <Field label={text.arabicDescription}><Textarea dir="rtl" value={general.description.ar || ""} onChange={(e) => setGeneral({ ...general, description: { ...general.description, ar: e.target.value } })} /></Field>
-              <Field label={text.kurdishDescription}><Textarea dir="rtl" value={general.description.ckb || ""} onChange={(e) => setGeneral({ ...general, description: { ...general.description, ckb: e.target.value } })} /></Field>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label={text.phone}><Input value={general.phone || ""} onChange={(e) => setGeneral({ ...general, phone: e.target.value })} /></Field>
-              <Field label={text.whatsapp}><Input value={general.whatsapp || ""} onChange={(e) => setGeneral({ ...general, whatsapp: e.target.value })} /></Field>
-              <Field label={text.email}><Input type="email" value={general.email || ""} onChange={(e) => setGeneral({ ...general, email: e.target.value })} /></Field>
-            </div>
-            <Field label={text.address}><Input value={general.address || ""} onChange={(e) => setGeneral({ ...general, address: e.target.value })} /></Field>
-            <Field label={text.googleMapsUrl}><Input value={general.googleMapsUrl || ""} onChange={(e) => setGeneral({ ...general, googleMapsUrl: e.target.value })} /></Field>
-            <div className="grid gap-4 md:grid-cols-4">
-              <Field label="Facebook"><Input value={general.socialLinks?.facebook || ""} onChange={(e) => setGeneral({ ...general, socialLinks: { ...general.socialLinks, facebook: e.target.value } })} /></Field>
-              <Field label="Instagram"><Input value={general.socialLinks?.instagram || ""} onChange={(e) => setGeneral({ ...general, socialLinks: { ...general.socialLinks, instagram: e.target.value } })} /></Field>
-              <Field label="TikTok"><Input value={general.socialLinks?.tiktok || ""} onChange={(e) => setGeneral({ ...general, socialLinks: { ...general.socialLinks, tiktok: e.target.value } })} /></Field>
-              <Field label="Snapchat"><Input value={general.socialLinks?.snapchat || ""} onChange={(e) => setGeneral({ ...general, socialLinks: { ...general.socialLinks, snapchat: e.target.value } })} /></Field>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <ImageUploadField label={text.logo} text={text} path="restaurants/main/logo" imageUrl={general.logoUrl} onUploaded={(result) => setGeneral({ ...general, logoUrl: result.imageUrl, logoPath: result.imagePath })} />
-              <ImageUploadField label={text.coverImage} text={text} path="restaurants/main/cover" imageUrl={general.coverImageUrl} onUploaded={(result) => setGeneral({ ...general, coverImageUrl: result.imageUrl, coverImagePath: result.imagePath })} />
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label={text.defaultLanguage}>
-                <Select value={general.defaultLanguage} onChange={(e) => setGeneral({ ...general, defaultLanguage: e.target.value as GeneralSettings["defaultLanguage"] })}>
-                  <option value="ckb">{text.kurdish}</option>
-                  <option value="ar">{text.arabic}</option>
-                  <option value="en">{text.english}</option>
-                </Select>
-              </Field>
-              <Field label={text.defaultCurrency}>
-                <Select value={general.defaultCurrency} onChange={(e) => setGeneral({ ...general, defaultCurrency: e.target.value as GeneralSettings["defaultCurrency"] })}>
-                  <option value="IQD">IQD</option>
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="TRY">TRY</option>
-                </Select>
-              </Field>
-            </div>
+            <SettingsFormSection title={text.brandDetails}>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Field label={text.restaurantNameEnglish}><Input value={general.restaurantName.en} onChange={(e) => setGeneral({ ...general, restaurantName: { ...general.restaurantName, en: e.target.value } })} /></Field>
+                <Field label={text.restaurantNameArabic}><Input dir="rtl" value={general.restaurantName.ar} onChange={(e) => setGeneral({ ...general, restaurantName: { ...general.restaurantName, ar: e.target.value } })} /></Field>
+                <Field label={text.restaurantNameKurdish}><Input dir="rtl" value={general.restaurantName.ckb} onChange={(e) => setGeneral({ ...general, restaurantName: { ...general.restaurantName, ckb: e.target.value } })} /></Field>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Field label={text.englishDescription}><Textarea value={general.description.en || ""} onChange={(e) => setGeneral({ ...general, description: { ...general.description, en: e.target.value } })} /></Field>
+                <Field label={text.arabicDescription}><Textarea dir="rtl" value={general.description.ar || ""} onChange={(e) => setGeneral({ ...general, description: { ...general.description, ar: e.target.value } })} /></Field>
+                <Field label={text.kurdishDescription}><Textarea dir="rtl" value={general.description.ckb || ""} onChange={(e) => setGeneral({ ...general, description: { ...general.description, ckb: e.target.value } })} /></Field>
+              </div>
+            </SettingsFormSection>
+            <SettingsFormSection title={text.contact}>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Field label={text.phone}><Input value={general.phone || ""} onChange={(e) => setGeneral({ ...general, phone: e.target.value })} /></Field>
+                <Field label={text.whatsapp}><Input value={general.whatsapp || ""} onChange={(e) => setGeneral({ ...general, whatsapp: e.target.value })} /></Field>
+                <Field label={text.email}><Input type="email" value={general.email || ""} onChange={(e) => setGeneral({ ...general, email: e.target.value })} /></Field>
+              </div>
+              <Field label={text.address}><Input value={general.address || ""} onChange={(e) => setGeneral({ ...general, address: e.target.value })} /></Field>
+              <Field label={text.googleMapsUrl}><Input value={general.googleMapsUrl || ""} onChange={(e) => setGeneral({ ...general, googleMapsUrl: e.target.value })} /></Field>
+            </SettingsFormSection>
+            <SettingsFormSection title={text.socialLinks}>
+              <div className="grid gap-4 md:grid-cols-4">
+                <Field label="Facebook"><Input value={general.socialLinks?.facebook || ""} onChange={(e) => setGeneral({ ...general, socialLinks: { ...general.socialLinks, facebook: e.target.value } })} /></Field>
+                <Field label="Instagram"><Input value={general.socialLinks?.instagram || ""} onChange={(e) => setGeneral({ ...general, socialLinks: { ...general.socialLinks, instagram: e.target.value } })} /></Field>
+                <Field label="TikTok"><Input value={general.socialLinks?.tiktok || ""} onChange={(e) => setGeneral({ ...general, socialLinks: { ...general.socialLinks, tiktok: e.target.value } })} /></Field>
+                <Field label="Snapchat"><Input value={general.socialLinks?.snapchat || ""} onChange={(e) => setGeneral({ ...general, socialLinks: { ...general.socialLinks, snapchat: e.target.value } })} /></Field>
+              </div>
+            </SettingsFormSection>
+            <SettingsFormSection title={text.media}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <ImageUploadField label={text.logo} text={text} path="restaurants/main/logo" imageUrl={general.logoUrl} onUploaded={(result) => setGeneral({ ...general, logoUrl: result.imageUrl, logoPath: result.imagePath })} />
+                <ImageUploadField label={text.coverImage} text={text} path="restaurants/main/cover" imageUrl={general.coverImageUrl} onUploaded={(result) => setGeneral({ ...general, coverImageUrl: result.imageUrl, coverImagePath: result.imagePath })} />
+              </div>
+            </SettingsFormSection>
+            <SettingsFormSection title={text.defaults}>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Field label={text.defaultLanguage}>
+                  <Select value={general.defaultLanguage} onChange={(e) => setGeneral({ ...general, defaultLanguage: e.target.value as GeneralSettings["defaultLanguage"] })}>
+                    <option value="ckb">{text.kurdish}</option>
+                    <option value="ar">{text.arabic}</option>
+                    <option value="en">{text.english}</option>
+                  </Select>
+                </Field>
+                <Field label={text.defaultCurrency}>
+                  <Select value={general.defaultCurrency} onChange={(e) => setGeneral({ ...general, defaultCurrency: e.target.value as GeneralSettings["defaultCurrency"] })}>
+                    <option value="IQD">IQD</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="TRY">TRY</option>
+                  </Select>
+                </Field>
+              </div>
+            </SettingsFormSection>
             <div>
-              <Button onClick={saveAll} disabled={saving}>{saving ? text.saving : text.saveSettings}</Button>
+              <Button onClick={saveAll} disabled={saving || !hasUnsavedChanges}>{saving ? text.saving : text.saveSettings}</Button>
             </div>
           </CardContent>
         </Card>
@@ -223,7 +259,7 @@ export function SettingsManager() {
               </div>
             ))}
             <div className="sm:col-span-2 lg:col-span-3">
-              <Button onClick={saveAll} disabled={saving}>{saving ? text.saving : text.saveSettings}</Button>
+              <Button onClick={saveAll} disabled={saving || !hasUnsavedChanges}>{saving ? text.saving : text.saveSettings}</Button>
             </div>
           </CardContent>
         </Card>
@@ -263,7 +299,7 @@ export function SettingsManager() {
                 </Select>
               </Field>
               <div className="md:col-span-4">
-                <Button onClick={saveAll} disabled={saving}>{saving ? text.saving : text.saveSettings}</Button>
+                <Button onClick={saveAll} disabled={saving || !hasUnsavedChanges}>{saving ? text.saving : text.saveSettings}</Button>
               </div>
             </div>
             <AppearancePreview appearance={appearance} text={text} />
@@ -294,11 +330,13 @@ export function SettingsManager() {
 function SettingsSectionButton({
   icon: Icon,
   label,
+  summary,
   active,
   onClick
 }: {
   icon: LucideIcon;
   label: string;
+  summary: string;
   active: boolean;
   onClick: () => void;
 }) {
@@ -314,8 +352,20 @@ function SettingsSectionButton({
       )}
     >
       <Icon className="h-5 w-5 shrink-0" aria-hidden />
-      <span className="min-w-0 whitespace-normal leading-snug">{label}</span>
+      <span className="min-w-0">
+        <span className="block whitespace-normal leading-snug">{label}</span>
+        <span className={cn("mt-1 block text-xs", active ? "text-primary-foreground/80" : "text-muted-foreground")}>{summary}</span>
+      </span>
     </Button>
+  );
+}
+
+function SettingsFormSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3 rounded-lg border bg-muted/15 p-4">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      {children}
+    </section>
   );
 }
 
@@ -413,6 +463,10 @@ function sectionFromHash(hash: string): SettingsSection | null {
   if (value === "admin-password") return "account";
   if (value === "general" || value === "menu" || value === "appearance" || value === "account") return value;
   return null;
+}
+
+function settingsSignature(general: GeneralSettings, menu: MenuSettings, appearance: AppearanceSettings) {
+  return JSON.stringify({ general, menu, appearance });
 }
 
 function colorWithAlpha(color: string, alpha: string) {

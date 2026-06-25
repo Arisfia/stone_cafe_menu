@@ -1,11 +1,11 @@
 import { SUPABASE_BUCKET, SUPABASE_KEY, SUPABASE_URL } from "@/lib/supabase/client";
 
-const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-const maxImageBytes = 5 * 1024 * 1024;
+const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const maxImageBytes = 10 * 1024 * 1024;
 
 export function validateImageFile(file: File) {
-  if (!allowedTypes.includes(file.type)) return "Use a JPG, PNG, or WebP image.";
-  if (file.size > maxImageBytes) return "Images must be 5 MB or smaller.";
+  if (!allowedTypes.includes(file.type)) return "Use a JPG, PNG, WebP, or GIF image.";
+  if (file.size > maxImageBytes) return "Images must be 10 MB or smaller.";
   return null;
 }
 
