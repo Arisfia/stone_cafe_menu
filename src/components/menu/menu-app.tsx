@@ -221,6 +221,7 @@ export function MenuApp({
               active={activeCategoryId === category.id}
               onClick={() => scrollToCategory(category.id)}
               slug={category.slug}
+              icon={category.icon}
               textDir={textDir}
             >
               {localized(category.name, locale)}
@@ -253,7 +254,7 @@ export function MenuApp({
                 >
                   <div dir={textDir} className="flex items-center gap-3">
                     <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <CategoryIcon slug={section.category.slug} className="h-5 w-5" />
+                      <CategoryIcon slug={section.category.slug} icon={section.category.icon} className="h-5 w-5" />
                     </span>
                     <h2 className="text-xl font-bold sm:text-2xl">{localized(section.category.name, locale)}</h2>
                     <span className="h-px flex-1 bg-border" aria-hidden />
@@ -318,12 +319,14 @@ function CategoryPill({
   onClick,
   children,
   slug,
+  icon,
   textDir
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
   slug: string;
+  icon?: string;
   textDir: "ltr" | "rtl";
 }) {
   return (
@@ -335,7 +338,7 @@ function CategoryPill({
         active ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-card text-foreground hover:bg-muted"
       )}
     >
-      <CategoryIcon slug={slug} className="h-4 w-4" />
+      <CategoryIcon slug={slug} icon={icon} className="h-4 w-4" />
       <span dir={textDir}>{children}</span>
     </button>
   );

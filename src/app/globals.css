@@ -383,6 +383,60 @@ body.overflow-lock {
 }
 .cat-dust { animation: cat-dust 2.4s ease-in infinite; }
 
+/* Special (star): pops in from small, then keeps a gentle pulse */
+@keyframes cat-star-pop {
+  0% { transform: scale(0.55) rotate(-12deg); opacity: 0.4; }
+  35% { transform: scale(1.18) rotate(4deg); opacity: 1; }
+  50% { transform: scale(0.98) rotate(0deg); }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(0.98); }
+}
+.cat-star-pop { transform-origin: center; animation: cat-star-pop 2.4s ease-in-out infinite; }
+
+/* Coffee (to-go): a warm shimmer, as if steaming */
+@keyframes cat-warm {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.07); opacity: 1; }
+}
+.cat-warm { transform-origin: center bottom; animation: cat-warm 2.2s ease-in-out infinite; }
+
+/* Donut / round things: rolls back and forth */
+@keyframes cat-roll {
+  0%, 100% { transform: rotate(-14deg); }
+  50% { transform: rotate(14deg); }
+}
+.cat-roll { transform-origin: center; animation: cat-roll 2s ease-in-out infinite; }
+
+/* Ice cream: slow downward drip with a soft squash */
+@keyframes cat-drip {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  55% { transform: translateY(1.4px) scaleY(0.94); }
+}
+.cat-drip { transform-origin: center top; animation: cat-drip 2.3s ease-in-out infinite; }
+
+/* Juice / milk: tips over to pour, then back */
+@keyframes cat-pour {
+  0%, 100% { transform: rotate(0deg); }
+  45% { transform: rotate(-16deg); }
+  70% { transform: rotate(-8deg); }
+}
+.cat-pour { transform-origin: 70% 90%; animation: cat-pour 2.6s ease-in-out infinite; }
+
+/* Flame / grill: flickers taller then shorter with a slight lean */
+@keyframes cat-flicker {
+  0%, 100% { transform: scaleY(1) scaleX(1) skewX(0deg); opacity: 0.92; }
+  30% { transform: scaleY(1.14) scaleX(0.96) skewX(3deg); opacity: 1; }
+  60% { transform: scaleY(0.95) scaleX(1.03) skewX(-3deg); opacity: 0.96; }
+}
+.cat-flicker { transform-origin: center bottom; animation: cat-flicker 1.1s ease-in-out infinite; }
+
+/* Diet / leaf: grows up from the base with a light sway */
+@keyframes cat-grow {
+  0%, 100% { transform: scaleY(0.86) rotate(-3deg); }
+  50% { transform: scaleY(1.02) rotate(3deg); }
+}
+.cat-grow { transform-origin: center bottom; animation: cat-grow 2.8s ease-in-out infinite; }
+
 /* Menu header contact chips */
 /* Available: draw the ring, then draw the tick inside it */
 @keyframes avl-ring {
@@ -462,6 +516,13 @@ body.overflow-lock {
   .cat-percent-in,
   .cat-bean-crumble,
   .cat-dust,
+  .cat-star-pop,
+  .cat-warm,
+  .cat-roll,
+  .cat-drip,
+  .cat-pour,
+  .cat-flicker,
+  .cat-grow,
   .avl-ring,
   .avl-check,
   .sig-wave,

@@ -17,6 +17,7 @@ export const categorySchema = z.object({
   name: localizedRequired,
   description: localizedOptional,
   slug: z.string().min(1, "Slug is required."),
+  icon: z.string().optional().default(""),
   displayOrder: z.coerce.number().int().min(0),
   isActive: z.boolean().default(true)
 });

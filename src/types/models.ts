@@ -10,6 +10,7 @@ export type Category = {
   name: LocalizedText;
   description: OptionalLocalizedText;
   slug: string;
+  icon?: string;
   displayOrder: number;
   isActive: boolean;
   createdAt?: Timestamp;

@@ -1,25 +1,83 @@
-import { type CSSProperties } from "react";
+import { type CSSProperties, type ReactNode } from "react";
 import {
+  Cake,
   CakeSlice,
+  Coffee,
+  Cookie,
+  Croissant,
   CupSoda,
+  Donut,
+  Flame,
+  GlassWater,
+  IceCreamCone,
   LayoutGrid,
+  Martini,
+  Milk,
+  Salad,
   Sandwich,
+  Star,
   Utensils,
   UtensilsCrossed,
   type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
-// Each category icon gets its own looping motion. Breakfast, hot drinks, coffee
-// and special offers use purpose-built animated SVGs; the rest reuse Lucide
-// icons with a transform animation. All motion is disabled under
-// prefers-reduced-motion (see globals.css).
-const SLUG_ICON: Record<string, { Icon: LucideIcon; anim: string }> = {
-  "cold-drinks": { Icon: CupSoda, anim: "cat-shake" },
-  desserts: { Icon: CakeSlice, anim: "cat-bob" },
-  sandwiches: { Icon: Sandwich, anim: "cat-bob" },
-  "main-meals": { Icon: UtensilsCrossed, anim: "cat-wiggle" },
-  all: { Icon: LayoutGrid, anim: "cat-sway" }
+// Every category icon has its own looping motion, purpose-built to the subject:
+// the egg boils, the flame flickers, the donut rolls, the leaf grows, etc.
+// Bespoke SVGs (breakfast/hot drinks/coffee/special offer) animate their own
+// parts; the rest are Lucide glyphs paired with a fitting transform animation.
+// All motion is disabled under prefers-reduced-motion (see globals.css).
+
+export type CategoryIconDef = {
+  key: string;
+  label: string;
+  // Either a Lucide glyph + animation class, or a bespoke animated SVG component.
+  Icon?: LucideIcon;
+  anim?: string;
+  Custom?: (props: { className?: string }) => ReactNode;
+};
+
+// Default icon for brand-new "Special N" categories: a star that pops + pulses.
+export const DEFAULT_CATEGORY_ICON = "special";
+
+export const CATEGORY_ICONS: CategoryIconDef[] = [
+  { key: "special", label: "Special", Icon: Star, anim: "cat-star-pop" },
+  { key: "special-offer", label: "Offer", Custom: SpecialOfferIcon },
+  { key: "breakfast", label: "Breakfast", Custom: BoilingEggIcon },
+  { key: "hot-drinks", label: "Hot drinks", Custom: HotDrinkIcon },
+  { key: "coffee", label: "Coffee beans", Custom: CoffeeDustIcon },
+  { key: "coffee-togo", label: "Coffee", Icon: Coffee, anim: "cat-warm" },
+  { key: "cold-drinks", label: "Cold drinks", Icon: CupSoda, anim: "cat-shake" },
+  { key: "juice", label: "Juice / water", Icon: GlassWater, anim: "cat-pour" },
+  { key: "milkshake", label: "Milkshake", Icon: Milk, anim: "cat-shake" },
+  { key: "mocktail", label: "Mocktail", Icon: Martini, anim: "cat-sway" },
+  { key: "pastry", label: "Pastry", Icon: Croissant, anim: "cat-bob" },
+  { key: "donut", label: "Donut", Icon: Donut, anim: "cat-roll" },
+  { key: "cookie", label: "Cookie", Icon: Cookie, anim: "cat-spin" },
+  { key: "cake", label: "Cake", Icon: Cake, anim: "cat-pulse" },
+  { key: "ice-cream", label: "Ice cream", Icon: IceCreamCone, anim: "cat-drip" },
+  { key: "desserts", label: "Desserts", Icon: CakeSlice, anim: "cat-bob" },
+  { key: "sandwiches", label: "Sandwiches", Icon: Sandwich, anim: "cat-bob" },
+  { key: "main-meals", label: "Main meals", Icon: UtensilsCrossed, anim: "cat-wiggle" },
+  { key: "spicy", label: "Grill / spicy", Icon: Flame, anim: "cat-flicker" },
+  { key: "diet", label: "Diet / healthy", Icon: Salad, anim: "cat-grow" },
+  { key: "all", label: "All", Icon: LayoutGrid, anim: "cat-sway" },
+  { key: "utensils", label: "Generic", Icon: Utensils, anim: "cat-wiggle" }
+];
+
+const ICON_MAP: Record<string, CategoryIconDef> = Object.fromEntries(CATEGORY_ICONS.map((def) => [def.key, def]));
+
+// Legacy categories created before the icon field existed are matched by slug so
+// their icons keep working without a re-save.
+const SLUG_TO_KEY: Record<string, string> = {
+  breakfast: "breakfast",
+  "hot-drinks": "hot-drinks",
+  coffee: "coffee",
+  "cold-drinks": "cold-drinks",
+  desserts: "desserts",
+  sandwiches: "sandwiches",
+  "main-meals": "main-meals",
+  all: "all"
 };
 
 // Matched loosely so an offers/discount category is detected whatever its exact
@@ -28,15 +86,21 @@ function isOfferSlug(slug: string) {
   return /offer|discount|deal|promo|sale/i.test(slug);
 }
 
-export function CategoryIcon({ slug, className }: { slug: string; className?: string }) {
-  if (slug === "breakfast") return <BoilingEggIcon className={className} />;
-  if (slug === "hot-drinks") return <HotDrinkIcon className={className} />;
-  if (slug === "coffee") return <CoffeeDustIcon className={className} />;
-  if (isOfferSlug(slug)) return <SpecialOfferIcon className={className} />;
+function resolveIconKey(slug?: string, icon?: string): string {
+  if (icon && ICON_MAP[icon]) return icon;
+  if (slug && SLUG_TO_KEY[slug]) return SLUG_TO_KEY[slug];
+  if (slug && isOfferSlug(slug)) return "special-offer";
+  return "utensils";
+}
 
-  const entry = SLUG_ICON[slug] ?? { Icon: Utensils, anim: "cat-wiggle" };
-  const Icon = entry.Icon;
-  return <Icon className={cn(entry.anim, className)} aria-hidden />;
+export function CategoryIcon({ slug, icon, className }: { slug?: string; icon?: string; className?: string }) {
+  const def = ICON_MAP[resolveIconKey(slug, icon)];
+  if (def.Custom) {
+    const Custom = def.Custom;
+    return <Custom className={className} />;
+  }
+  const Icon = def.Icon ?? Utensils;
+  return <Icon className={cn(def.anim, className)} aria-hidden />;
 }
 
 function SpecialOfferIcon({ className }: { className?: string }) {

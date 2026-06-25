@@ -15,6 +15,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
+import { CATEGORY_ICONS, CategoryIcon, DEFAULT_CATEGORY_ICON } from "@/components/menu/category-icon";
 import { getAdminAppData, deleteCategory, deleteMenuItem, saveCategory, saveMenuItem, updateCategoryActive } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
@@ -24,11 +25,16 @@ import type { AppData, Category, Locale } from "@/types/models";
 
 type CategoryFormData = z.infer<typeof categorySchema>;
 
+// "Special" in each language, so a new category's default name is filled in all
+// three locales (the name is required in every language).
+const SPECIAL_BASE: Record<Locale, string> = { en: "Special", ar: "خاص", ckb: "تایبەت" };
+
 const emptyCategory: CategoryFormData = {
   id: "",
   name: { en: "", ar: "", ckb: "" },
   description: { en: "", ar: "", ckb: "" },
   slug: "",
+  icon: "",
   displayOrder: 0,
   isActive: true
 };
@@ -126,6 +132,7 @@ export function CategoryManager() {
       id: category.id,
       name: category.name,
       slug: category.slug,
+      icon: category.icon || "",
       displayOrder: category.displayOrder,
       isActive: category.isActive,
       description: {
@@ -137,8 +144,16 @@ export function CategoryManager() {
   }
 
   function newCategory() {
-    const nextOrder = nextDisplayOrder(data?.categories || []);
-    form.reset({ ...emptyCategory, displayOrder: nextOrder });
+    const existing = data?.categories || [];
+    const nextOrder = nextDisplayOrder(existing);
+    const n = nextSpecialNumber(existing);
+    form.reset({
+      ...emptyCategory,
+      name: { en: `${SPECIAL_BASE.en} ${n}`, ar: `${SPECIAL_BASE.ar} ${n}`, ckb: `${SPECIAL_BASE.ckb} ${n}` },
+      slug: `special-${n}`,
+      icon: DEFAULT_CATEGORY_ICON,
+      displayOrder: nextOrder
+    });
     setMessage("");
     setError("");
     setEditingCategoryId(null);
@@ -448,6 +463,10 @@ function CategoryEditorForm({
             </Field>
           </div>
         </FormSection>
+        <FormSection title={text.categoryIcon}>
+          {text.categoryIconHint ? <p className="text-xs text-muted-foreground">{text.categoryIconHint}</p> : null}
+          <IconPicker value={form.watch("icon") || ""} onChange={(key) => form.setValue("icon", key, { shouldDirty: true })} />
+        </FormSection>
         <FormSection title={text.publishing}>
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_160px]">
             <Field label={text.slug} error={adminErrorText(form.formState.errors.slug?.message, text)}>
@@ -481,6 +500,32 @@ function CategoryEditorForm({
   );
 }
 
+function IconPicker({ value, onChange }: { value: string; onChange: (key: string) => void }) {
+  return (
+    <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
+      {CATEGORY_ICONS.filter((def) => def.key !== "utensils").map((def) => {
+        const selected = value === def.key;
+        return (
+          <button
+            key={def.key}
+            type="button"
+            onClick={() => onChange(def.key)}
+            title={def.label}
+            aria-label={def.label}
+            aria-pressed={selected}
+            className={cn(
+              "focus-ring flex aspect-square items-center justify-center rounded-lg border transition-colors",
+              selected ? "border-primary bg-primary/10 text-primary ring-1 ring-inset ring-primary/40" : "bg-card text-foreground hover:bg-muted"
+            )}
+          >
+            <CategoryIcon icon={def.key} className="h-6 w-6" />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function CategoryAdminPreview({
   category,
   itemCount,
@@ -502,9 +547,14 @@ function CategoryAdminPreview({
       <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
         <div className="bg-gradient-to-br from-accent via-primary/10 to-secondary/10 p-5">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="text-xl font-semibold leading-tight">{title}</h3>
-              {description ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{description}</p> : null}
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <CategoryIcon slug={slug} icon={category.icon} className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <h3 className="text-xl font-semibold leading-tight">{title}</h3>
+                {description ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{description}</p> : null}
+              </div>
             </div>
             <span className={cn("shrink-0 rounded-full px-3 py-1 text-xs font-semibold", category.isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
               {category.isActive ? text.active : text.inactive}
@@ -571,6 +621,19 @@ function missingLocalizedFields(value: Record<Locale, string> | Partial<Record<L
 
 function nextDisplayOrder(entries: { displayOrder: number }[]) {
   return entries.length ? Math.max(...entries.map((entry) => entry.displayOrder)) + 1 : 1;
+}
+
+// Next free "Special N" number, based on existing English names and slugs, so
+// new categories auto-name Special 1, Special 2, ... without colliding.
+function nextSpecialNumber(categories: Category[]) {
+  let max = 0;
+  for (const category of categories) {
+    const byName = /^special\s+(\d+)$/i.exec((category.name?.en || "").trim());
+    const bySlug = /^special-(\d+)$/i.exec(category.slug || "");
+    if (byName) max = Math.max(max, Number(byName[1]));
+    if (bySlug) max = Math.max(max, Number(bySlug[1]));
+  }
+  return max + 1;
 }
 
 function replaceCategory(data: AppData | null, category: Category): AppData | null {
