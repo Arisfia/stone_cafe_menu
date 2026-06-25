@@ -51,7 +51,10 @@ export function ExpenseManager() {
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [byWho, setByWho] = useState("");
+
+  // Recorded automatically as the signed-in user — staff can't change who an
+  // expense is attributed to.
+  const recordedBy = auth.profile?.displayName || auth.profile?.username || auth.user?.email || "";
 
   async function refresh() {
     const [data, pos, nextExpenses] = await Promise.all([getAdminAppData(), getPosState(), listExpenses()]);
@@ -65,12 +68,6 @@ export function ExpenseManager() {
       .catch((err) => setError(err instanceof Error ? err.message : text.settingsSaveFailed))
       .finally(() => setLoading(false));
   }, [text.settingsSaveFailed]);
-
-  useEffect(() => {
-    if (byWho) return;
-    const defaultByWho = auth.profile?.displayName || auth.profile?.username || auth.user?.email || "";
-    if (defaultByWho) setByWho(defaultByWho);
-  }, [auth.profile?.displayName, auth.profile?.username, auth.user?.email, byWho]);
 
   const categoryOptions = useMemo(() => {
     const fromText = expenseCategoryKeys.map((key) => text[key]).filter(Boolean);
@@ -117,7 +114,7 @@ export function ExpenseManager() {
     setError("");
     const trimmedTitle = title.trim();
     const trimmedCategory = category.trim();
-    const trimmedByWho = byWho.trim();
+    const trimmedByWho = recordedBy.trim();
     const parsedAmount = Math.round(Number(amount));
     if (!trimmedTitle || !date || !trimmedCategory || !trimmedByWho || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
       setError(text.expenseRequired);
@@ -219,7 +216,7 @@ export function ExpenseManager() {
                   />
                 </Field>
                 <Field label={text.date}>
-                  <Input type="date" value={date} max={todayKey()} onChange={(event) => setDate(event.target.value)} />
+                  <Input type="date" className="max-w-[11rem]" value={date} max={todayKey()} onChange={(event) => setDate(event.target.value)} />
                 </Field>
               </div>
 
@@ -251,7 +248,10 @@ export function ExpenseManager() {
               </Field>
 
               <Field label={text.byWho}>
-                <Input value={byWho} onChange={(event) => setByWho(event.target.value)} />
+                <div className="flex h-10 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm" title={recordedBy}>
+                  <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <span dir={textDir} className="truncate font-medium">{recordedBy || "—"}</span>
+                </div>
               </Field>
 
               <Field label={text.note}>

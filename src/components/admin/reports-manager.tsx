@@ -1,21 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BadgePercent, ListOrdered, Receipt, ShoppingBag, TrendingUp } from "lucide-react";
+import { BadgePercent, ListOrdered, Receipt, Scale, ShoppingBag, TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { adminErrorText, useAdminLocale } from "@/components/admin/admin-preferences";
-import { getPosState } from "@/lib/firebase/firestore";
+import { getPosState, listExpenses } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
 import { formatMoney } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
-import type { Currency, PosCompletedOrder } from "@/types/models";
+import type { Currency, Expense, PosCompletedOrder } from "@/types/models";
 
 type Mode = "daily" | "monthly" | "all";
 
 export function ReportsManager() {
   const { locale, text, dir: textDir } = useAdminLocale();
   const [orders, setOrders] = useState<PosCompletedOrder[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<Mode>("daily");
@@ -23,8 +24,11 @@ export function ReportsManager() {
   const [month, setMonth] = useState(() => todayKey().slice(0, 7));
 
   useEffect(() => {
-    getPosState()
-      .then((state) => setOrders(state.completedOrders || []))
+    Promise.all([getPosState(), listExpenses()])
+      .then(([state, nextExpenses]) => {
+        setOrders(state.completedOrders || []);
+        setExpenses(nextExpenses);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : text.settingsSaveFailed))
       .finally(() => setLoading(false));
   }, [text.settingsSaveFailed]);
@@ -69,6 +73,20 @@ export function ReportsManager() {
 
   const avgOrder = filtered.length ? Math.round(totals.revenue / filtered.length) : 0;
 
+  // Expenses logged for the selected period (expense.date is already a local
+  // YYYY-MM-DD key), and the resulting sale-after-expense figure.
+  const expensesTotal = useMemo(() => {
+    return expenses
+      .filter((expense) => {
+        if (mode === "all") return true;
+        if (!expense.date) return false;
+        return mode === "daily" ? expense.date === day : expense.date.slice(0, 7) === month;
+      })
+      .reduce((sum, expense) => sum + expense.amount, 0);
+  }, [expenses, mode, day, month]);
+
+  const saleAfterExpense = totals.revenue - expensesTotal;
+
   const modes: { key: Mode; label: string }[] = [
     { key: "daily", label: text.daily },
     { key: "monthly", label: text.monthly },
@@ -108,6 +126,17 @@ export function ReportsManager() {
       </div>
 
       {error ? <p dir={textDir} className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{adminErrorText(error, text)}</p> : null}
+
+      {/* Sales minus expenses = total sale after expense */}
+      <Card className="overflow-hidden">
+        <CardContent dir="ltr" className="flex flex-col items-stretch gap-3 p-5 sm:flex-row sm:items-center sm:gap-4">
+          <SummaryFigure icon={<TrendingUp className="h-4 w-4" aria-hidden />} label={text.totalSales} value={formatMoney(totals.revenue, currency, locale)} tone="positive" textDir={textDir} />
+          <Operator>−</Operator>
+          <SummaryFigure icon={<TrendingDown className="h-4 w-4" aria-hidden />} label={text.totalExpenses} value={formatMoney(expensesTotal, currency, locale)} tone="negative" textDir={textDir} />
+          <Operator>=</Operator>
+          <SummaryFigure icon={<Scale className="h-4 w-4" aria-hidden />} label={text.saleAfterExpense} value={formatMoney(saleAfterExpense, currency, locale)} tone={saleAfterExpense >= 0 ? "positive" : "negative"} emphasized textDir={textDir} />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={<TrendingUp className="h-5 w-5" aria-hidden />} label={text.totalRevenue} value={formatMoney(totals.revenue, currency, locale)} />
@@ -207,5 +236,47 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
         </span>
       </CardContent>
     </Card>
+  );
+}
+
+function SummaryFigure({
+  icon,
+  label,
+  value,
+  tone,
+  emphasized = false,
+  textDir
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tone: "positive" | "negative";
+  emphasized?: boolean;
+  textDir: "ltr" | "rtl";
+}) {
+  const accent = tone === "negative" ? "text-destructive" : "text-primary";
+  return (
+    <div
+      className={cn(
+        "flex-1 rounded-xl border p-4",
+        emphasized ? (tone === "negative" ? "border-destructive/40 bg-destructive/10" : "border-primary/40 bg-primary/10") : "bg-card"
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", tone === "negative" ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary")}>
+          {icon}
+        </span>
+        <span dir={textDir} className="text-xs font-medium text-muted-foreground">{label}</span>
+      </div>
+      <p className={cn("mt-2 font-bold tabular-nums", accent, emphasized ? "text-2xl sm:text-3xl" : "text-xl")}>{value}</p>
+    </div>
+  );
+}
+
+function Operator({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="shrink-0 select-none text-center text-xl font-bold text-muted-foreground sm:text-2xl" aria-hidden>
+      {children}
+    </span>
   );
 }
