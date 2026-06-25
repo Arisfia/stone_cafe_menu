@@ -62,7 +62,16 @@ export function WelcomeScreen() {
             language flips the page direction. */}
         <ThemeToggle className="absolute right-4 top-4 z-20 h-11 w-11 border-[#86cc8a]/60 bg-background/70 shadow-sm backdrop-blur hover:bg-muted dark:border-[#2b3a25]/60" />
 
-        <p dir={textDir} className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7a3b] dark:text-[#A4D8A6]">
+        <p
+          dir={textDir}
+          className={cn(
+            "font-bold text-[#2f7a3b] dark:text-[#A4D8A6]",
+            // Arabic/Kurdish letters join up, so letter-spacing looks broken —
+            // drop it there and make the greeting larger. English keeps the
+            // uppercase tracked-label look.
+            textDir === "rtl" ? "text-2xl tracking-normal" : "text-sm uppercase tracking-[0.2em]"
+          )}
+        >
           {translate(locale, "welcome.greeting")}
         </p>
 
