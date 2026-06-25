@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ShieldCheck, Trash2, UserPlus, UserRound } from "lucide-react";
+import { ChevronDown, Search, ShieldCheck, Trash2, UserPlus, UserRound } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
@@ -21,6 +23,7 @@ import {
 import { createStaffAuthUser, deleteStaffAccount } from "@/lib/firebase/user-admin";
 import { ADMIN_FEATURES, emptyPermissions, roleOf } from "@/lib/admin/permissions";
 import { cn } from "@/lib/utils/cn";
+import { normalizeSearch } from "@/lib/utils/format";
 import type { AdminPermissions, AdminProfile, AdminRole } from "@/types/models";
 
 const USERNAME_PATTERN = /^[a-z0-9._-]{3,20}$/;
@@ -34,6 +37,10 @@ export function UserManager() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<AdminProfile | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | AdminRole>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "disabled">("all");
 
   // Add-user form state
   const [email, setEmail] = useState("");
@@ -105,6 +112,7 @@ export function UserManager() {
       }
       await refresh();
       resetForm();
+      setCreateOpen(false);
       setMessage(mappingFailed ? text.deployRulesForUsername : text.userCreated);
     } catch (err) {
       setError(mapAuthError(err, text));
@@ -224,10 +232,20 @@ export function UserManager() {
     }
   }
 
-  const sortedUsers = useMemo(
-    () => [...users].sort((a, b) => Number(roleOf(a) === "employee") - Number(roleOf(b) === "employee")),
-    [users]
-  );
+  const sortedUsers = useMemo(() => {
+    const normalizedQuery = normalizeSearch(query);
+    return users
+      .filter((profile) => roleFilter === "all" || roleOf(profile) === roleFilter)
+      .filter((profile) => statusFilter === "all" || (statusFilter === "active" ? !profile.disabled : profile.disabled))
+      .filter((profile) => {
+        if (!normalizedQuery) return true;
+        return normalizeSearch([profile.email, profile.displayName || "", profile.username || "", roleOf(profile)].join(" ")).includes(normalizedQuery);
+      })
+      .sort((a, b) => Number(roleOf(a) === "employee") - Number(roleOf(b) === "employee") || a.email.localeCompare(b.email));
+  }, [query, roleFilter, statusFilter, users]);
+  const adminCount = users.filter((profile) => roleOf(profile) === "admin").length;
+  const employeeCount = users.filter((profile) => roleOf(profile) === "employee").length;
+  const disabledCount = users.filter((profile) => profile.disabled).length;
 
   return (
     <div className="space-y-6">
@@ -236,14 +254,28 @@ export function UserManager() {
           <h1 className="text-3xl font-semibold">{text.userManagement}</h1>
           <p dir={textDir} className="text-muted-foreground">{text.userManagementDesc}</p>
         </div>
-        {saving ? <span className="rounded-full border bg-card px-3 py-1.5 text-sm text-muted-foreground">{text.saving}</span> : null}
+        <div className="flex flex-wrap gap-2">
+          {saving ? <span className="rounded-full border bg-card px-3 py-1.5 text-sm text-muted-foreground">{text.saving}</span> : null}
+          <Button type="button" onClick={() => setCreateOpen((value) => !value)}>
+            <UserPlus className="h-4 w-4" aria-hidden />
+            {text.addUser}
+          </Button>
+        </div>
       </div>
 
       {message ? <p className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm text-primary">{message}</p> : null}
       {error ? <p dir={textDir} className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{adminErrorText(error, text)}</p> : null}
 
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <UserStat label={text.users} value={users.length} />
+        <UserStat label={text.roleAdmin} value={adminCount} tone="primary" />
+        <UserStat label={text.roleEmployee} value={employeeCount} />
+        <UserStat label={text.accountDisabled} value={disabledCount} />
+      </div>
+
       {/* Add user */}
-      <Card>
+      {createOpen ? (
+      <Card className="settings-panel">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <UserPlus className="h-5 w-5 text-primary" aria-hidden />
@@ -255,7 +287,7 @@ export function UserManager() {
             <Field label={text.email}>
               <Input type="email" autoComplete="off" value={email} onChange={(event) => setEmail(event.target.value)} />
             </Field>
-            <Field label={text.username}>
+            <Field label={text.loginSlug}>
               <Input autoComplete="off" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="e.g. sara" />
               <p dir={textDir} className="mt-1 text-xs text-muted-foreground">{text.usernameHint}</p>
             </Field>
@@ -311,6 +343,24 @@ export function UserManager() {
           </Button>
         </CardContent>
       </Card>
+      ) : null}
+
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
+        <div className="relative">
+          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input className="ps-9" placeholder={text.searchUsers} value={query} onChange={(event) => setQuery(event.target.value)} />
+        </div>
+        <Select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as "all" | AdminRole)}>
+          <option value="all">{text.allRoles}</option>
+          <option value="admin">{text.roleAdmin}</option>
+          <option value="employee">{text.roleEmployee}</option>
+        </Select>
+        <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "all" | "active" | "disabled")}>
+          <option value="all">{text.allStatuses}</option>
+          <option value="active">{text.active}</option>
+          <option value="disabled">{text.accountDisabled}</option>
+        </Select>
+      </div>
 
       {/* Existing users */}
       <div className="space-y-3">
@@ -331,7 +381,9 @@ export function UserManager() {
             />
           ))
         ) : (
-          <p dir={textDir} className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{text.noUsers}</p>
+          <p dir={textDir} className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            {query || roleFilter !== "all" || statusFilter !== "all" ? text.noMatchingUsers : text.noUsers}
+          </p>
         )}
       </div>
 
@@ -353,6 +405,15 @@ export function UserManager() {
           </Card>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function UserStat({ label, value, tone = "default" }: { label: string; value: number; tone?: "default" | "primary" }) {
+  return (
+    <div className={cn("rounded-lg border bg-card p-4", tone === "primary" && "border-primary/30 bg-primary/5")}>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-semibold">{value}</p>
     </div>
   );
 }
@@ -433,11 +494,15 @@ function UserRow({
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
             <span className="truncate text-sm font-semibold">{profile.displayName || profile.email}</span>
-            {isSelf ? <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">{text.youLabel}</span> : null}
-            {profile.disabled ? <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">{text.accountDisabled}</span> : null}
+            <Badge className={role === "admin" ? "border-primary/30 bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}>
+              {role === "admin" ? text.roleAdmin : text.roleEmployee}
+            </Badge>
+            {profile.username ? <Badge>@{profile.username}</Badge> : <Badge className="bg-muted text-muted-foreground">{text.noUsername}</Badge>}
+            {isSelf ? <Badge className="border-primary/30 bg-primary/10 text-primary">{text.youLabel}</Badge> : null}
+            {profile.disabled ? <Badge className="border-destructive/30 bg-destructive/10 text-destructive">{text.accountDisabled}</Badge> : null}
           </span>
           <span className="block truncate text-xs text-muted-foreground">
-            {profile.username ? `@${profile.username} · ` : ""}{profile.email} · {role === "admin" ? text.roleAdmin : text.roleEmployee}
+            {profile.email}
           </span>
         </span>
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
@@ -451,9 +516,10 @@ function UserRow({
             </p>
           ) : null}
 
-          <Field label={text.username}>
+          <Field label={text.loginSlug}>
             <div className="flex gap-2">
-              <Input value={usernameDraft} onChange={(event) => setUsernameDraft(event.target.value)} placeholder="e.g. sara" />
+              <span className="flex h-10 items-center rounded-md border bg-muted px-3 text-sm text-muted-foreground">@</span>
+              <Input value={usernameDraft} onChange={(event) => setUsernameDraft(event.target.value)} placeholder="sara" />
               <Button
                 type="button"
                 variant="outline"
