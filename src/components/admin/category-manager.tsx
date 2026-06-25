@@ -4,7 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import type { z } from "zod";
-import { ChevronDown, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, CircleOff, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
@@ -16,7 +18,7 @@ import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/ad
 import { getAdminAppData, deleteCategory, deleteMenuItem, saveCategory, saveMenuItem, updateCategoryActive } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
-import { slugify } from "@/lib/utils/format";
+import { normalizeSearch, slugify } from "@/lib/utils/format";
 import { categorySchema } from "@/lib/validation/schemas";
 import type { AppData, Category, Locale } from "@/types/models";
 
@@ -58,25 +60,32 @@ export function CategoryManager() {
 
   const categories = useMemo(() => {
     const list = data?.categories || [];
+    const normalizedQuery = normalizeSearch(query);
     return list
       .filter((entry) => statusFilter === "all" || (statusFilter === "active" ? entry.isActive : !entry.isActive))
-      .filter((entry) => JSON.stringify(entry.name).toLowerCase().includes(query.toLowerCase()))
+      .filter((entry) => !normalizedQuery || normalizeSearch(Object.values(entry.name).join(" ")).includes(normalizedQuery))
       .sort((a, b) => a.displayOrder - b.displayOrder);
   }, [data, query, statusFilter]);
 
   async function onSubmit(values: CategoryFormData) {
-    const id = values.id || slugify(values.name.en);
+    const slug = values.slug || slugify(values.name.en);
+    const id = values.id || slug;
     setSaving(true);
     setMessage("");
     setError("");
-    await saveCategory({ ...values, id } as Category);
-    form.reset(emptyCategory);
-    await refresh();
-    setMessage(text.categorySaved);
-    setFormOpen(false);
-    setEditingCategoryId(null);
-    setExpandedCategoryId(id);
-    setSaving(false);
+    try {
+      await saveCategory({ ...values, id, slug } as Category);
+      form.reset(emptyCategory);
+      await refresh();
+      setMessage(text.categorySaved);
+      setFormOpen(false);
+      setEditingCategoryId(null);
+      setExpandedCategoryId(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : text.settingsSaveFailed);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function confirmDelete() {
@@ -84,19 +93,27 @@ export function CategoryManager() {
     const items = data.menuItems.filter((item) => item.categoryId === deleteTarget.id);
     if (items.length && deleteMode === "move" && !moveTarget) return;
     setSaving(true);
-    if (items.length) {
-      if (deleteMode === "move") {
-        await Promise.all(items.map((item) => saveMenuItem({ ...item, categoryId: moveTarget })));
-      } else {
-        await Promise.all(items.map((item) => deleteMenuItem(item.id)));
+    setMessage("");
+    setError("");
+    try {
+      if (items.length) {
+        if (deleteMode === "move") {
+          await Promise.all(items.map((item) => saveMenuItem({ ...item, categoryId: moveTarget })));
+        } else {
+          await Promise.all(items.map((item) => deleteMenuItem(item.id)));
+        }
       }
+      await deleteCategory(deleteTarget.id);
+      setDeleteTarget(null);
+      setMoveTarget("");
+      setDeleteMode("move");
+      await refresh();
+      setMessage(text.categoryDeleted);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : text.settingsSaveFailed);
+    } finally {
+      setSaving(false);
     }
-    await deleteCategory(deleteTarget.id);
-    setDeleteTarget(null);
-    setMoveTarget("");
-    setDeleteMode("move");
-    await refresh();
-    setSaving(false);
   }
 
   function edit(category: Category) {
@@ -120,7 +137,8 @@ export function CategoryManager() {
   }
 
   function newCategory() {
-    form.reset(emptyCategory);
+    const nextOrder = nextDisplayOrder(data?.categories || []);
+    form.reset({ ...emptyCategory, displayOrder: nextOrder });
     setMessage("");
     setError("");
     setEditingCategoryId(null);
@@ -154,6 +172,10 @@ export function CategoryManager() {
   }
 
   const targetItemCount = deleteTarget ? data?.menuItems.filter((item) => item.categoryId === deleteTarget.id).length || 0 : 0;
+  const allCategories = data?.categories || [];
+  const totalItems = data?.menuItems.length || 0;
+  const activeCategories = allCategories.filter((category) => category.isActive).length;
+  const inactiveCategories = allCategories.length - activeCategories;
 
   return (
     <div className="space-y-6">
@@ -170,6 +192,13 @@ export function CategoryManager() {
 
       {message ? <p className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm text-primary">{message}</p> : null}
       {error ? <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</p> : null}
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <CatalogStat label={text.totalCategories} value={allCategories.length} />
+        <CatalogStat label={text.activeCategories} value={activeCategories} tone="primary" />
+        <CatalogStat label={text.inactiveCategories} value={inactiveCategories} />
+        <CatalogStat label={text.totalMenuItems} value={totalItems} />
+      </div>
 
       {formOpen ? (
         <Card className="settings-panel">
@@ -200,13 +229,15 @@ export function CategoryManager() {
           </Select>
         </div>
         <div className="grid gap-3">
-          {categories.map((category) => {
+          {categories.length ? categories.map((category) => {
             const expanded = expandedCategoryId === category.id;
             const itemCount = data?.menuItems.filter((item) => item.categoryId === category.id).length || 0;
+            const availableItemCount = data?.menuItems.filter((item) => item.categoryId === category.id && item.isAvailable && !item.isSoldOut).length || 0;
+            const missingTranslationCount = missingLocalizedFields(category.name);
             const statusSaving = statusSavingIds.includes(category.id);
             return (
-              <Card key={category.id}>
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg p-5 transition-colors hover:bg-muted/50">
+              <Card key={category.id} className={cn(!category.isActive && "bg-muted/20")}>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg p-4 transition-colors hover:bg-muted/50 sm:p-5">
                   <button
                     type="button"
                     className="focus-ring flex min-w-0 flex-1 items-center justify-between gap-3 rounded-md text-start"
@@ -214,11 +245,23 @@ export function CategoryManager() {
                     onClick={() => setExpandedCategoryId((current) => (current === category.id ? null : category.id))}
                   >
                     <div className="min-w-0">
-                      <p className="font-semibold">{localized(category.name, locale, category.name.en)}</p>
-                      <p className="text-sm text-muted-foreground">{category.name.en} / {category.name.ar} / {category.name.ckb}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {text.order} {category.displayOrder} · {itemCount} {text.menuItems}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold">{localized(category.name, locale, category.name.en)}</p>
+                        <Badge className={cn(category.isActive ? "border-primary/30 bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
+                          {category.isActive ? text.active : text.inactive}
+                        </Badge>
+                        {missingTranslationCount ? (
+                          <Badge className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                            {text.missingTranslations}
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 truncate text-sm text-muted-foreground">{category.name.en} / {category.name.ar} / {category.name.ckb}</p>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <span className="rounded-full border bg-background px-2 py-0.5">{text.order} {category.displayOrder}</span>
+                        <span className="rounded-full border bg-background px-2 py-0.5">{itemCount} {text.menuItems}</span>
+                        <span className="rounded-full border bg-background px-2 py-0.5">{availableItemCount} {text.available}</span>
+                      </div>
                     </div>
                     <ChevronDown className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} aria-hidden />
                   </button>
@@ -252,6 +295,12 @@ export function CategoryManager() {
                       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
                         <CategoryAdminPreview category={category} itemCount={itemCount} locale={locale} text={text} />
                         <div className="flex flex-wrap content-start gap-2">
+                          <Button type="button" variant="secondary" asChild>
+                            <Link href={`/admin/menu-items?category=${encodeURIComponent(category.id)}`}>
+                              <PlusCircle className="h-4 w-4" aria-hidden />
+                              {text.addItemToCategory}
+                            </Link>
+                          </Button>
                           <Button type="button" variant="outline" size="icon" aria-label={text.edit} title={text.edit} onClick={() => edit(category)}>
                             <Pencil className="h-4 w-4" aria-hidden />
                           </Button>
@@ -265,7 +314,13 @@ export function CategoryManager() {
                 ) : null}
               </Card>
             );
-          })}
+          }) : (
+            <EmptyCatalogState
+              title={query || statusFilter !== "all" ? text.noMatchingCategories : text.noCategoriesYet}
+              actionLabel={text.addCategory}
+              onAction={newCategory}
+            />
+          )}
         </div>
       </div>
 
@@ -351,40 +406,66 @@ function CategoryEditorForm({
   onCancel: () => void;
 }) {
   const watchedCategory = form.watch();
+  const englishName = form.register("name.en");
+  const slugField = form.register("slug");
 
   return (
     <>
       <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="grid gap-4 md:grid-cols-3">
-          <Field label={text.englishName} error={adminErrorText(form.formState.errors.name?.en?.message, text)}>
-            <Input {...form.register("name.en")} onBlur={(event) => !form.getValues("slug") && form.setValue("slug", slugify(event.target.value))} />
-          </Field>
-          <Field label={text.arabicName} error={adminErrorText(form.formState.errors.name?.ar?.message, text)}>
-            <Input dir="rtl" {...form.register("name.ar")} />
-          </Field>
-          <Field label={text.kurdishName} error={adminErrorText(form.formState.errors.name?.ckb?.message, text)}>
-            <Input dir="rtl" {...form.register("name.ckb")} />
-          </Field>
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <Field label={text.englishDescription}>
-            <Textarea {...form.register("description.en")} />
-          </Field>
-          <Field label={text.arabicDescription}>
-            <Textarea dir="rtl" {...form.register("description.ar")} />
-          </Field>
-          <Field label={text.kurdishDescription}>
-            <Textarea dir="rtl" {...form.register("description.ckb")} />
-          </Field>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={text.slug} error={adminErrorText(form.formState.errors.slug?.message, text)}>
-            <Input {...form.register("slug")} />
-          </Field>
-          <Field label={text.displayOrder}>
-            <Input type="number" {...form.register("displayOrder")} />
-          </Field>
-        </div>
+        <FormSection title={text.names}>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Field label={text.englishName} error={adminErrorText(form.formState.errors.name?.en?.message, text)}>
+              <Input
+                {...englishName}
+                onChange={(event) => {
+                  englishName.onChange(event);
+                  if (!form.getValues("slug")) form.setValue("slug", slugify(event.target.value), { shouldValidate: true });
+                }}
+                onBlur={(event) => {
+                  englishName.onBlur(event);
+                  if (!form.getValues("slug")) form.setValue("slug", slugify(event.target.value), { shouldValidate: true });
+                }}
+              />
+            </Field>
+            <Field label={text.arabicName} error={adminErrorText(form.formState.errors.name?.ar?.message, text)}>
+              <Input dir="rtl" {...form.register("name.ar")} />
+            </Field>
+            <Field label={text.kurdishName} error={adminErrorText(form.formState.errors.name?.ckb?.message, text)}>
+              <Input dir="rtl" {...form.register("name.ckb")} />
+            </Field>
+          </div>
+        </FormSection>
+        <FormSection title={text.descriptions}>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Field label={text.englishDescription}>
+              <Textarea {...form.register("description.en")} />
+            </Field>
+            <Field label={text.arabicDescription}>
+              <Textarea dir="rtl" {...form.register("description.ar")} />
+            </Field>
+            <Field label={text.kurdishDescription}>
+              <Textarea dir="rtl" {...form.register("description.ckb")} />
+            </Field>
+          </div>
+        </FormSection>
+        <FormSection title={text.publishing}>
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_160px]">
+            <Field label={text.slug} error={adminErrorText(form.formState.errors.slug?.message, text)}>
+              <Input {...slugField} onChange={(event) => slugField.onChange(event)} />
+            </Field>
+            <Field label={text.displayOrder}>
+              <Input type="number" {...form.register("displayOrder")} />
+            </Field>
+          </div>
+          <div className="flex items-center justify-between rounded-md border bg-background p-3">
+            <span className="text-sm font-medium">{text.active}</span>
+            <Switch
+              label={text.active}
+              checked={Boolean(form.watch("isActive"))}
+              onCheckedChange={(checked) => form.setValue("isActive", checked, { shouldDirty: true })}
+            />
+          </div>
+        </FormSection>
         <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={saving}>{saving ? text.saving : text.saveCategory}</Button>
           <Button type="button" variant="outline" onClick={onCancel}>{text.cancel}</Button>
@@ -451,6 +532,45 @@ function CategoryAdminPreview({
       </div>
     </div>
   );
+}
+
+function CatalogStat({ label, value, tone = "default" }: { label: string; value: number; tone?: "default" | "primary" }) {
+  return (
+    <div className={cn("rounded-lg border bg-card p-4", tone === "primary" && "border-primary/30 bg-primary/5")}>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3 rounded-lg border bg-muted/15 p-4">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function EmptyCatalogState({ title, actionLabel, onAction }: { title: string; actionLabel: string; onAction: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-muted/15 p-8 text-center">
+      <CircleOff className="h-8 w-8 text-muted-foreground" aria-hidden />
+      <p className="mt-3 font-medium">{title}</p>
+      <Button type="button" className="mt-4" onClick={onAction}>
+        <PlusCircle className="h-4 w-4" aria-hidden />
+        {actionLabel}
+      </Button>
+    </div>
+  );
+}
+
+function missingLocalizedFields(value: Record<Locale, string> | Partial<Record<Locale, string>>) {
+  return (["en", "ar", "ckb"] as Locale[]).filter((key) => !value[key]).length;
+}
+
+function nextDisplayOrder(entries: { displayOrder: number }[]) {
+  return entries.length ? Math.max(...entries.map((entry) => entry.displayOrder)) + 1 : 1;
 }
 
 function replaceCategory(data: AppData | null, category: Category): AppData | null {

@@ -151,13 +151,16 @@ export function ReportsManager() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Receipt className="h-5 w-5 text-primary" aria-hidden />
-            {text.recentOrders}
+            {text.allOrders}
+            {filtered.length ? (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary">{filtered.length}</span>
+            ) : null}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {filtered.length ? (
             <div className="space-y-2">
-              {filtered.slice(0, 15).map((order) => (
+              {filtered.map((order) => (
                 <div key={order.id} className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3">
                   <div className="min-w-0">
                     <p dir={textDir} className="truncate text-sm font-medium">{order.tableName}</p>
