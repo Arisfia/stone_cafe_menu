@@ -446,13 +446,14 @@ body.overflow-lock {
 }
 .cat-bite { transform-box: fill-box; transform-origin: center; animation: cat-bite 1.8s ease-in-out infinite; }
 
-/* Ice cream: a drop forms then falls away under gravity */
+/* Ice cream: a fat drop swells at the scoop, then falls away under gravity */
 @keyframes cat-drop {
-  0% { transform: translateY(0); opacity: 0; }
-  20% { opacity: 1; }
-  100% { transform: translateY(7px); opacity: 0; }
+  0% { transform: translateY(-1px) scale(0.5); opacity: 0; }
+  18% { opacity: 1; transform: translateY(0) scale(1); }
+  78% { opacity: 1; }
+  100% { transform: translateY(8.5px) scale(0.9); opacity: 0; }
 }
-.cat-drop { transform-box: fill-box; animation: cat-drop 2.2s ease-in infinite; }
+.cat-drop { transform-box: fill-box; transform-origin: center top; animation: cat-drop 2s ease-in infinite; }
 
 /* Cake candle: flame flickers, gets snuffed out, then relights */
 @keyframes cat-candle-flame {

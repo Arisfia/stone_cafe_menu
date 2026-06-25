@@ -222,19 +222,19 @@ function CookieBiteIcon({ className }: { className?: string }) {
   );
 }
 
-// Ice cream cone that melts: the scoop softly squashes while drops drip down.
+// Ice cream cone that melts: the scoop softly squashes while big drops drip down.
 function IceCreamDripIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden focusable="false">
       <g className="cat-drip">
-        <circle cx="12" cy="8" r="4.8" fill="currentColor" opacity="0.18" />
-        <circle cx="12" cy="8" r="4.8" fill="none" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M7.4 11 12 20.6 16.6 11" fill="currentColor" opacity="0.12" />
-        <path d="M7.4 11 12 20.6 16.6 11" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+        <circle cx="12" cy="6.8" r="4.3" fill="currentColor" opacity="0.18" />
+        <circle cx="12" cy="6.8" r="4.3" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M8 9.6 12 18.4 16 9.6" fill="currentColor" opacity="0.12" />
+        <path d="M8 9.6 12 18.4 16 9.6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
       </g>
       <g fill="currentColor">
-        <circle className="cat-drop" cx="9" cy="12" r="1" opacity="0" style={{ animationDelay: "0s" }} />
-        <circle className="cat-drop" cx="15" cy="12.4" r="0.9" opacity="0" style={{ animationDelay: "1.1s" }} />
+        <path className="cat-drop" d="M7.7 9.8c2.2 1.9 2.2 4 0 5.1c-2.2-1.1-2.2-3.2 0-5.1z" opacity="0" style={{ animationDelay: "0s" }} />
+        <path className="cat-drop" d="M16.3 10.4c1.9 1.7 1.9 3.5 0 4.5c-1.9-1-1.9-2.8 0-4.5z" opacity="0" style={{ animationDelay: "1s" }} />
       </g>
     </svg>
   );
