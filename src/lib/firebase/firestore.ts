@@ -20,7 +20,7 @@ import { defaultAppData } from "@/data/default-data";
 import { getFirebaseDb } from "@/lib/firebase/client";
 import { removeImage } from "@/lib/supabase/storage";
 import { slugify } from "@/lib/utils/format";
-import type { AdminPermissions, AdminProfile, AdminRole, AppData, Category, MenuItem, PosState, PosTableArea } from "@/types/models";
+import type { AdminPermissions, AdminProfile, AdminRole, AppData, Category, Expense, MenuItem, PosState, PosTableArea } from "@/types/models";
 
 function converter<T extends { id: string }>(): FirestoreDataConverter<T> {
   return {
@@ -55,6 +55,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 const categoryConverter = converter<Category>();
 const itemConverter = converter<MenuItem>();
+const expenseConverter = converter<Expense>();
 
 const defaultPosState: PosState = {
   tables: Array.from({ length: 8 }, (_, index) => ({
@@ -309,6 +310,34 @@ export async function deleteMenuItem(itemId: string) {
   const db = getFirebaseDb();
   if (!db) return;
   await deleteDoc(doc(db, "menuItems", itemId));
+}
+
+export async function listExpenses(): Promise<Expense[]> {
+  const db = getFirebaseDb();
+  if (!db) return [];
+  const snap = await getDocs(query(collection(db, "expenses").withConverter(expenseConverter), orderBy("date", "desc"), limit(500)));
+  return snap.docs.map((entry) => entry.data());
+}
+
+export async function saveExpense(expense: Expense) {
+  const db = getFirebaseDb();
+  if (!db) throw new Error("Firestore is not configured.");
+  const payload = {
+    ...expense,
+    updatedAt: serverTimestamp(),
+    createdAt: expense.createdAt || serverTimestamp()
+  };
+  if (expense.id) {
+    await setDoc(doc(db, "expenses", expense.id).withConverter(expenseConverter), payload);
+  } else {
+    await addDoc(collection(db, "expenses").withConverter(expenseConverter), payload);
+  }
+}
+
+export async function deleteExpense(expenseId: string) {
+  const db = getFirebaseDb();
+  if (!db) throw new Error("Firestore is not configured.");
+  await deleteDoc(doc(db, "expenses", expenseId));
 }
 
 export async function saveSettings(section: "general" | "menu" | "appearance" | "qr", value: Record<string, unknown>) {

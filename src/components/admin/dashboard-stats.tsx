@@ -15,6 +15,7 @@ import {
   Plus,
   QrCode,
   Receipt,
+  ReceiptText,
   Settings,
   ShoppingBag,
   Table2,
@@ -95,6 +96,7 @@ export function DashboardStats() {
     { href: "/admin/categories", icon: Plus, label: text.addCategory, show: auth.can("categories") },
     { href: "/admin/pos", icon: Table2, label: text.pos, show: auth.can("pos") },
     { href: "/admin/reports", icon: BarChart3, label: text.reports, show: auth.can("reports") },
+    { href: "/admin/expenses", icon: ReceiptText, label: text.expenses, show: auth.can("expenses") },
     { href: "/admin/qr-code", icon: QrCode, label: text.qrCode, show: auth.can("qrCode") },
     { href: "/admin/settings", icon: Settings, label: text.settings, show: auth.can("settings") },
     { href: "/menu", icon: ExternalLink, label: text.viewPublicMenu, show: true, target: "_blank" }

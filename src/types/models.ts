@@ -141,6 +141,21 @@ export type PosCompletedOrder = {
   completedAt: string;
 };
 
+export type Expense = {
+  id: string;
+  title: string;
+  category: string;
+  amount: number;
+  currency: Currency;
+  date: string;
+  note?: string;
+  byWho: string;
+  createdByUid?: string;
+  createdByEmail?: string;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+};
+
 export type PosState = {
   tables: PosTable[];
   orders: Record<string, PosTableOrder>;
@@ -173,7 +188,7 @@ export type QrSettings = {
 
 export type AdminRole = "admin" | "employee";
 
-export type AdminFeature = "dashboard" | "categories" | "menuItems" | "pos" | "reports" | "qrCode" | "settings";
+export type AdminFeature = "dashboard" | "categories" | "menuItems" | "pos" | "reports" | "expenses" | "qrCode" | "settings";
 
 export type AdminPermissions = Partial<Record<AdminFeature, boolean>>;
 
