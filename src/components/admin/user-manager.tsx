@@ -197,18 +197,26 @@ export function UserManager() {
     setSaving(true);
     setMessage("");
     setError("");
+
+    // Best-effort: ask the server to delete the Firebase Auth login so the email
+    // is freed for reuse (needs the Admin SDK / FIREBASE_ADMIN_* env vars). A
+    // server problem must NEVER block the access + username cleanup below, or the
+    // username would stay bound after "deleting" the account.
+    let emailFreed = false;
     try {
-      // Try a full server-side delete (Auth login + username + profile). If the
-      // Admin SDK isn't configured, fall back to removing the Firestore records
-      // so they at least lose access and the username is freed.
-      const fullyDeleted = await deleteStaffAccount(removeTarget.uid);
-      if (!fullyDeleted) {
-        if (removeTarget.username) await releaseUsername(removeTarget.username).catch(() => {});
-        await deleteAdminProfile(removeTarget.uid);
-      }
+      emailFreed = await deleteStaffAccount(removeTarget.uid);
+    } catch {
+      emailFreed = false;
+    }
+
+    try {
+      // Always revoke access and release the username — even if the Auth delete
+      // was unavailable. Deleting already-removed docs is a harmless no-op.
+      if (removeTarget.username) await releaseUsername(removeTarget.username).catch(() => {});
+      await deleteAdminProfile(removeTarget.uid);
       setRemoveTarget(null);
       await refresh();
-      setMessage(fullyDeleted ? text.userRemoved : text.accountDeletePartial);
+      setMessage(emailFreed ? text.userRemoved : text.accountDeletePartial);
     } catch (err) {
       setError(err instanceof Error ? err.message : text.settingsSaveFailed);
     } finally {

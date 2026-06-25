@@ -38,8 +38,10 @@ export function PosManager() {
   const auth = useAdminAuth();
   // Editing the table layout (add/rename/delete tables) is an admin-only setup
   // task. Employees with POS access can still take, transfer, merge and complete
-  // orders — they just can't change the tables themselves.
-  const canManageTables = auth.role === "admin";
+  // orders — they just can't change the tables themselves. Default-deny while the
+  // profile is still loading so the edit control never flashes in for an employee
+  // (roleOf(null) optimistically returns "admin").
+  const canManageTables = !auth.loading && auth.role === "admin";
   const [data, setData] = useState<AppData | null>(null);
   const [pos, setPos] = useState<PosState>(emptyPosState);
   const [selectedTableId, setSelectedTableId] = useState("");
