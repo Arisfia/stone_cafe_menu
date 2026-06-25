@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Building2, CheckCircle2, KeyRound, Palette, Save, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import { getFirebaseAuth } from "@/lib/firebase/client";
-import { changeAdminPassword, sendAdminPasswordReset } from "@/lib/firebase/auth";
+import { changeAdminPassword } from "@/lib/firebase/auth";
 import { getAdminAppData, saveSettings } from "@/lib/firebase/firestore";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -112,13 +112,6 @@ export function SettingsManager() {
     } catch (err) {
       setError(err instanceof Error ? err.message : text.passwordChangeFailed);
     }
-  }
-
-  async function sendReset() {
-    const email = getFirebaseAuth()?.currentUser?.email;
-    if (!email) return;
-    await sendAdminPasswordReset(email);
-    setMessage(text.resetSent);
   }
 
   const currentSignature = useMemo(() => settingsSignature(general, menu, appearance), [appearance, general, menu]);
@@ -317,7 +310,6 @@ export function SettingsManager() {
               <Field label={text.confirmNewPassword}><Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></Field>
               <div className="flex flex-wrap gap-2 md:col-span-3">
                 <Button type="submit">{text.changePassword}</Button>
-                <Button type="button" variant="outline" onClick={sendReset}>{text.sendForgotPasswordEmail}</Button>
               </div>
             </form>
           </CardContent>

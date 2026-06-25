@@ -50,7 +50,6 @@
     "login": "Admin Login",
     "email": "Email",
     "password": "Password",
-    "forgotPassword": "Forgot password",
     "signIn": "Sign in",
     "save": "Save",
     "delete": "Delete",

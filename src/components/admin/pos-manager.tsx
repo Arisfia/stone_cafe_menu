@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Armchair,
   ArrowRightLeft,
+  Coffee,
   Merge,
   Minus,
   Pencil,
@@ -12,6 +14,7 @@ import {
   Search,
   Table2,
   Trash2,
+  Umbrella,
   X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -58,6 +61,13 @@ export function PosManager() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const menuPickerRef = useRef<HTMLDivElement | null>(null);
+  // Ticks once a minute so the per-table "time since last activity" chips refresh.
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     Promise.all([getAdminAppData(), getPosState()])
@@ -76,6 +86,7 @@ export function PosManager() {
   const selectedTable = tables.find((table) => table.id === selectedTableId) || tables[0];
   const selectedDraftTable = draftTables.find((table) => table.id === draftSelectedTableId);
   const selectedOrder = selectedTable ? pos.orders[selectedTable.id] || emptyOrder(selectedTable.id) : null;
+  const posCurrency: Currency = data?.general.defaultCurrency ?? "IQD";
   const categories = useMemo(
     () => (data?.categories || []).filter((category) => category.isActive).sort((a, b) => a.displayOrder - b.displayOrder),
     [data?.categories]
@@ -458,48 +469,87 @@ export function PosManager() {
           {!(tableToolsOpen && canManageTables) ? (
             <div className="space-y-3">
               <div className="space-y-4">
-                {tableSections.map((section, index) => (
-                  <div key={section.area} className={cn(index > 0 && "pt-2")}>
-                    <TableAreaHeading area={section.area} text={text} textDir={textDir} />
-                    {section.tables.length ? (
-                      <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
-                        {section.tables.map((table) => {
-                          const order = pos.orders[table.id];
-                          const count = order?.lines.reduce((sum, line) => sum + line.quantity, 0) || 0;
-                          const occupied = count > 0;
-                          const selected = table.id === selectedTable?.id;
-                          const actionTarget = tableAction !== null && !selected;
-                          // In move mode an occupied destination is blocked; in merge mode it is a valid target.
-                          const blockedTarget = actionTarget && tableAction === "move" && occupied;
-                          return (
-                            <button
-                              key={table.id}
-                              type="button"
-                              onClick={() => pressTable(table.id)}
-                              className={cn(
-                                "focus-ring min-h-20 rounded-lg border p-3 text-start transition-colors",
-                                selected
-                                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                                  : occupied
-                                    ? "border-secondary bg-secondary/10 ring-1 ring-inset ring-secondary/40 hover:bg-secondary/20"
-                                    : "bg-card hover:bg-muted",
-                                actionTarget && "border-primary/60 ring-2 ring-primary/30",
-                                blockedTarget && "opacity-60"
-                              )}
-                            >
-                              <span dir={textDir} className="block truncate text-base font-semibold">{table.name}</span>
-                              <span dir={textDir} className={cn("mt-2 block truncate text-xs", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
-                                {count ? `${count} ${text.menuItems}` : text.noItemsOnTable}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p dir={textDir} className="mt-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">{text.noTablesInArea}</p>
-                    )}
-                  </div>
-                ))}
+                {tableSections.map((section, index) => {
+                  const occupiedCount = section.tables.filter((entry) => tableOrderLineCount(pos.orders[entry.id]) > 0).length;
+                  const areaTotal = section.tables.reduce((sum, entry) => {
+                    const tableOrder = pos.orders[entry.id];
+                    return tableOrder ? sum + calculateTotals(tableOrder, posCurrency).total : sum;
+                  }, 0);
+                  return (
+                    <div key={section.area} className={cn(index > 0 && "pt-2")}>
+                      <TableAreaHeading
+                        area={section.area}
+                        text={text}
+                        textDir={textDir}
+                        locale={locale}
+                        currency={posCurrency}
+                        occupied={occupiedCount}
+                        total={section.tables.length}
+                        areaTotal={areaTotal}
+                      />
+                      {section.tables.length ? (
+                        <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
+                          {section.tables.map((table) => {
+                            const order = pos.orders[table.id];
+                            const count = tableOrderLineCount(order);
+                            const occupied = count > 0;
+                            const selected = table.id === selectedTable?.id;
+                            const actionTarget = tableAction !== null && !selected;
+                            // In move mode an occupied destination is blocked; in merge mode it is a valid target.
+                            const blockedTarget = actionTarget && tableAction === "move" && occupied;
+                            const orderTotal = occupied && order ? calculateTotals(order, posCurrency).total : 0;
+                            const minutes = occupied && order?.updatedAt ? Math.max(0, Math.floor((now - Date.parse(order.updatedAt)) / 60000)) : null;
+                            return (
+                              <button
+                                key={table.id}
+                                type="button"
+                                onClick={() => pressTable(table.id)}
+                                className={cn(
+                                  "focus-ring min-h-20 rounded-lg border p-3 text-start transition-[transform,background-color,border-color,color] duration-200 active:scale-[0.97]",
+                                  selected
+                                    ? "border-primary bg-primary text-primary-foreground shadow-sm pos-tile-pop"
+                                    : occupied
+                                      ? "border-secondary bg-secondary/10 ring-1 ring-inset ring-secondary/40 hover:bg-secondary/20 pos-tile-glow"
+                                      : "border-dashed bg-card hover:bg-muted",
+                                  actionTarget && "ring-2 ring-primary/40",
+                                  blockedTarget && "opacity-60"
+                                )}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <span dir={textDir} className="min-w-0 truncate text-base font-semibold">{table.name}</span>
+                                  <Coffee className={cn("h-4 w-4 shrink-0", selected ? "text-primary-foreground/90" : occupied ? "text-secondary" : "text-muted-foreground/30")} aria-hidden />
+                                </div>
+                                <div className="mt-2 flex items-center justify-between gap-2">
+                                  {occupied ? (
+                                    <span dir={textDir} className={cn("truncate text-sm font-bold tabular-nums", selected ? "text-primary-foreground" : "text-foreground")}>
+                                      {formatMoney(orderTotal, posCurrency, locale)}
+                                    </span>
+                                  ) : (
+                                    <span dir={textDir} className={cn("truncate text-xs", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                                      {text.noItemsOnTable}
+                                    </span>
+                                  )}
+                                  {occupied && minutes !== null ? (
+                                    <span className={cn("shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums", selected ? "bg-primary-foreground/20 text-primary-foreground" : durationTone(minutes))}>
+                                      {formatDuration(minutes)}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                {occupied ? (
+                                  <span className={cn("mt-1 block text-[10px]", selected ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                                    {count} {text.menuItems}
+                                  </span>
+                                ) : null}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p dir={textDir} className="mt-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">{text.noTablesInArea}</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex items-center justify-end gap-2">
                 <Button
@@ -789,20 +839,54 @@ function mergeOrderLines(baseLines: PosOrderLine[], addedLines: PosOrderLine[]):
 function TableAreaHeading({
   area,
   text,
-  textDir
+  textDir,
+  locale,
+  currency,
+  occupied,
+  total,
+  areaTotal
 }: {
   area: PosTableArea;
   text: Record<string, string>;
   textDir: "ltr" | "rtl";
+  locale?: "en" | "ar" | "ckb";
+  currency?: Currency;
+  occupied?: number;
+  total?: number;
+  areaTotal?: number;
 }) {
+  const Icon = area === "outdoor" ? Umbrella : Armchair;
   return (
-    <div className="flex items-center gap-3">
-      <span dir={textDir} className="text-sm font-semibold text-muted-foreground">
+    <div className="flex items-center gap-2">
+      <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", area === "outdoor" ? "bg-primary/10 text-primary" : "bg-secondary/15 text-secondary")}>
+        <Icon className="h-4 w-4" aria-hidden />
+      </span>
+      <span dir={textDir} className="text-sm font-semibold">
         {area === "outdoor" ? text.outdoorTables : text.indoorTables}
       </span>
-      {area === "outdoor" ? <span className="h-px flex-1 bg-border" aria-hidden /> : null}
+      {typeof total === "number" && total > 0 ? (
+        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+          {occupied ?? 0}/{total}
+        </span>
+      ) : null}
+      <span className="h-px flex-1 bg-border" aria-hidden />
+      {areaTotal && areaTotal > 0 && currency && locale ? (
+        <span className="shrink-0 text-xs font-semibold tabular-nums text-secondary">{formatMoney(areaTotal, currency, locale)}</span>
+      ) : null}
     </div>
   );
+}
+
+function formatDuration(totalMinutes: number): string {
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  return `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`;
+}
+
+// Idle-time chip color: fresh (neutral) → over 30 min (amber) → over an hour (red).
+function durationTone(totalMinutes: number): string {
+  if (totalMinutes >= 60) return "bg-destructive/15 text-destructive";
+  if (totalMinutes >= 30) return "bg-amber-500/15 text-amber-700 dark:text-amber-400";
+  return "bg-muted text-muted-foreground";
 }
 
 function TotalRow({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {

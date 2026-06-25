@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { resolveLoginEmail, sendAdminPasswordReset, signInAdmin } from "@/lib/firebase/auth";
+import { signInAdmin } from "@/lib/firebase/auth";
 import { hasFirebaseClientConfig } from "@/lib/firebase/client";
 import { AdminPreferences, useAdminLocale } from "@/components/admin/admin-preferences";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
@@ -19,7 +19,6 @@ export function LoginForm() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +34,6 @@ export function LoginForm() {
     event.preventDefault();
     setLoading(true);
     setError("");
-    setMessage("");
     try {
       await signInAdmin(identifier, password);
       router.replace("/admin/dashboard");
@@ -43,22 +41,6 @@ export function LoginForm() {
       setError(err instanceof Error ? friendlyAuthError(err.message, text) : text.loginFailed);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handlePasswordReset() {
-    setError("");
-    setMessage("");
-    if (!identifier) {
-      setError(text.enterEmailFirst);
-      return;
-    }
-    try {
-      const email = await resolveLoginEmail(identifier);
-      await sendAdminPasswordReset(email);
-      setMessage(text.resetSent);
-    } catch (err) {
-      setError(err instanceof Error ? friendlyAuthError(err.message, text) : text.resetFailed);
     }
   }
 
@@ -108,16 +90,8 @@ export function LoginForm() {
                 {error}
               </p>
             ) : null}
-            {message ? (
-              <p dir={textDir} className="text-sm text-primary">
-                {message}
-              </p>
-            ) : null}
             <Button className="w-full" type="submit" disabled={loading}>
               <span dir={textDir}>{loading ? text.signingIn : text.signIn}</span>
-            </Button>
-            <Button className="w-full" type="button" variant="ghost" onClick={handlePasswordReset}>
-              <span dir={textDir}>{text.forgotPassword}</span>
             </Button>
           </form>
         </CardContent>

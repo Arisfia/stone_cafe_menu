@@ -474,6 +474,21 @@ body.overflow-lock {
 }
 .cat-candle-smoke { transform-box: fill-box; transform-origin: center bottom; animation: cat-candle-smoke 3s ease-in-out infinite; }
 
+/* POS: occupied table tile breathes a soft caramel glow so busy tables stand out */
+@keyframes pos-tile-glow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--secondary) / 0); }
+  50% { box-shadow: 0 0 0 4px hsl(var(--secondary) / 0.18); }
+}
+.pos-tile-glow { animation: pos-tile-glow 2.6s ease-in-out infinite; }
+
+/* POS: selected table tile gives a quick spring pop */
+@keyframes pos-tile-pop {
+  0% { transform: scale(0.96); }
+  55% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+.pos-tile-pop { animation: pos-tile-pop 0.32s ease-out; }
+
 /* Menu header contact chips */
 /* Available: draw the ring, then draw the tick inside it */
 @keyframes avl-ring {
@@ -536,6 +551,8 @@ body.overflow-lock {
   .globe-glyph-character,
   .pop-in,
   .settings-panel,
+  .pos-tile-glow,
+  .pos-tile-pop,
   .cat-bob,
   .cat-spin,
   .cat-pulse,

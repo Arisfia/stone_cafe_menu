@@ -1,7 +1,6 @@
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   updatePassword,
@@ -50,12 +49,6 @@ export async function verifyApprovedAdmin(uid: string) {
 export async function logoutAdmin() {
   const auth = getFirebaseAuth();
   if (auth) await signOut(auth);
-}
-
-export async function sendAdminPasswordReset(email: string) {
-  const auth = getFirebaseAuth();
-  if (!auth) throw new Error("Firebase Authentication is not configured.");
-  await sendPasswordResetEmail(auth, email);
 }
 
 export async function changeAdminPassword(user: User, currentPassword: string, newPassword: string) {
