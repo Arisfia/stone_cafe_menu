@@ -1,12 +1,21 @@
 import { SUPABASE_BUCKET, SUPABASE_KEY, SUPABASE_URL } from "@/lib/supabase/client";
 
-const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const allowedTypes: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif"
+};
 const maxImageBytes = 10 * 1024 * 1024;
 
 export function validateImageFile(file: File) {
-  if (!allowedTypes.includes(file.type)) return "Use a JPG, PNG, WebP, or GIF image.";
+  if (!allowedTypes[file.type]) return "Use a JPG, PNG, WebP, or GIF image.";
   if (file.size > maxImageBytes) return "Images must be 10 MB or smaller.";
   return null;
+}
+
+export function imageExtensionForFile(file: File) {
+  return allowedTypes[file.type] || file.name.split(".").pop()?.toLowerCase() || "webp";
 }
 
 /**
@@ -21,7 +30,7 @@ export async function uploadImage(path: string, file: File, onProgress?: (progre
   const error = validateImageFile(file);
   if (error) throw new Error(error);
 
-  const extension = file.name.split(".").pop()?.toLowerCase() || "webp";
+  const extension = imageExtensionForFile(file);
   const objectKey = `${path.replace(/^\/+|\/+$/g, "")}/${crypto.randomUUID()}.${extension}`;
   const endpoint = `${baseUrl}/storage/v1/object/${SUPABASE_BUCKET}/${objectKey}`;
 

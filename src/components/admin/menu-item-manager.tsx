@@ -527,6 +527,7 @@ function MenuItemEditorForm({
             path={`menu-items/${form.watch("id") || categoryId || "new"}`}
             imageUrl={form.watch("imageUrl") || ""}
             imageHistory={form.watch("imageHistory") || []}
+            helpText={text.menuItemImageHint}
             onUploaded={(result) => {
               form.setValue("imageHistory", addCurrentImageToHistory(form.getValues()), { shouldDirty: true });
               form.setValue("imageUrl", result.imageUrl, { shouldDirty: true, shouldValidate: true });

@@ -15,6 +15,7 @@ export function ImageUploadField({
   path,
   imageUrl,
   imageHistory = [],
+  helpText,
   onUploaded,
   onRemoved,
   onRollback,
@@ -25,6 +26,7 @@ export function ImageUploadField({
   path: string;
   imageUrl?: string;
   imageHistory?: ImageHistoryEntry[];
+  helpText?: string;
   onUploaded: (result: { imageUrl: string; imagePath: string }) => void;
   onRemoved?: () => void;
   onRollback?: (entry: ImageHistoryEntry) => void;
@@ -90,6 +92,7 @@ export function ImageUploadField({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={preview} alt="" className="h-32 w-full rounded-md border object-cover" />
       ) : null}
+      {helpText ? <p className="text-xs text-muted-foreground">{helpText}</p> : null}
       <div className="flex items-center gap-2">
         <Input
           ref={inputRef}
