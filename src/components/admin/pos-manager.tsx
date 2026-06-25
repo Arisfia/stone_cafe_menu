@@ -20,6 +20,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { adminErrorText, useAdminLocale } from "@/components/admin/admin-preferences";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { getAdminAppData, getPosState, savePosState } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/cn";
@@ -34,6 +35,11 @@ const emptyPosState: PosState = {
 
 export function PosManager() {
   const { locale, text, dir: textDir } = useAdminLocale();
+  const auth = useAdminAuth();
+  // Editing the table layout (add/rename/delete tables) is an admin-only setup
+  // task. Employees with POS access can still take, transfer, merge and complete
+  // orders — they just can't change the tables themselves.
+  const canManageTables = auth.role === "admin";
   const [data, setData] = useState<AppData | null>(null);
   const [pos, setPos] = useState<PosState>(emptyPosState);
   const [selectedTableId, setSelectedTableId] = useState("");
@@ -433,19 +439,21 @@ export function PosManager() {
               <Table2 className="h-5 w-5 text-primary" aria-hidden />
               {text.tables}
             </CardTitle>
-            <Button
-              type="button"
-              variant={tableToolsOpen ? "default" : "outline"}
-              size="icon"
-              aria-label={text.editTable}
-              title={text.editTable}
-              onClick={() => tableToolsOpen ? closeTableTools() : openTableTools()}
-            >
-              <Pencil className="h-4 w-4" aria-hidden />
-            </Button>
+            {canManageTables ? (
+              <Button
+                type="button"
+                variant={tableToolsOpen ? "default" : "outline"}
+                size="icon"
+                aria-label={text.editTable}
+                title={text.editTable}
+                onClick={() => tableToolsOpen ? closeTableTools() : openTableTools()}
+              >
+                <Pencil className="h-4 w-4" aria-hidden />
+              </Button>
+            ) : null}
           </div>
 
-          {!tableToolsOpen ? (
+          {!(tableToolsOpen && canManageTables) ? (
             <div className="space-y-3">
               <div className="space-y-4">
                 {tableSections.map((section, index) => (
@@ -518,7 +526,7 @@ export function PosManager() {
             </div>
           ) : null}
 
-          {tableToolsOpen ? (
+          {tableToolsOpen && canManageTables ? (
             <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
               <div className="space-y-4">
                 {draftTableSections.map((section, index) => (

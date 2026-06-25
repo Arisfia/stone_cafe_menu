@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -10,16 +10,26 @@ import { Input } from "@/components/ui/input";
 import { resolveLoginEmail, sendAdminPasswordReset, signInAdmin } from "@/lib/firebase/auth";
 import { hasFirebaseClientConfig } from "@/lib/firebase/client";
 import { AdminPreferences, useAdminLocale } from "@/components/admin/admin-preferences";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 
 export function LoginForm() {
   const router = useRouter();
   const { text, dir: textDir } = useAdminLocale();
+  const auth = useAdminAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Already signed in as approved staff → skip the login page and go straight to
+  // the admin panel. AdminShell bounces employees without dashboard access to
+  // their first allowed section.
+  const alreadySignedIn = !auth.loading && auth.isAdmin;
+  useEffect(() => {
+    if (alreadySignedIn) router.replace("/admin/dashboard");
+  }, [alreadySignedIn, router]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,6 +60,14 @@ export function LoginForm() {
     } catch (err) {
       setError(err instanceof Error ? friendlyAuthError(err.message, text) : text.resetFailed);
     }
+  }
+
+  if (alreadySignedIn) {
+    return (
+      <main dir="ltr" className="flex min-h-screen items-center justify-center text-muted-foreground">
+        <span dir={textDir}>{text.redirecting}</span>
+      </main>
+    );
   }
 
   return (

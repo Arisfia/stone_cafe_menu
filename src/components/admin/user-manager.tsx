@@ -18,7 +18,7 @@ import {
   saveAdminProfile,
   setAdminProfileDisabled
 } from "@/lib/firebase/firestore";
-import { createStaffAuthUser } from "@/lib/firebase/user-admin";
+import { createStaffAuthUser, deleteStaffAccount } from "@/lib/firebase/user-admin";
 import { ADMIN_FEATURES, emptyPermissions, roleOf } from "@/lib/admin/permissions";
 import { cn } from "@/lib/utils/cn";
 import type { AdminPermissions, AdminProfile, AdminRole } from "@/types/models";
@@ -198,11 +198,17 @@ export function UserManager() {
     setMessage("");
     setError("");
     try {
-      if (removeTarget.username) await releaseUsername(removeTarget.username).catch(() => {});
-      await deleteAdminProfile(removeTarget.uid);
+      // Try a full server-side delete (Auth login + username + profile). If the
+      // Admin SDK isn't configured, fall back to removing the Firestore records
+      // so they at least lose access and the username is freed.
+      const fullyDeleted = await deleteStaffAccount(removeTarget.uid);
+      if (!fullyDeleted) {
+        if (removeTarget.username) await releaseUsername(removeTarget.username).catch(() => {});
+        await deleteAdminProfile(removeTarget.uid);
+      }
       setRemoveTarget(null);
       await refresh();
-      setMessage(text.userRemoved);
+      setMessage(fullyDeleted ? text.userRemoved : text.accountDeletePartial);
     } catch (err) {
       setError(err instanceof Error ? err.message : text.settingsSaveFailed);
     } finally {
