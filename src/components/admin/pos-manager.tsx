@@ -418,7 +418,7 @@ export function PosManager() {
       if (!saved) return;
       setSelectedTableId(targetTable.id);
       setTableAction(null);
-      scrollToMenuPicker();
+      // Stay on the tables after merging (don't jump down to the menu picker).
     });
   }
 
