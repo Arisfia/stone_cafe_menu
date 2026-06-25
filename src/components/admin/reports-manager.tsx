@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BadgePercent, ChevronLeft, ChevronRight, ListOrdered, Receipt, ShoppingBag, TrendingUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BadgePercent, ListOrdered, Receipt, ShoppingBag, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { adminErrorText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { getPosState } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
@@ -70,43 +69,6 @@ export function ReportsManager() {
 
   const avgOrder = filtered.length ? Math.round(totals.revenue / filtered.length) : 0;
 
-  // Tap-friendly date pickers (native date inputs render badly in dark mode and
-  // need typing). Everything is driven by themed <Select> dropdowns + steppers.
-  const intlLocale = locale === "ckb" ? "ar-IQ" : locale;
-  const maxDay = todayKey();
-  const maxMonth = maxDay.slice(0, 7);
-  const dayParts = parseDayKey(day);
-  const monthParts = parseMonthKey(month);
-  const monthNames = useMemo(
-    () => Array.from({ length: 12 }, (_, m) => new Date(2000, m, 1).toLocaleDateString(intlLocale, { month: "long" })),
-    [intlLocale]
-  );
-  const years = useMemo(() => {
-    const current = new Date().getFullYear();
-    const set = new Set<number>([current, dayParts.y, monthParts.y]);
-    for (const order of orders) {
-      const year = new Date(order.completedAt).getFullYear();
-      if (Number.isFinite(year) && year <= current) set.add(year);
-    }
-    return [...set].filter((year) => year <= current).sort((a, b) => b - a);
-  }, [orders, dayParts.y, monthParts.y]);
-
-  const clampDay = (key: string) => (key > maxDay ? maxDay : key);
-  const clampMonth = (key: string) => (key > maxMonth ? maxMonth : key);
-  const setDailyYear = (y: number) => setDay(clampDay(fmtDay(y, dayParts.m, Math.min(dayParts.d, daysInMonth(y, dayParts.m)))));
-  const setDailyMonth = (m: number) => setDay(clampDay(fmtDay(dayParts.y, m, Math.min(dayParts.d, daysInMonth(dayParts.y, m)))));
-  const setDailyDay = (d: number) => setDay(clampDay(fmtDay(dayParts.y, dayParts.m, d)));
-  const stepDay = (delta: number) => {
-    const dt = new Date(dayParts.y, dayParts.m, dayParts.d + delta);
-    setDay(clampDay(fmtDay(dt.getFullYear(), dt.getMonth(), dt.getDate())));
-  };
-  const setMonthlyYear = (y: number) => setMonth(clampMonth(fmtMonth(y, monthParts.m)));
-  const setMonthlyMonth = (m: number) => setMonth(clampMonth(fmtMonth(monthParts.y, m)));
-  const stepMonth = (delta: number) => {
-    const dt = new Date(monthParts.y, monthParts.m + delta, 1);
-    setMonth(clampMonth(fmtMonth(dt.getFullYear(), dt.getMonth())));
-  };
-
   const modes: { key: Mode; label: string }[] = [
     { key: "daily", label: text.daily },
     { key: "monthly", label: text.monthly },
@@ -137,49 +99,10 @@ export function ReportsManager() {
             ))}
           </div>
           {mode === "daily" ? (
-            <div className="flex items-center gap-1.5">
-              <Button type="button" variant="outline" size="icon" className="h-9 w-9" aria-label="−1" onClick={() => stepDay(-1)}>
-                <ChevronLeft className="h-4 w-4" aria-hidden />
-              </Button>
-              <Select className="h-9 w-auto" aria-label="Day" value={dayParts.d} onChange={(event) => setDailyDay(Number(event.target.value))}>
-                {Array.from({ length: daysInMonth(dayParts.y, dayParts.m) }, (_, i) => i + 1).map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </Select>
-              <Select className="h-9 w-auto" aria-label="Month" value={dayParts.m} onChange={(event) => setDailyMonth(Number(event.target.value))}>
-                {monthNames.map((name, m) => (
-                  <option key={m} value={m}>{name}</option>
-                ))}
-              </Select>
-              <Select className="h-9 w-auto" aria-label="Year" value={dayParts.y} onChange={(event) => setDailyYear(Number(event.target.value))}>
-                {years.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </Select>
-              <Button type="button" variant="outline" size="icon" className="h-9 w-9" aria-label="+1" onClick={() => stepDay(1)} disabled={day >= maxDay}>
-                <ChevronRight className="h-4 w-4" aria-hidden />
-              </Button>
-            </div>
+            <Input type="date" value={day} max={todayKey()} onChange={(event) => setDay(event.target.value)} className="h-9 w-auto" aria-label={text.daily} />
           ) : null}
           {mode === "monthly" ? (
-            <div className="flex items-center gap-1.5">
-              <Button type="button" variant="outline" size="icon" className="h-9 w-9" aria-label="−1" onClick={() => stepMonth(-1)}>
-                <ChevronLeft className="h-4 w-4" aria-hidden />
-              </Button>
-              <Select className="h-9 w-auto" aria-label="Month" value={monthParts.m} onChange={(event) => setMonthlyMonth(Number(event.target.value))}>
-                {monthNames.map((name, m) => (
-                  <option key={m} value={m}>{name}</option>
-                ))}
-              </Select>
-              <Select className="h-9 w-auto" aria-label="Year" value={monthParts.y} onChange={(event) => setMonthlyYear(Number(event.target.value))}>
-                {years.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </Select>
-              <Button type="button" variant="outline" size="icon" className="h-9 w-9" aria-label="+1" onClick={() => stepMonth(1)} disabled={month >= maxMonth}>
-                <ChevronRight className="h-4 w-4" aria-hidden />
-              </Button>
-            </div>
+            <Input type="month" value={month} max={todayKey().slice(0, 7)} onChange={(event) => setMonth(event.target.value)} className="h-9 w-auto" aria-label={text.monthly} />
           ) : null}
         </div>
       </div>
@@ -268,28 +191,6 @@ function localDateKey(iso: string): string {
 
 function todayKey(): string {
   return localDateKey(new Date().toISOString());
-}
-
-function parseDayKey(key: string): { y: number; m: number; d: number } {
-  const [y, m, d] = key.split("-").map(Number);
-  return { y: y || new Date().getFullYear(), m: (m || 1) - 1, d: d || 1 };
-}
-
-function parseMonthKey(key: string): { y: number; m: number } {
-  const [y, m] = key.split("-").map(Number);
-  return { y: y || new Date().getFullYear(), m: (m || 1) - 1 };
-}
-
-function fmtDay(y: number, m: number, d: number): string {
-  return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-}
-
-function fmtMonth(y: number, m: number): string {
-  return `${y}-${String(m + 1).padStart(2, "0")}`;
-}
-
-function daysInMonth(y: number, m: number): number {
-  return new Date(y, m + 1, 0).getDate();
 }
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
