@@ -640,6 +640,13 @@ body.overflow-lock {
 .social-anim-facebook svg { animation: social-fb 3.8s ease-in-out 0.6s infinite; }
 .social-anim-snapchat svg { animation: social-ghost 4s ease-in-out 1.8s infinite; }
 
+/* "Closed" status dot — a slow standby-style blink (distinct from the open pulse). */
+@keyframes status-closed-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.25; }
+}
+.status-closed-dot { animation: status-closed-blink 2.4s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .steam-wisp,
   .bean-float,
@@ -693,7 +700,8 @@ body.overflow-lock {
   .social-anim-tiktok svg,
   .social-anim-instagram svg,
   .social-anim-facebook svg,
-  .social-anim-snapchat svg {
+  .social-anim-snapchat svg,
+  .status-closed-dot {
     animation: none;
   }
 }

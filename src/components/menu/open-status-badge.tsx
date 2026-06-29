@@ -45,7 +45,7 @@ export function OpenStatusBadge({
       )}
     >
       <span
-        className={cn("h-2 w-2 rounded-full", isOpen ? "bg-primary motion-safe:animate-pulse" : "bg-muted-foreground/50")}
+        className={cn("h-2 w-2 rounded-full", isOpen ? "bg-primary motion-safe:animate-pulse" : "bg-muted-foreground/50 status-closed-dot")}
         aria-hidden
       />
       <span dir={textDir} className="font-semibold">{statusLabel}</span>
