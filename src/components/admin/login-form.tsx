@@ -11,6 +11,7 @@ import { signInAdmin } from "@/lib/firebase/auth";
 import { hasFirebaseClientConfig } from "@/lib/firebase/client";
 import { AdminPreferences, useAdminLocale } from "@/components/admin/admin-preferences";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
+import { BrandCredit } from "@/components/brand-credit";
 
 export function LoginForm() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export function LoginForm() {
   }
 
   return (
-    <main dir="ltr" className="flex min-h-screen items-center justify-center bg-background p-6">
+    <main dir="ltr" className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-6">
       <Card className="w-full max-w-md" dir="ltr">
         <CardHeader>
           <AdminPreferences />
@@ -96,6 +97,7 @@ export function LoginForm() {
           </form>
         </CardContent>
       </Card>
+      <BrandCredit />
     </main>
   );
 }

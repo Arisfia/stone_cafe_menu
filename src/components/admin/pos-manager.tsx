@@ -24,6 +24,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { adminErrorText, useAdminLocale } from "@/components/admin/admin-preferences";
+import { BRAND_AGENCY } from "@/components/brand-credit";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { getAdminAppData, getPosState, savePosState } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
@@ -701,16 +702,19 @@ export function PosManager() {
                       key={item.id}
                       type="button"
                       onClick={() => addMenuItem(item)}
-                      className="focus-ring flex min-h-24 items-start justify-between gap-3 rounded-lg border bg-card p-3 text-start transition-colors hover:border-primary/40 hover:bg-muted/50"
+                      className="focus-ring flex min-h-24 items-start gap-3 rounded-lg border bg-card p-3 text-start transition-colors hover:border-primary/40 hover:bg-muted/50"
                     >
-                      <span className="min-w-0">
-                        <span dir={textDir} className="line-clamp-2 block font-semibold">{title}</span>
-                        <span dir={textDir} className="mt-1 line-clamp-1 block text-xs text-muted-foreground">
-                          {localized(data?.categories.find((category) => category.id === item.categoryId)?.name, locale, text.noCategory)}
+                      <MenuPickerThumb src={item.imageUrl} alt={title} />
+                      <span className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                        <span className="min-w-0">
+                          <span dir={textDir} className="line-clamp-2 block font-semibold">{title}</span>
+                          <span dir={textDir} className="mt-1 line-clamp-1 block text-xs text-muted-foreground">
+                            {localized(data?.categories.find((category) => category.id === item.categoryId)?.name, locale, text.noCategory)}
+                          </span>
                         </span>
-                      </span>
-                      <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                        {formatMoney(price, item.currency, locale)}
+                        <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                          {formatMoney(price, item.currency, locale)}
+                        </span>
                       </span>
                     </button>
                   );
@@ -850,6 +854,33 @@ function mergeOrderLines(baseLines: PosOrderLine[], addedLines: PosOrderLine[]):
     }
   }
   return lines;
+}
+
+// Square thumbnail for the menu picker. Real uploaded photos fill the tile
+// (object-cover); items without an image fall back to the round Stone Cafe logo,
+// matching the public menu cards. Plain <img> so animated GIFs still play.
+const POS_THUMB_FALLBACK = "/stone-cafe-logo.jpg";
+
+function MenuPickerThumb({ src, alt }: { src?: string; alt: string }) {
+  const [imageSrc, setImageSrc] = useState(src || POS_THUMB_FALLBACK);
+  const isFallback = imageSrc === POS_THUMB_FALLBACK;
+
+  useEffect(() => {
+    setImageSrc(src || POS_THUMB_FALLBACK);
+  }, [src]);
+
+  return (
+    <span className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-gradient-to-br from-accent via-primary/5 to-secondary/10">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={imageSrc}
+        alt={alt}
+        loading="lazy"
+        className={cn("h-full w-full object-cover", isFallback && "scale-90 rounded-full p-1.5")}
+        onError={() => setImageSrc(POS_THUMB_FALLBACK)}
+      />
+    </span>
+  );
 }
 
 // Coffee cup with big billowing vapor — used only on occupied tables. Color
@@ -1012,7 +1043,11 @@ function ReceiptPreview({
       <div className="text-center">
         <p className="text-base font-black">Thank You and Visit Again</p>
         <p dir="rtl" className="mt-1 text-base font-black">سوپاس، جارێکی تر سەردانمان بکەنەوە</p>
+        <p className="mt-3 text-xs font-bold">We&apos;d love your feedback</p>
+        <p dir="rtl" className="text-xs font-bold">بیروڕاتان پێمان بڵێن</p>
       </div>
+
+      <p className="mt-4 text-center text-[9px] uppercase tracking-[0.15em] text-black/55">Powered by {BRAND_AGENCY}</p>
     </div>
   );
 }

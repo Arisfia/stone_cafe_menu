@@ -16,6 +16,7 @@ import { LanguageGlobe } from "@/components/menu/language-globe";
 import { MenuBackground } from "@/components/menu/menu-background";
 import { ThemeToggle } from "@/components/menu/theme-toggle";
 import { FallbackMenuImage } from "@/components/menu/fallback-menu-image";
+import { BrandCredit } from "@/components/brand-credit";
 import { defaultAppData } from "@/data/default-data";
 import { getPublicAppData } from "@/lib/firebase/firestore";
 import { localized, translate } from "@/lib/i18n/config";
@@ -310,6 +311,10 @@ export function MenuApp({
           onClose={() => setActiveItem(null)}
         />
       ) : null}
+
+      <footer className="relative z-10 px-4 pb-10 pt-6">
+        <BrandCredit />
+      </footer>
     </main>
   );
 }

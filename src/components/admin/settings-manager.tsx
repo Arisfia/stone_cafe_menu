@@ -26,7 +26,7 @@ export function SettingsManager() {
   const [general, setGeneral] = useState<GeneralSettings>(defaultGeneralSettings);
   const [menu, setMenu] = useState<MenuSettings>(defaultMenuSettings);
   const [appearance, setAppearance] = useState<AppearanceSettings>(defaultAppearanceSettings);
-  const [activeSection, setActiveSection] = useState<SettingsSection>("general");
+  const [activeSection, setActiveSection] = useState<SettingsSection | null>(null);
   const [savedSignature, setSavedSignature] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -46,7 +46,9 @@ export function SettingsManager() {
 
   useEffect(() => {
     function syncSectionFromHash() {
-      setActiveSection(sectionFromHash(window.location.hash) || "general");
+      // No hash → all sections collapsed. A deep link (e.g. #general from the
+      // profile menu) still opens that section.
+      setActiveSection(sectionFromHash(window.location.hash));
     }
 
     syncSectionFromHash();
@@ -63,8 +65,12 @@ export function SettingsManager() {
 
   function toggleSection(section: SettingsSection) {
     const baseUrl = `${window.location.pathname}${window.location.search}`;
-    window.history.replaceState(null, "", `${baseUrl}#${section}`);
-    setActiveSection(section);
+    setActiveSection((current) => {
+      // Tapping the open section again collapses it.
+      const next = current === section ? null : section;
+      window.history.replaceState(null, "", next ? `${baseUrl}#${next}` : baseUrl);
+      return next;
+    });
   }
 
   async function saveAll() {

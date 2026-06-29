@@ -20,6 +20,7 @@ import { useLocale } from "@/hooks/use-locale";
 import { localized, translate } from "@/lib/i18n/config";
 import { defaultAppData } from "@/data/default-data";
 import { cn } from "@/lib/utils/cn";
+import { BrandCredit } from "@/components/brand-credit";
 
 export function WelcomeScreen() {
   const { locale, setLocale, dir: textDir } = useLocale("ckb", {
@@ -134,6 +135,8 @@ export function WelcomeScreen() {
           </Link>
         </Button>
       </section>
+
+      <BrandCredit className="absolute inset-x-0 bottom-4 z-10 text-[#2f7a3b]/80 dark:text-[#A4D8A6]/70" />
     </main>
   );
 }
