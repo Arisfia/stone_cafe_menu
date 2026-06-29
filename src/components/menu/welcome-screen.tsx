@@ -16,14 +16,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { LanguageSelector } from "@/components/menu/language-selector";
 import { ThemeToggle } from "@/components/menu/theme-toggle";
-import { useLocale } from "@/hooks/use-locale";
+import { useLocale, publicLocaleChangeEvent, publicLocaleStorageKey } from "@/hooks/use-locale";
 import { localized, translate } from "@/lib/i18n/config";
 import { defaultAppData } from "@/data/default-data";
 import { cn } from "@/lib/utils/cn";
 import { BrandCredit } from "@/components/brand-credit";
 
+// The welcome screen always opens in this language, regardless of any previously
+// stored public locale.
+const WELCOME_DEFAULT_LOCALE = "ckb";
+
 export function WelcomeScreen() {
-  const { locale, setLocale, dir: textDir } = useLocale("ckb", {
+  const { locale, setLocale, dir: textDir } = useLocale(WELCOME_DEFAULT_LOCALE, {
     documentDirection: "ltr",
     readStored: false
   });
@@ -38,6 +42,17 @@ export function WelcomeScreen() {
     "--primary-foreground": "128 44% 14%",
     "--ring": "122 40% 75%"
   } as CSSProperties;
+
+  // The welcome always shows Kurdish by default, but the menu reads the persisted
+  // locale (`ary-menu-locale`). Without syncing, a previously chosen language
+  // (e.g. English) lingers in storage, so pressing Enter on the Kurdish-looking
+  // welcome would still load the menu in that old language. Reset storage to the
+  // welcome default on open so "what you see is what you get"; an explicit pick on
+  // the welcome still overwrites it and carries into the menu.
+  useEffect(() => {
+    window.localStorage.setItem(publicLocaleStorageKey, WELCOME_DEFAULT_LOCALE);
+    window.dispatchEvent(new CustomEvent(publicLocaleChangeEvent, { detail: WELCOME_DEFAULT_LOCALE }));
+  }, []);
 
   // Lock the page to a single, non-scrollable screen (prevents iOS Safari
   // rubber-band overscroll). Reverted on unmount so /menu can scroll normally.
