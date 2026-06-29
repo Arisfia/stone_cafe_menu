@@ -208,14 +208,14 @@ function CoffeeBackground() {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-      {/* mint aroma blobs (+ a soft light glow) */}
-      <div className="aroma-pan absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[#A4D8A6]/45 blur-3xl dark:bg-[#A4D8A6]/15" />
+      {/* mint aroma glows (+ a soft light glow) */}
+      <div className="aroma-1 aroma-pan absolute -left-24 -top-24 h-80 w-80" />
       <div
-        className="aroma-pan absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-[#c2ecc3]/50 blur-3xl dark:bg-[#2f4a26]/25"
+        className="aroma-2 aroma-pan absolute -bottom-32 -right-20 h-96 w-96"
         style={{ animationDelay: "4s" }}
       />
       <div
-        className="aroma-pan absolute right-1/3 top-10 h-56 w-56 rounded-full bg-white/35 blur-3xl dark:bg-[#3a5a33]/20"
+        className="aroma-3 aroma-pan absolute right-1/3 top-10 h-56 w-56"
         style={{ animationDelay: "8s" }}
       />
 

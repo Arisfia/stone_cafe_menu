@@ -10,7 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CategoryIcon } from "@/components/menu/category-icon";
-import { AvailableIcon, LocationPinIcon, PhoneSignalIcon, WhatsappSendIcon } from "@/components/menu/menu-contact-icons";
+import { LocationPinIcon, PhoneSignalIcon, WhatsappSendIcon } from "@/components/menu/menu-contact-icons";
+import { OpenStatusBadge } from "@/components/menu/open-status-badge";
 import { MenuItemCard } from "@/components/menu/menu-item-card";
 import { LanguageGlobe } from "@/components/menu/language-globe";
 import { MenuBackground } from "@/components/menu/menu-background";
@@ -149,7 +150,7 @@ export function MenuApp({
       <MenuBackground />
       {/* Branded header */}
       <header className="relative overflow-hidden border-b bg-gradient-to-b from-accent/55 via-card/95 to-card/90 backdrop-blur-sm">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+        <div className="glow-primary pointer-events-none absolute -right-16 -top-20 h-64 w-64" aria-hidden />
         <div className="container relative grid gap-5 py-7">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:flex-wrap sm:justify-between sm:gap-4">
             <div className="flex min-w-0 items-center gap-3 sm:gap-4">
@@ -172,10 +173,7 @@ export function MenuApp({
           </div>
 
           <div className="flex max-w-full flex-wrap items-center gap-2 text-sm">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 font-medium text-primary">
-              <AvailableIcon className="h-4 w-4" />
-              <span dir={textDir}>{translate(locale, "menu.available")}</span>
-            </span>
+            <OpenStatusBadge locale={locale} textDir={textDir} />
             {!loading && data.general.phone ? (
               <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`tel:${data.general.phone}`}>
                 <PhoneSignalIcon className="h-4 w-4 text-primary" />

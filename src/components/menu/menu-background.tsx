@@ -20,14 +20,14 @@ export function MenuBackground() {
       {/* light mint wash that ties to the welcome page */}
       <div className="absolute inset-0 bg-gradient-to-b from-accent/45 via-background to-accent/25 dark:from-[#0c1810] dark:via-background dark:to-[#0a140b]" />
 
-      {/* drifting aroma blobs */}
-      <div className="aroma-pan absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[#A4D8A6]/30 blur-3xl dark:bg-[#A4D8A6]/10" />
+      {/* drifting aroma glows */}
+      <div className="aroma-1 aroma-pan absolute -left-24 -top-24 h-80 w-80 opacity-80" />
       <div
-        className="aroma-pan absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-[#c2ecc3]/35 blur-3xl dark:bg-[#2f4a26]/20"
+        className="aroma-2 aroma-pan absolute -bottom-32 -right-20 h-96 w-96 opacity-80"
         style={{ animationDelay: "4s" }}
       />
       <div
-        className="aroma-pan absolute right-1/3 top-1/3 h-56 w-56 rounded-full bg-white/25 blur-3xl dark:bg-[#3a5a33]/15"
+        className="aroma-3 aroma-pan absolute right-1/3 top-1/3 h-56 w-56 opacity-80"
         style={{ animationDelay: "8s" }}
       />
 
