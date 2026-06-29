@@ -82,7 +82,7 @@ export function WelcomeScreen() {
     <main
       dir="ltr"
       style={accentStyle}
-      className="fixed inset-0 flex touch-none items-center justify-center overflow-hidden overscroll-none bg-gradient-to-br from-[#d7efd8] via-[#A4D8A6] to-[#86cc8a] p-4 dark:from-[#0c1810] dark:via-[#10210f] dark:to-[#0a140b]"
+      className="no-select fixed inset-0 flex touch-none items-center justify-center overflow-hidden overscroll-none bg-gradient-to-br from-[#d7efd8] via-[#A4D8A6] to-[#86cc8a] p-4 dark:from-[#0c1810] dark:via-[#10210f] dark:to-[#0a140b]"
     >
       <CoffeeBackground />
 

@@ -126,6 +126,22 @@ textarea {
   font: inherit;
 }
 
+/* Public pages (menu + welcome) feel like an app: text can't be selected and the
+   iOS long-press callout is suppressed, but buttons/links still work. Inputs stay
+   selectable so the search box behaves normally. Admin is left untouched. */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.no-select input,
+.no-select textarea,
+.no-select [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .focus-ring {
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
 }
@@ -559,40 +575,46 @@ body.overflow-lock {
 }
 .pin-ping { transform-origin: center; animation: pin-ping 2.4s ease-out infinite; }
 
-/* Social icon hover animations — one per platform's personality */
+/* Social icon animations — they play on their own (most visitors arrive on a
+   phone via QR/link, where there's no hover). Each keyframe does its motion early
+   then holds still, so with a long duration the icon "winks" periodically instead
+   of fidgeting non-stop; staggered delays keep them from moving in unison. */
 @keyframes social-glitch {
-  0%   { transform: translate(0, 0); filter: drop-shadow(1px 0 #ff0050) drop-shadow(-1px 0 #00f2ea); }
-  20%  { transform: translate(-1.5px, 1px); filter: drop-shadow(2px 0 #ff0050) drop-shadow(-2px 0 #00f2ea); }
-  40%  { transform: translate(1.5px, -1px); filter: drop-shadow(-2px 0 #ff0050) drop-shadow(2px 0 #00f2ea); }
-  60%  { transform: translate(-1px, 0); filter: drop-shadow(1px 1px #ff0050) drop-shadow(-1px -1px #00f2ea); }
-  80%  { transform: translate(1px, 1px); filter: drop-shadow(2px 0 #ff0050) drop-shadow(-2px 0 #00f2ea); }
-  100% { transform: translate(0, 0); filter: drop-shadow(1px 0 #ff0050) drop-shadow(-1px 0 #00f2ea); }
+  0%   { transform: translate(0, 0); filter: none; }
+  2%   { transform: translate(-1.5px, 1px); filter: drop-shadow(2px 0 #ff0050) drop-shadow(-2px 0 #00f2ea); }
+  4%   { transform: translate(1.5px, -1px); filter: drop-shadow(-2px 0 #ff0050) drop-shadow(2px 0 #00f2ea); }
+  6%   { transform: translate(-1px, 0); filter: drop-shadow(1px 1px #ff0050) drop-shadow(-1px -1px #00f2ea); }
+  8%   { transform: translate(1px, 1px); filter: drop-shadow(2px 0 #ff0050) drop-shadow(-2px 0 #00f2ea); }
+  10%  { transform: translate(0, 0); filter: drop-shadow(1px 0 #ff0050) drop-shadow(-1px 0 #00f2ea); }
+  12%, 100% { transform: translate(0, 0); filter: none; }
 }
 
 @keyframes social-insta {
   0%   { transform: scale(1); filter: hue-rotate(0deg); }
-  50%  { transform: scale(1.2); filter: hue-rotate(160deg); }
-  100% { transform: scale(1); filter: hue-rotate(0deg); }
+  18%  { transform: scale(1.2); filter: hue-rotate(160deg); }
+  36%, 100% { transform: scale(1); filter: hue-rotate(0deg); }
 }
 
 @keyframes social-bob {
-  0%, 100% { transform: translateY(0) scale(1); }
-  30%      { transform: translateY(-3px) scale(1.12); }
-  55%      { transform: translateY(0) scale(1.04); }
-  75%      { transform: translateY(-1.5px) scale(1.08); }
+  0%   { transform: translateY(0) scale(1); }
+  10%  { transform: translateY(-3px) scale(1.12); }
+  20%  { transform: translateY(0) scale(1.04); }
+  28%  { transform: translateY(-1.5px) scale(1.08); }
+  36%, 100% { transform: translateY(0) scale(1); }
 }
 
 @keyframes social-ghost {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25%      { transform: translateY(-2.5px) rotate(-5deg); }
-  50%      { transform: translateY(0) rotate(0deg); }
-  75%      { transform: translateY(-2.5px) rotate(5deg); }
+  0%   { transform: translateY(0) rotate(0deg); }
+  10%  { transform: translateY(-2.5px) rotate(-5deg); }
+  20%  { transform: translateY(0) rotate(0deg); }
+  30%  { transform: translateY(-2.5px) rotate(5deg); }
+  40%, 100% { transform: translateY(0) rotate(0deg); }
 }
 
-.social-anim-tiktok:hover svg { animation: social-glitch 0.45s steps(2, end) infinite; }
-.social-anim-instagram:hover svg { animation: social-insta 0.9s ease-in-out infinite; }
-.social-anim-facebook:hover svg { animation: social-bob 0.6s ease-in-out infinite; }
-.social-anim-snapchat:hover svg { animation: social-ghost 0.9s ease-in-out infinite; }
+.social-anim-tiktok svg { animation: social-glitch 3.6s linear 1.2s infinite; }
+.social-anim-instagram svg { animation: social-insta 4.2s ease-in-out 0s infinite; }
+.social-anim-facebook svg { animation: social-bob 3.8s ease-in-out 0.6s infinite; }
+.social-anim-snapchat svg { animation: social-ghost 4s ease-in-out 1.8s infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   .steam-wisp,
@@ -644,10 +666,10 @@ body.overflow-lock {
     animation: none;
   }
 
-  .social-anim-tiktok:hover svg,
-  .social-anim-instagram:hover svg,
-  .social-anim-facebook:hover svg,
-  .social-anim-snapchat:hover svg {
+  .social-anim-tiktok svg,
+  .social-anim-instagram svg,
+  .social-anim-facebook svg,
+  .social-anim-snapchat svg {
     animation: none;
   }
 }

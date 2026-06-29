@@ -145,7 +145,7 @@ export function MenuApp({
   const logoUrl = data.general.logoUrl;
 
   return (
-    <main dir="ltr" className="relative min-h-screen">
+    <main dir="ltr" className="no-select relative min-h-screen">
       <MenuBackground />
       {/* Branded header */}
       <header className="relative overflow-hidden border-b bg-gradient-to-b from-accent/55 via-card/95 to-card/90 backdrop-blur-sm">
