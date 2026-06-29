@@ -83,6 +83,8 @@ export type GeneralSettings = {
   defaultLanguage: Locale;
   enabledLanguages: Locale[];
   defaultCurrency: Currency;
+  // POS service fee added to each bill, as a percentage (e.g. 10 = 10%).
+  serviceFeePercent?: number;
   updatedAt?: Timestamp;
 };
 

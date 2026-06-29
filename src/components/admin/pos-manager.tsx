@@ -37,8 +37,9 @@ const emptyPosState: PosState = {
   completedOrders: []
 };
 
-const SERVICE_FEE_RATE = 0.1;
-const SERVICE_FEE_PERCENT = 10;
+// Fallback when no service fee is configured in settings (settings → General).
+const DEFAULT_SERVICE_FEE_PERCENT = 10;
+const DEFAULT_SERVICE_FEE_RATE = DEFAULT_SERVICE_FEE_PERCENT / 100;
 
 export function PosManager() {
   const { locale, text, dir: textDir } = useAdminLocale();
@@ -91,6 +92,9 @@ export function PosManager() {
   const selectedDraftTable = draftTables.find((table) => table.id === draftSelectedTableId);
   const selectedOrder = selectedTable ? pos.orders[selectedTable.id] || emptyOrder(selectedTable.id) : null;
   const posCurrency: Currency = data?.general.defaultCurrency ?? "IQD";
+  // Service fee comes from settings (General → Service fee %), defaulting to 10%.
+  const serviceFeePercent = Math.max(0, data?.general.serviceFeePercent ?? DEFAULT_SERVICE_FEE_PERCENT);
+  const serviceFeeRate = serviceFeePercent / 100;
   const categories = useMemo(
     () => (data?.categories || []).filter((category) => category.isActive).sort((a, b) => a.displayOrder - b.displayOrder),
     [data?.categories]
@@ -322,7 +326,7 @@ export function PosManager() {
       discountValue: selectedOrder.discountValue,
       subtotal: totals.subtotal,
       discountAmount: totals.discountAmount,
-      serviceFeeRate: SERVICE_FEE_RATE,
+      serviceFeeRate,
       serviceFeeAmount: totals.serviceFeeAmount,
       total: totals.total,
       currency: totals.currency,
@@ -436,7 +440,7 @@ export function PosManager() {
     window.setTimeout(cleanup, 1000);
   }
 
-  const totals = selectedOrder ? calculateTotals(selectedOrder, data?.general.defaultCurrency || "IQD") : null;
+  const totals = selectedOrder ? calculateTotals(selectedOrder, posCurrency, serviceFeeRate) : null;
 
   return (
     <div className="space-y-6">
@@ -479,7 +483,7 @@ export function PosManager() {
                   const occupiedCount = section.tables.filter((entry) => tableOrderLineCount(pos.orders[entry.id]) > 0).length;
                   const areaTotal = section.tables.reduce((sum, entry) => {
                     const tableOrder = pos.orders[entry.id];
-                    return tableOrder ? sum + calculateTotals(tableOrder, posCurrency).total : sum;
+                    return tableOrder ? sum + calculateTotals(tableOrder, posCurrency, serviceFeeRate).total : sum;
                   }, 0);
                   return (
                     <div key={section.area} className={cn(index > 0 && "pt-2")}>
@@ -503,7 +507,7 @@ export function PosManager() {
                             const actionTarget = tableAction !== null && !selected;
                             // In move mode an occupied destination is blocked; in merge mode it is a valid target.
                             const blockedTarget = actionTarget && tableAction === "move" && occupied;
-                            const orderTotal = occupied && order ? calculateTotals(order, posCurrency).total : 0;
+                            const orderTotal = occupied && order ? calculateTotals(order, posCurrency, serviceFeeRate).total : 0;
                             const minutes = occupied && order?.updatedAt ? Math.max(0, Math.floor((now - Date.parse(order.updatedAt)) / 60000)) : null;
                             return (
                               <button
@@ -785,7 +789,9 @@ export function PosManager() {
                   </div>
                   <TotalRow label={text.subtotal} value={formatMoney(totals.subtotal, totals.currency, locale)} />
                   <TotalRow label={text.discount} value={`-${formatMoney(totals.discountAmount, totals.currency, locale)}`} />
-                  <TotalRow label={serviceFeeLabel(locale)} value={formatMoney(totals.serviceFeeAmount, totals.currency, locale)} />
+                  {totals.serviceFeeAmount > 0 ? (
+                    <TotalRow label={serviceFeeLabel(locale, serviceFeePercent)} value={formatMoney(totals.serviceFeeAmount, totals.currency, locale)} />
+                  ) : null}
                   <TotalRow label={text.total} value={formatMoney(totals.total, totals.currency, locale)} strong />
                 </div>
 
@@ -805,6 +811,7 @@ export function PosManager() {
                   order={selectedOrder}
                   totals={totals}
                   locale={locale}
+                  serviceFeePercent={serviceFeePercent}
                 />
               </>
             ) : null}
@@ -929,13 +936,15 @@ function ReceiptPreview({
   table,
   order,
   totals,
-  locale
+  locale,
+  serviceFeePercent
 }: {
   restaurantName: string;
   table: PosTable;
   order: PosTableOrder;
   totals: PosTotals;
   locale: "en" | "ar" | "ckb";
+  serviceFeePercent: number;
 }) {
   const receiptLocale: "en" | "ckb" = locale === "ckb" ? "ckb" : "en";
   const receiptDir = receiptLocale === "ckb" ? "rtl" : "ltr";
@@ -989,7 +998,9 @@ function ReceiptPreview({
         {totals.discountAmount > 0 ? (
           <ReceiptTotalRow en="Discount" ckb="داشکاندن" value={`-${formatMoney(totals.discountAmount, totals.currency, receiptLocale)}`} />
         ) : null}
-        <ReceiptTotalRow en={`Service fee ${SERVICE_FEE_PERCENT}%`} ckb={`خزمەتگوزاری ${SERVICE_FEE_PERCENT}%`} value={formatMoney(totals.serviceFeeAmount, totals.currency, receiptLocale)} />
+        {totals.serviceFeeAmount > 0 ? (
+          <ReceiptTotalRow en={`Service fee ${serviceFeePercent}%`} ckb={`خزمەتگوزاری ${serviceFeePercent}%`} value={formatMoney(totals.serviceFeeAmount, totals.currency, receiptLocale)} />
+        ) : null}
         <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-4 border-t-2 border-dashed border-black pt-3">
           <ReceiptLabel en="Total" ckb="کۆی گشتی" className="text-base font-black" />
           <span className="text-2xl font-black tabular-nums">{formatMoney(totals.total, totals.currency, receiptLocale)}</span>
@@ -1067,7 +1078,7 @@ function emptyOrder(tableId: string): PosTableOrder {
   };
 }
 
-function calculateTotals(order: PosTableOrder, fallbackCurrency: Currency): PosTotals {
+function calculateTotals(order: PosTableOrder, fallbackCurrency: Currency, serviceFeeRate: number = DEFAULT_SERVICE_FEE_RATE): PosTotals {
   const currency = order.lines[0]?.currency || fallbackCurrency;
   const subtotal = order.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0);
   const rawDiscount = order.discountType === "percent"
@@ -1075,7 +1086,7 @@ function calculateTotals(order: PosTableOrder, fallbackCurrency: Currency): PosT
     : order.discountValue;
   const discountAmount = Math.min(subtotal, Math.max(0, rawDiscount));
   const serviceBase = subtotal - discountAmount;
-  const serviceFeeAmount = Math.round(serviceBase * SERVICE_FEE_RATE);
+  const serviceFeeAmount = Math.round(serviceBase * Math.max(0, serviceFeeRate));
   return {
     subtotal,
     discountAmount,
@@ -1085,8 +1096,8 @@ function calculateTotals(order: PosTableOrder, fallbackCurrency: Currency): PosT
   };
 }
 
-function serviceFeeLabel(locale: "en" | "ar" | "ckb") {
-  return locale === "ckb" ? `خزمەتگوزاری ${SERVICE_FEE_PERCENT}%` : `Service fee ${SERVICE_FEE_PERCENT}%`;
+function serviceFeeLabel(locale: "en" | "ar" | "ckb", percent: number = DEFAULT_SERVICE_FEE_PERCENT) {
+  return locale === "ckb" ? `خزمەتگوزاری ${percent}%` : `Service fee ${percent}%`;
 }
 
 function normalizeTableOrder(state: PosState): PosState {

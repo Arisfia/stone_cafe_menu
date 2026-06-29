@@ -232,6 +232,20 @@ export function SettingsManager() {
                     <option value="TRY">TRY</option>
                   </Select>
                 </Field>
+                <Field label={text.serviceFee}>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={general.serviceFeePercent ?? 10}
+                    onChange={(e) => {
+                      const next = Math.min(100, Math.max(0, Math.round(Number(e.target.value) || 0)));
+                      setGeneral({ ...general, serviceFeePercent: next });
+                    }}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">{text.serviceFeeHint}</p>
+                </Field>
               </div>
             </SettingsFormSection>
             <div>

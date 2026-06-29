@@ -22,7 +22,8 @@ export const defaultGeneralSettings: GeneralSettings = {
   },
   defaultLanguage: "ckb",
   enabledLanguages: ["ckb", "ar", "en"],
-  defaultCurrency: "IQD"
+  defaultCurrency: "IQD",
+  serviceFeePercent: 10
 };
 
 export const defaultMenuSettings = {
