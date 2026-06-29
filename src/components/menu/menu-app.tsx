@@ -16,6 +16,7 @@ import { LanguageGlobe } from "@/components/menu/language-globe";
 import { MenuBackground } from "@/components/menu/menu-background";
 import { ThemeToggle } from "@/components/menu/theme-toggle";
 import { FallbackMenuImage } from "@/components/menu/fallback-menu-image";
+import { SocialLinks } from "@/components/menu/social-links";
 import { BrandCredit } from "@/components/brand-credit";
 import { defaultAppData } from "@/data/default-data";
 import { getPublicAppData } from "@/lib/firebase/firestore";
@@ -193,6 +194,7 @@ export function MenuApp({
                 <span dir={textDir}>{translate(locale, "menu.openMaps")}</span>
               </a>
             ) : null}
+            {!loading ? <SocialLinks social={data.general.socialLinks} className="ms-1" /> : null}
           </div>
 
           {data.menu.enableSearch ? (

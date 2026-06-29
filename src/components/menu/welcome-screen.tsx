@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -17,9 +17,11 @@ import { Button } from "@/components/ui/button";
 import { LanguageSelector } from "@/components/menu/language-selector";
 import { ThemeToggle } from "@/components/menu/theme-toggle";
 import { useLocale, publicLocaleChangeEvent, publicLocaleStorageKey } from "@/hooks/use-locale";
+import { getPublicAppData } from "@/lib/firebase/firestore";
 import { localized, translate } from "@/lib/i18n/config";
 import { defaultAppData } from "@/data/default-data";
 import { cn } from "@/lib/utils/cn";
+import { SocialLinks } from "@/components/menu/social-links";
 import { BrandCredit } from "@/components/brand-credit";
 
 // The welcome screen always opens in this language, regardless of any previously
@@ -33,6 +35,17 @@ export function WelcomeScreen() {
   });
   const restaurantName = localized(defaultAppData.general.restaurantName, locale);
   const logoUrl = defaultAppData.general.logoUrl;
+
+  // Welcome is otherwise static; pull just the live social links so they match
+  // what's configured in admin (falls back to default data if Firebase is absent).
+  const [social, setSocial] = useState(defaultAppData.general.socialLinks);
+  useEffect(() => {
+    let active = true;
+    getPublicAppData()
+      .then((data) => { if (active) setSocial(data.general.socialLinks); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   // Brand mint #A4D8A6 (HSL 122 40% 75%) as the accent. Deep-green foreground
   // keeps text legible on the light mint. Scoped to this subtree so the shared
@@ -149,6 +162,8 @@ export function WelcomeScreen() {
             <ArrowRight className="h-5 w-5" aria-hidden />
           </Link>
         </Button>
+
+        <SocialLinks social={social} className="mt-6 justify-center" />
       </section>
 
       <BrandCredit className="absolute inset-x-0 bottom-4 z-10 text-[#2f7a3b]/80 dark:text-[#A4D8A6]/70" />
