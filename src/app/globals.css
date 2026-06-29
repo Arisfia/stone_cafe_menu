@@ -595,12 +595,11 @@ body.overflow-lock {
   36%, 100% { transform: scale(1); filter: hue-rotate(0deg); }
 }
 
-@keyframes social-bob {
-  0%   { transform: translateY(0) scale(1); }
-  10%  { transform: translateY(-3px) scale(1.12); }
-  20%  { transform: translateY(0) scale(1.04); }
-  28%  { transform: translateY(-1.5px) scale(1.08); }
-  36%, 100% { transform: translateY(0) scale(1); }
+@keyframes social-fb {
+  0%   { transform: perspective(220px) rotateY(0deg); filter: none; }
+  10%  { transform: perspective(220px) rotateY(180deg); filter: drop-shadow(0 0 4px #1877f2); }
+  20%  { transform: perspective(220px) rotateY(360deg); filter: none; }
+  20.01%, 100% { transform: perspective(220px) rotateY(360deg); filter: none; }
 }
 
 @keyframes social-ghost {
@@ -613,7 +612,7 @@ body.overflow-lock {
 
 .social-anim-tiktok svg { animation: social-glitch 3.6s linear 1.2s infinite; }
 .social-anim-instagram svg { animation: social-insta 4.2s ease-in-out 0s infinite; }
-.social-anim-facebook svg { animation: social-bob 3.8s ease-in-out 0.6s infinite; }
+.social-anim-facebook svg { animation: social-fb 3.8s ease-in-out 0.6s infinite; }
 .social-anim-snapchat svg { animation: social-ghost 4s ease-in-out 1.8s infinite; }
 
 @media (prefers-reduced-motion: reduce) {
