@@ -112,6 +112,11 @@ html[lang="ckb"] h6,
 :lang(ckb) {
   font-family: "StoneCafeKJino", "StoneCafeCairo", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-weight: 700 !important;
+  /* KJino renders visually smaller than the Arabic Cairo at the same font-size.
+     font-size-adjust normalizes by x-height so Kurdish matches/exceeds Arabic,
+     without the compounding you'd get from an `em` multiplier on this universal
+     selector. Tune this single number up/down to taste. */
+  font-size-adjust: 0.54;
 }
 
 button,
@@ -554,6 +559,41 @@ body.overflow-lock {
 }
 .pin-ping { transform-origin: center; animation: pin-ping 2.4s ease-out infinite; }
 
+/* Social icon hover animations — one per platform's personality */
+@keyframes social-glitch {
+  0%   { transform: translate(0, 0); filter: drop-shadow(1px 0 #ff0050) drop-shadow(-1px 0 #00f2ea); }
+  20%  { transform: translate(-1.5px, 1px); filter: drop-shadow(2px 0 #ff0050) drop-shadow(-2px 0 #00f2ea); }
+  40%  { transform: translate(1.5px, -1px); filter: drop-shadow(-2px 0 #ff0050) drop-shadow(2px 0 #00f2ea); }
+  60%  { transform: translate(-1px, 0); filter: drop-shadow(1px 1px #ff0050) drop-shadow(-1px -1px #00f2ea); }
+  80%  { transform: translate(1px, 1px); filter: drop-shadow(2px 0 #ff0050) drop-shadow(-2px 0 #00f2ea); }
+  100% { transform: translate(0, 0); filter: drop-shadow(1px 0 #ff0050) drop-shadow(-1px 0 #00f2ea); }
+}
+
+@keyframes social-insta {
+  0%   { transform: scale(1); filter: hue-rotate(0deg); }
+  50%  { transform: scale(1.2); filter: hue-rotate(160deg); }
+  100% { transform: scale(1); filter: hue-rotate(0deg); }
+}
+
+@keyframes social-bob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30%      { transform: translateY(-3px) scale(1.12); }
+  55%      { transform: translateY(0) scale(1.04); }
+  75%      { transform: translateY(-1.5px) scale(1.08); }
+}
+
+@keyframes social-ghost {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-2.5px) rotate(-5deg); }
+  50%      { transform: translateY(0) rotate(0deg); }
+  75%      { transform: translateY(-2.5px) rotate(5deg); }
+}
+
+.social-anim-tiktok:hover svg { animation: social-glitch 0.45s steps(2, end) infinite; }
+.social-anim-instagram:hover svg { animation: social-insta 0.9s ease-in-out infinite; }
+.social-anim-facebook:hover svg { animation: social-bob 0.6s ease-in-out infinite; }
+.social-anim-snapchat:hover svg { animation: social-ghost 0.9s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .steam-wisp,
   .bean-float,
@@ -601,6 +641,13 @@ body.overflow-lock {
   .msg-fly,
   .pin-drop,
   .pin-ping {
+    animation: none;
+  }
+
+  .social-anim-tiktok:hover svg,
+  .social-anim-instagram:hover svg,
+  .social-anim-facebook:hover svg,
+  .social-anim-snapchat:hover svg {
     animation: none;
   }
 }

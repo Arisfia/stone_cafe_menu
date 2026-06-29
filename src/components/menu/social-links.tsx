@@ -9,11 +9,11 @@ type SocialLinksData = {
   snapchat?: string;
 };
 
-const SOCIALS: { key: keyof SocialLinksData; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>> }[] = [
-  { key: "instagram", label: "Instagram", Icon: InstagramIcon },
-  { key: "facebook", label: "Facebook", Icon: FacebookIcon },
-  { key: "tiktok", label: "TikTok", Icon: TiktokIcon },
-  { key: "snapchat", label: "Snapchat", Icon: SnapchatIcon }
+const SOCIALS: { key: keyof SocialLinksData; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>>; anim: string }[] = [
+  { key: "instagram", label: "Instagram", Icon: InstagramIcon, anim: "social-anim-instagram" },
+  { key: "facebook", label: "Facebook", Icon: FacebookIcon, anim: "social-anim-facebook" },
+  { key: "tiktok", label: "TikTok", Icon: TiktokIcon, anim: "social-anim-tiktok" },
+  { key: "snapchat", label: "Snapchat", Icon: SnapchatIcon, anim: "social-anim-snapchat" }
 ];
 
 // Accept either a full URL or a bare handle/domain and always return a valid URL.
@@ -31,7 +31,7 @@ export function SocialLinks({ social, className }: { social?: SocialLinksData; c
 
   return (
     <div dir="ltr" className={cn("flex flex-wrap items-center gap-2", className)}>
-      {items.map(({ key, label, Icon }) => (
+      {items.map(({ key, label, Icon, anim }) => (
         <a
           key={key}
           href={toHref(social![key]!)}
@@ -39,7 +39,10 @@ export function SocialLinks({ social, className }: { social?: SocialLinksData; c
           rel="noopener noreferrer"
           aria-label={label}
           title={label}
-          className="focus-ring inline-flex h-9 w-9 items-center justify-center rounded-full border bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+          className={cn(
+            "focus-ring inline-flex h-9 w-9 items-center justify-center rounded-full border bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary",
+            anim
+          )}
         >
           <Icon className="h-4 w-4" aria-hidden />
         </a>
