@@ -3,7 +3,7 @@
 import QRCode from "qrcode";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Copy, Download, ExternalLink, Palette, Printer, QrCode, RotateCcw, Save, type LucideIcon } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Copy, Download, ExternalLink, FileText, LayoutGrid, Palette, Printer, QrCode, RotateCcw, Save, StickyNote, type LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +15,11 @@ import { getAdminAppData, saveSettings } from "@/lib/firebase/firestore";
 import { hasSafeQrContrast } from "@/lib/utils/qr";
 import { cn } from "@/lib/utils/cn";
 import { defaultQrSettings } from "@/data/default-data";
-import type { QrSettings } from "@/types/models";
+import type { LocalizedText, QrSettings } from "@/types/models";
 
-export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
+export type QrPrintDesign = "poster" | "card" | "tent";
+
+export function QrDesigner({ printMode = false, printDesign = "poster" }: { printMode?: boolean; printDesign?: QrPrintDesign }) {
   const { text, dir: textDir } = useAdminLocale();
   const [settings, setSettings] = useState<QrSettings>(defaultQrSettings);
   const [dataUrl, setDataUrl] = useState("");
@@ -65,6 +67,12 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
       active = false;
     };
   }, [settings, text.qrGenerationFailed]);
+
+  useEffect(() => {
+    if (!printMode) return;
+    document.body.classList.add("qr-printing");
+    return () => document.body.classList.remove("qr-printing");
+  }, [printMode]);
 
   async function saveQr() {
     setMessage("");
@@ -135,16 +143,39 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
   const safeContrast = hasSafeQrContrast(settings.foregroundColor, settings.backgroundColor);
   const validMenuUrl = isValidUrl(settings.menuUrl);
   const readyToScan = validMenuUrl && safeContrast && Boolean(dataUrl);
+  const logoSrc = settings.logoUrl || "/stone-cafe-logo.jpg";
+  const displayUrl = settings.menuUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
 
   if (printMode) {
+    if (printDesign === "tent") {
+      return (
+        <main className="qr-print-area qr-tent-sheet">
+          <div className="qr-tent">
+            <div className="qr-tent-panel qr-tent-flip">
+              <ScanCard logoSrc={logoSrc} qr={dataUrl} title={settings.title} url={displayUrl} size="tent" />
+            </div>
+            <div className="qr-tent-fold" aria-hidden />
+            <div className="qr-tent-panel">
+              <ScanCard logoSrc={logoSrc} qr={dataUrl} title={settings.title} url={displayUrl} size="tent" />
+            </div>
+          </div>
+        </main>
+      );
+    }
+    if (printDesign === "card") {
+      return (
+        <main className="qr-print-area qr-card-sheet">
+          <div className="qr-card-grid">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ScanCard key={i} logoSrc={logoSrc} qr={dataUrl} title={settings.title} url={displayUrl} size="compact" />
+            ))}
+          </div>
+        </main>
+      );
+    }
     return (
-      <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-6 bg-white p-8 text-center text-black">
-        <div className="text-2xl font-semibold">{settings.title.en}</div>
-        <div className="text-xl" dir="rtl">{settings.title.ar}</div>
-        <div className="text-xl" dir="rtl">{settings.title.ckb}</div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {dataUrl ? <img src={dataUrl} alt={text.menuQrCode} className="h-80 w-80" /> : null}
-        <p className="break-all text-lg">{settings.menuUrl}</p>
+      <main className="qr-print-area qr-poster">
+        <ScanCard logoSrc={logoSrc} qr={dataUrl} title={settings.title} url={displayUrl} size="poster" />
       </main>
     );
   }
@@ -208,6 +239,22 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
               </div>
             </section>
 
+            <section className="space-y-3 rounded-lg border bg-muted/15 p-4">
+              <h3 className="text-sm font-semibold">{text.printableDesigns}</h3>
+              <p dir={textDir} className="text-xs text-muted-foreground">{text.printableDesignsHint}</p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Button asChild variant="outline">
+                  <Link href="/admin/qr-code/print?design=poster" target="_blank"><FileText className="h-4 w-4" aria-hidden /> {text.designPoster}</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/admin/qr-code/print?design=tent" target="_blank"><StickyNote className="h-4 w-4" aria-hidden /> {text.designTent}</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/admin/qr-code/print?design=card" target="_blank"><LayoutGrid className="h-4 w-4" aria-hidden /> {text.designCardSheet}</Link>
+                </Button>
+              </div>
+            </section>
+
             <div className="flex flex-wrap gap-2">
               <Button onClick={saveQr} disabled={saving || !readyToScan}>
                 <Save className="h-4 w-4" aria-hidden />
@@ -256,6 +303,37 @@ export function QrDesigner({ printMode = false }: { printMode?: boolean }) {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function ScanCard({
+  logoSrc,
+  qr,
+  title,
+  url,
+  size
+}: {
+  logoSrc: string;
+  qr: string;
+  title: LocalizedText;
+  url: string;
+  size: "poster" | "tent" | "compact";
+}) {
+  return (
+    <div className={cn("qr-card", size === "tent" && "qr-card-tent", size === "compact" && "qr-card-compact")}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="qr-card-logo" src={logoSrc} alt="Stone Cafe" />
+      <div className="qr-card-tile">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {qr ? <img src={qr} alt="" /> : null}
+      </div>
+      <div className="qr-card-titles">
+        <p className="qr-card-title" dir="rtl" lang="ckb">{title.ckb}</p>
+        <p className="qr-card-title" dir="rtl" lang="ar">{title.ar}</p>
+        <p className="qr-card-title qr-card-title-en">{title.en}</p>
+      </div>
+      <p className="qr-card-url">{url}</p>
     </div>
   );
 }

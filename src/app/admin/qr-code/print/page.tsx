@@ -1,5 +1,11 @@
-import { QrDesigner } from "@/components/qr/qr-designer";
+import { QrDesigner, type QrPrintDesign } from "@/components/qr/qr-designer";
 
-export default function AdminQrPrintPage() {
-  return <QrDesigner printMode />;
+export default async function AdminQrPrintPage({
+  searchParams
+}: {
+  searchParams: Promise<{ design?: string }>;
+}) {
+  const { design } = await searchParams;
+  const printDesign: QrPrintDesign = design === "card" || design === "tent" ? design : "poster";
+  return <QrDesigner printMode printDesign={printDesign} />;
 }
