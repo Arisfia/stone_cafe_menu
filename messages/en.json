@@ -42,7 +42,8 @@
     "tagline": "Freshly brewed, just for you",
     "chooseLanguage": "Choose your language",
     "enter": "View the Menu",
-    "logoHint": "Logo"
+    "logoHint": "Logo",
+    "findUsSocial": "Find us on social media"
   },
   "admin": {
     "dashboard": "Dashboard",

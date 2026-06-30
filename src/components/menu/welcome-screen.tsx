@@ -171,7 +171,14 @@ export function WelcomeScreen() {
           </Link>
         </Button>
 
-        <SocialLinks social={social} className="mt-6 justify-center" />
+        {social && Object.values(social).some((value) => value?.trim()) ? (
+          <div className="mt-6 space-y-2">
+            <p dir={textDir} className="text-xs font-medium text-muted-foreground">
+              {translate(locale, "welcome.findUsSocial")}
+            </p>
+            <SocialLinks social={social} className="justify-center" />
+          </div>
+        ) : null}
       </section>
 
       <BrandCredit className="absolute inset-x-0 bottom-4 z-10 text-[#2f7a3b]/80 dark:text-[#A4D8A6]/70" />

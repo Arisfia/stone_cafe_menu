@@ -4,7 +4,7 @@
 
 @font-face {
   font-family: "StoneCafeCairo";
-  src: url("/fonts/Cairo-Bold.ttf") format("truetype");
+  src: url("/fonts/Cairo-Bold.woff2") format("woff2");
   font-display: swap;
   font-style: normal;
   font-weight: 700;
@@ -12,7 +12,7 @@
 
 @font-face {
   font-family: "StoneCafeReadex";
-  src: url("/fonts/ReadexPro-Bold.ttf") format("truetype");
+  src: url("/fonts/ReadexPro-Bold.woff2") format("woff2");
   font-display: swap;
   font-style: normal;
   font-weight: 700;
@@ -20,7 +20,7 @@
 
 @font-face {
   font-family: "StoneCafeKJino";
-  src: url("/fonts/KJino.TTF") format("truetype");
+  src: url("/fonts/KJino.woff2") format("woff2");
   font-display: swap;
   font-style: normal;
   font-weight: 700;
