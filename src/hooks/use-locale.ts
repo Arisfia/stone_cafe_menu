@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { dirForLocale, isLocale, type LocaleDirection } from "@/lib/i18n/config";
 import type { Locale } from "@/types/models";
 
-export const publicLocaleStorageKey = "ary-menu-locale";
-export const publicLocaleChangeEvent = "ary-menu-locale-change";
+export const publicLocaleStorageKey = "stone-cafe-menu-locale";
+export const publicLocaleChangeEvent = "stone-cafe-menu-locale-change";
 export const adminLocaleStorageKey = "stone-cafe-admin-locale";
 export const adminLocaleChangeEvent = "stone-cafe-admin-locale-change";
 

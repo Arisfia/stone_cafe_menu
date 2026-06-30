@@ -57,7 +57,7 @@ export function WelcomeScreen() {
   } as CSSProperties;
 
   // The welcome always shows Kurdish by default, but the menu reads the persisted
-  // locale (`ary-menu-locale`). Without syncing, a previously chosen language
+  // locale (`stone-cafe-menu-locale`). Without syncing, a previously chosen language
   // (e.g. English) lingers in storage, so pressing Enter on the Kurdish-looking
   // welcome would still load the menu in that old language. Reset storage to the
   // welcome default on open so "what you see is what you get"; an explicit pick on

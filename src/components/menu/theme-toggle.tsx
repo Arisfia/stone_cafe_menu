@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 
-export const publicThemeStorageKey = "ary-menu-theme";
-export const publicThemeChangeEvent = "ary-menu-theme-change";
+export const publicThemeStorageKey = "stone-cafe-menu-theme";
+export const publicThemeChangeEvent = "stone-cafe-menu-theme-change";
 export const adminThemeStorageKey = "stone-cafe-admin-theme";
 export const adminThemeChangeEvent = "stone-cafe-admin-theme-change";
 
