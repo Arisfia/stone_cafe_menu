@@ -85,6 +85,10 @@ export type GeneralSettings = {
   defaultCurrency: Currency;
   // POS service fee added to each bill, as a percentage (e.g. 10 = 10%).
   serviceFeePercent?: number;
+  // Café opening hours (0–24, whole hours) used by the public Open/Closed badge.
+  // Uniform across the week. Falls back to the defaults when unset.
+  openHour?: number;
+  closeHour?: number;
   updatedAt?: Timestamp;
 };
 

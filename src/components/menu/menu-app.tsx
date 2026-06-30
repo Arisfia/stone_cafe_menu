@@ -173,7 +173,7 @@ export function MenuApp({
           </div>
 
           <div className="flex max-w-full flex-wrap items-center gap-2 text-sm">
-            <OpenStatusBadge locale={locale} textDir={textDir} />
+            <OpenStatusBadge locale={locale} textDir={textDir} openHour={data.general.openHour} closeHour={data.general.closeHour} />
             {!loading && data.general.phone ? (
               <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`tel:${data.general.phone}`}>
                 <PhoneSignalIcon className="h-4 w-4 text-primary" />

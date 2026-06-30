@@ -752,4 +752,27 @@ body.overflow-lock {
     height: auto !important;
     width: 42mm !important;
   }
+
+  /* Daily-close / shift summary — prints alone on the same thermal roll. */
+  body.report-printing * {
+    visibility: hidden !important;
+  }
+
+  body.report-printing .report-print-area,
+  body.report-printing .report-print-area * {
+    visibility: visible !important;
+  }
+
+  body.report-printing .report-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 72mm !important;
+    max-width: 72mm !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    font-size: 12px !important;
+  }
 }

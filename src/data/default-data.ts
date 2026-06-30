@@ -23,7 +23,9 @@ export const defaultGeneralSettings: GeneralSettings = {
   defaultLanguage: "ckb",
   enabledLanguages: ["ckb", "ar", "en"],
   defaultCurrency: "IQD",
-  serviceFeePercent: 10
+  serviceFeePercent: 10,
+  openHour: 9,
+  closeHour: 23
 };
 
 export const defaultMenuSettings = {

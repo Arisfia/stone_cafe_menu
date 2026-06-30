@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BadgePercent, ListOrdered, Receipt, Scale, ShoppingBag, TrendingDown, TrendingUp } from "lucide-react";
+import { BadgePercent, FileText, ListOrdered, Printer, Receipt, Scale, ShoppingBag, TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { adminErrorText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { getPosState, listExpenses } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
 import { formatMoney } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
-import type { Currency, Expense, PosCompletedOrder } from "@/types/models";
+import type { Currency, Expense, Locale, PosCompletedOrder } from "@/types/models";
 
 type Mode = "daily" | "monthly" | "all";
 
@@ -50,11 +51,13 @@ export function ReportsManager() {
     return filtered.reduce(
       (acc, order) => {
         acc.revenue += order.total;
+        acc.subtotal += order.subtotal;
         acc.discount += order.discountAmount;
+        acc.serviceFee += order.serviceFeeAmount || 0;
         acc.items += order.lines.reduce((sum, line) => sum + line.quantity, 0);
         return acc;
       },
-      { revenue: 0, discount: 0, items: 0 }
+      { revenue: 0, subtotal: 0, discount: 0, serviceFee: 0, items: 0 }
     );
   }, [filtered]);
 
@@ -86,6 +89,16 @@ export function ReportsManager() {
   }, [expenses, mode, day, month]);
 
   const saleAfterExpense = totals.revenue - expensesTotal;
+
+  const periodLabel = mode === "all" ? text.allTime : mode === "monthly" ? formatMonthLabel(month, locale) : formatDayLabel(day, locale);
+
+  function printSummary() {
+    document.body.classList.add("report-printing");
+    const cleanup = () => document.body.classList.remove("report-printing");
+    window.addEventListener("afterprint", cleanup, { once: true });
+    window.print();
+    window.setTimeout(cleanup, 1000);
+  }
 
   const modes: { key: Mode; label: string }[] = [
     { key: "daily", label: text.daily },
@@ -135,6 +148,38 @@ export function ReportsManager() {
           <SummaryFigure icon={<TrendingDown className="h-4 w-4" aria-hidden />} label={text.totalExpenses} value={formatMoney(expensesTotal, currency, locale)} tone="negative" textDir={textDir} />
           <Operator>=</Operator>
           <SummaryFigure icon={<Scale className="h-4 w-4" aria-hidden />} label={text.saleAfterExpense} value={formatMoney(saleAfterExpense, currency, locale)} tone={saleAfterExpense >= 0 ? "positive" : "negative"} emphasized textDir={textDir} />
+        </CardContent>
+      </Card>
+
+      {/* Close / shift summary — a printable end-of-period breakdown (Z-report style). */}
+      <Card className="report-print-area">
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+          <div className="min-w-0">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FileText className="h-5 w-5 text-primary" aria-hidden />
+              {text.closeSummary}
+            </CardTitle>
+            <p dir={textDir} className="mt-1 text-xs text-muted-foreground">{periodLabel} · {filtered.length} {text.ordersCount}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={printSummary} className="shrink-0 print:hidden">
+            <Printer className="me-1.5 h-4 w-4" aria-hidden />
+            {text.printSummary}
+          </Button>
+        </CardHeader>
+        <CardContent dir="ltr">
+          <dl className="space-y-0.5 text-sm">
+            <CloseLine label={text.grossSales} value={formatMoney(totals.subtotal, currency, locale)} textDir={textDir} />
+            <CloseLine label={text.totalDiscounts} value={`− ${formatMoney(totals.discount, currency, locale)}`} tone="negative" textDir={textDir} />
+            {totals.serviceFee > 0 ? (
+              <CloseLine label={text.serviceFees} value={`+ ${formatMoney(totals.serviceFee, currency, locale)}`} textDir={textDir} />
+            ) : null}
+            <div className="my-1 border-t" />
+            <CloseLine label={text.netSales} value={formatMoney(totals.revenue, currency, locale)} strong textDir={textDir} />
+            <CloseLine label={text.totalExpenses} value={`− ${formatMoney(expensesTotal, currency, locale)}`} tone="negative" textDir={textDir} />
+            <div className="my-1 border-t" />
+            <CloseLine label={text.saleAfterExpense} value={formatMoney(saleAfterExpense, currency, locale)} tone={saleAfterExpense >= 0 ? "positive" : "negative"} emphasized textDir={textDir} />
+          </dl>
+          <p className="mt-3 text-xs text-muted-foreground">{totals.items} {text.itemsSold}</p>
         </CardContent>
       </Card>
 
@@ -223,6 +268,42 @@ function localDateKey(iso: string): string {
 
 function todayKey(): string {
   return localDateKey(new Date().toISOString());
+}
+
+function formatDayLabel(key: string, locale: Locale): string {
+  const [y, m, d] = key.split("-").map(Number);
+  if (!y || !m || !d) return key;
+  return new Date(y, m - 1, d).toLocaleDateString(locale === "ckb" ? "ar-IQ" : locale, { year: "numeric", month: "long", day: "numeric" });
+}
+
+function formatMonthLabel(key: string, locale: Locale): string {
+  const [y, m] = key.split("-").map(Number);
+  if (!y || !m) return key;
+  return new Date(y, m - 1, 1).toLocaleDateString(locale === "ckb" ? "ar-IQ" : locale, { year: "numeric", month: "long" });
+}
+
+function CloseLine({
+  label,
+  value,
+  tone,
+  strong = false,
+  emphasized = false,
+  textDir
+}: {
+  label: string;
+  value: string;
+  tone?: "positive" | "negative";
+  strong?: boolean;
+  emphasized?: boolean;
+  textDir: "ltr" | "rtl";
+}) {
+  const accent = tone === "negative" ? "text-destructive" : tone === "positive" ? "text-primary" : "";
+  return (
+    <div className={cn("flex items-baseline justify-between gap-4 rounded-md px-1 py-1", emphasized && "bg-primary/5 px-2")}>
+      <dt dir={textDir} className={cn("text-muted-foreground", (strong || emphasized) && "font-semibold text-foreground")}>{label}</dt>
+      <dd className={cn("shrink-0 tabular-nums", accent, emphasized ? "text-lg font-bold" : strong ? "font-bold" : "font-medium")}>{value}</dd>
+    </div>
+  );
 }
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {

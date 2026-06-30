@@ -254,6 +254,25 @@ export function SettingsManager() {
                 </Field>
               </div>
             </SettingsFormSection>
+            <SettingsFormSection title={text.openingHours}>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Field label={text.opensAt}>
+                  <Select value={String(general.openHour ?? 9)} onChange={(e) => setGeneral({ ...general, openHour: Number(e.target.value) })}>
+                    {hourOptions.slice(0, 24).map((h) => (
+                      <option key={h} value={h}>{formatHourLabel(h)}</option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label={text.closesAt}>
+                  <Select value={String(general.closeHour ?? 23)} onChange={(e) => setGeneral({ ...general, closeHour: Number(e.target.value) })}>
+                    {hourOptions.slice(1).map((h) => (
+                      <option key={h} value={h}>{formatHourLabel(h)}</option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{text.hoursHint}</p>
+            </SettingsFormSection>
             <div>
               <Button onClick={saveAll} disabled={saving || !hasUnsavedChanges}>{saving ? text.saving : text.saveSettings}</Button>
             </div>
@@ -483,6 +502,15 @@ function settingsSignature(general: GeneralSettings, menu: MenuSettings, appeara
 
 function colorWithAlpha(color: string, alpha: string) {
   return /^#[0-9a-f]{6}$/i.test(color) ? `${color}${alpha}` : color;
+}
+
+// Whole-hour options 0–24 (24 = midnight, used as a closing time).
+const hourOptions = Array.from({ length: 25 }, (_, i) => i);
+
+function formatHourLabel(hour: number): string {
+  const normalized = ((hour % 24) + 24) % 24;
+  const date = new Date(2000, 0, 1, normalized, 0, 0);
+  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
 function menuSettingLabel(key: string, text: Record<string, string>) {

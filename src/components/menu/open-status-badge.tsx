@@ -12,10 +12,14 @@ import type { Locale } from "@/types/models";
 export function OpenStatusBadge({
   locale,
   textDir,
+  openHour,
+  closeHour,
   className
 }: {
   locale: Locale;
   textDir: "ltr" | "rtl";
+  openHour?: number;
+  closeHour?: number;
   className?: string;
 }) {
   const [now, setNow] = useState<Date | null>(null);
@@ -30,7 +34,7 @@ export function OpenStatusBadge({
   // client-only) and it appears as soon as the page is interactive.
   if (!now) return null;
 
-  const { isOpen, changeAt } = getOpenState(now);
+  const { isOpen, changeAt } = getOpenState(now, openHour, closeHour);
   const timeLocale = locale === "ckb" ? "ar-IQ" : locale;
   const timeText = changeAt.toLocaleTimeString(timeLocale, { hour: "numeric", minute: "2-digit" });
   const statusLabel = translate(locale, isOpen ? "menu.openNow" : "menu.closedNow");
