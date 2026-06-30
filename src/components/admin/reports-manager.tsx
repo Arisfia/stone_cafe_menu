@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BadgePercent, FileText, ListOrdered, Printer, Receipt, Scale, ShoppingBag, TrendingDown, TrendingUp } from "lucide-react";
+import { BadgePercent, BarChart3, FileText, ListOrdered, Printer, Receipt, Scale, ShoppingBag, TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +73,42 @@ export function ReportsManager() {
     }
     return [...map.values()].sort((a, b) => b.quantity - a.quantity).slice(0, 10);
   }, [filtered]);
+
+  const topMax = topItems[0]?.quantity || 1;
+
+  // Revenue bucketed across the selected period: by hour (daily), by day
+  // (monthly), or by month (all time). Sorted chronologically for the bar chart.
+  const trend = useMemo(() => {
+    const map = new Map<string, { revenue: number; sort: number; label: string }>();
+    for (const order of filtered) {
+      const date = new Date(order.completedAt);
+      if (Number.isNaN(date.getTime())) continue;
+      let key: string;
+      let sort: number;
+      let label: string;
+      if (mode === "daily") {
+        const hour = date.getHours();
+        key = String(hour);
+        sort = hour;
+        label = `${(hour % 12) || 12}${hour < 12 ? "a" : "p"}`;
+      } else if (mode === "monthly") {
+        const dayOfMonth = date.getDate();
+        key = String(dayOfMonth);
+        sort = dayOfMonth;
+        label = String(dayOfMonth);
+      } else {
+        key = `${date.getFullYear()}-${date.getMonth()}`;
+        sort = date.getFullYear() * 12 + date.getMonth();
+        label = date.toLocaleDateString(locale === "ckb" ? "ar-IQ" : locale, { month: "short" });
+      }
+      const current = map.get(key) || { revenue: 0, sort, label };
+      current.revenue += order.total;
+      map.set(key, current);
+    }
+    return [...map.values()].sort((a, b) => a.sort - b.sort);
+  }, [filtered, mode, locale]);
+
+  const trendMax = Math.max(1, ...trend.map((entry) => entry.revenue));
 
   const avgOrder = filtered.length ? Math.round(totals.revenue / filtered.length) : 0;
 
@@ -197,6 +233,33 @@ export function ReportsManager() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
+            <BarChart3 className="h-5 w-5 text-primary" aria-hidden />
+            {text.revenueTrend}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {trend.length ? (
+            <div dir="ltr" className="flex h-44 items-end gap-1.5 overflow-x-auto pb-1">
+              {trend.map((entry) => (
+                <div key={entry.sort} className="flex h-full min-w-[26px] flex-1 flex-col items-center justify-end gap-1.5">
+                  <div
+                    className="w-full rounded-t bg-primary/80 transition-colors hover:bg-primary"
+                    style={{ height: `${Math.max(3, Math.round((entry.revenue / trendMax) * 100))}%` }}
+                    title={formatMoney(entry.revenue, currency, locale)}
+                  />
+                  <span className="text-[10px] tabular-nums text-muted-foreground">{entry.label}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p dir={textDir} className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{text.noSales}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
             <ListOrdered className="h-5 w-5 text-primary" aria-hidden />
             {text.topItems}
           </CardTitle>
@@ -207,11 +270,16 @@ export function ReportsManager() {
           ) : topItems.length ? (
             <div className="space-y-2">
               {topItems.map((item, index) => (
-                <div key={index} className="flex items-center gap-3 rounded-lg border bg-card p-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{index + 1}</span>
-                  <span dir={textDir} className="min-w-0 flex-1 truncate text-sm font-medium">{localized(item.name, locale)}</span>
-                  <span className="shrink-0 text-sm font-semibold">{item.quantity}×</span>
-                  <span className="shrink-0 text-sm text-muted-foreground">{formatMoney(item.revenue, currency, locale)}</span>
+                <div key={index} className="relative flex items-center gap-3 overflow-hidden rounded-lg border bg-card p-3">
+                  <span
+                    className="absolute inset-y-0 left-0 bg-primary/10"
+                    style={{ width: `${Math.round((item.quantity / topMax) * 100)}%` }}
+                    aria-hidden
+                  />
+                  <span className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{index + 1}</span>
+                  <span dir={textDir} className="relative z-10 min-w-0 flex-1 truncate text-sm font-medium">{localized(item.name, locale)}</span>
+                  <span className="relative z-10 shrink-0 text-sm font-semibold">{item.quantity}×</span>
+                  <span className="relative z-10 shrink-0 text-sm text-muted-foreground">{formatMoney(item.revenue, currency, locale)}</span>
                 </div>
               ))}
             </div>

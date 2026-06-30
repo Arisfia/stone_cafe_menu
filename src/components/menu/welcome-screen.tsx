@@ -145,7 +145,15 @@ export function WelcomeScreen() {
 
         {/* Language */}
         <div className="mt-6 space-y-3">
-          <p dir={textDir} className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <p
+            dir={textDir}
+            className={cn(
+              "font-semibold text-muted-foreground",
+              // Arabic/Kurdish are connected scripts — letter-spacing + uppercase
+              // break the glyphs, so only the Latin (English) label gets them.
+              textDir === "rtl" ? "text-sm tracking-normal" : "text-xs uppercase tracking-wide"
+            )}
+          >
             {translate(locale, "welcome.chooseLanguage")}
           </p>
           {/* Fixed ltr order so the buttons keep their position when the
