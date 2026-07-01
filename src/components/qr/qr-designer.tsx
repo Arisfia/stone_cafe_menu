@@ -3,7 +3,7 @@
 import QRCode from "qrcode";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Copy, Download, ExternalLink, FileText, LayoutGrid, Palette, Printer, QrCode, RotateCcw, Save, StickyNote, type LucideIcon } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, Copy, Download, ExternalLink, Palette, Printer, QrCode, RotateCcw, Save, type LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,9 +17,9 @@ import { cn } from "@/lib/utils/cn";
 import { defaultQrSettings } from "@/data/default-data";
 import type { LocalizedText, QrSettings } from "@/types/models";
 
-export type QrPrintDesign = "poster" | "card" | "tent";
+export type QrPrintVariant = "qr" | "design";
 
-export function QrDesigner({ printMode = false, printDesign = "poster" }: { printMode?: boolean; printDesign?: QrPrintDesign }) {
+export function QrDesigner({ printMode = false, printVariant = "design", tableCount = 1 }: { printMode?: boolean; printVariant?: QrPrintVariant; tableCount?: number }) {
   const { text, dir: textDir } = useAdminLocale();
   const [settings, setSettings] = useState<QrSettings>(defaultQrSettings);
   const [dataUrl, setDataUrl] = useState("");
@@ -27,6 +27,8 @@ export function QrDesigner({ printMode = false, printDesign = "poster" }: { prin
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [cardCount, setCardCount] = useState(8);
+  const [printMenuOpen, setPrintMenuOpen] = useState(false);
   const menuUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/menu`;
 
   useEffect(() => {
@@ -140,6 +142,11 @@ export function QrDesigner({ printMode = false, printDesign = "poster" }: { prin
     setError("");
   }
 
+  function openPrint(mode: QrPrintVariant) {
+    setPrintMenuOpen(false);
+    window.open(`/admin/qr-code/print?mode=${mode}&count=${cardCount}`, "_blank", "noopener");
+  }
+
   const safeContrast = hasSafeQrContrast(settings.foregroundColor, settings.backgroundColor);
   const validMenuUrl = isValidUrl(settings.menuUrl);
   const readyToScan = validMenuUrl && safeContrast && Boolean(dataUrl);
@@ -147,35 +154,30 @@ export function QrDesigner({ printMode = false, printDesign = "poster" }: { prin
   const displayUrl = settings.menuUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
 
   if (printMode) {
-    if (printDesign === "tent") {
-      return (
-        <main className="qr-print-area qr-tent-sheet">
-          <div className="qr-tent">
-            <div className="qr-tent-panel qr-tent-flip">
-              <ScanCard logoSrc={logoSrc} qr={dataUrl} title={settings.title} url={displayUrl} size="tent" />
-            </div>
-            <div className="qr-tent-fold" aria-hidden />
-            <div className="qr-tent-panel">
-              <ScanCard logoSrc={logoSrc} qr={dataUrl} title={settings.title} url={displayUrl} size="tent" />
-            </div>
-          </div>
-        </main>
-      );
-    }
-    if (printDesign === "card") {
-      return (
-        <main className="qr-print-area qr-card-sheet">
-          <div className="qr-card-grid">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <ScanCard key={i} logoSrc={logoSrc} qr={dataUrl} title={settings.title} url={displayUrl} size="compact" />
+    return (
+      <main className="qr-print-root">
+        <div className="qr-print-toolbar no-print">
+          <p>{tableCount} × {text.tableCards} · {printVariant === "qr" ? text.printQrOnly : text.printFullDesign}</p>
+          <Button onClick={() => window.print()} disabled={!dataUrl}>
+            <Printer className="h-4 w-4" aria-hidden /> {text.printNow}
+          </Button>
+        </div>
+        <div className="qr-print-area">
+          <div className="qr-sheet">
+            {Array.from({ length: tableCount }).map((_, i) => (
+              <TableCard
+                key={i}
+                variant={printVariant}
+                number={i + 1}
+                tableWord={text.tableWord}
+                logoSrc={logoSrc}
+                qr={dataUrl}
+                title={settings.title}
+                url={displayUrl}
+              />
             ))}
           </div>
-        </main>
-      );
-    }
-    return (
-      <main className="qr-print-area qr-poster">
-        <ScanCard logoSrc={logoSrc} qr={dataUrl} title={settings.title} url={displayUrl} size="poster" />
+        </div>
       </main>
     );
   }
@@ -240,18 +242,36 @@ export function QrDesigner({ printMode = false, printDesign = "poster" }: { prin
             </section>
 
             <section className="space-y-3 rounded-lg border bg-muted/15 p-4">
-              <h3 className="text-sm font-semibold">{text.printableDesigns}</h3>
-              <p dir={textDir} className="text-xs text-muted-foreground">{text.printableDesignsHint}</p>
-              <div className="grid gap-2 sm:grid-cols-3">
-                <Button asChild variant="outline">
-                  <Link href="/admin/qr-code/print?design=poster" target="_blank"><FileText className="h-4 w-4" aria-hidden /> {text.designPoster}</Link>
+              <h3 className="text-sm font-semibold">{text.tableCards}</h3>
+              <p dir={textDir} className="text-xs text-muted-foreground">{text.tableCardsHint}</p>
+              <Field label={text.numberOfTables}>
+                <Input
+                  type="number"
+                  min={1}
+                  max={200}
+                  className="w-28"
+                  value={cardCount}
+                  onChange={(e) => setCardCount(Math.min(Math.max(parseInt(e.target.value, 10) || 1, 1), 200))}
+                />
+              </Field>
+              <div className="relative inline-block">
+                <Button type="button" onClick={() => setPrintMenuOpen((v) => !v)} disabled={!readyToScan}>
+                  <Printer className="h-4 w-4" aria-hidden /> {text.print}
+                  <ChevronDown className="h-4 w-4" aria-hidden />
                 </Button>
-                <Button asChild variant="outline">
-                  <Link href="/admin/qr-code/print?design=tent" target="_blank"><StickyNote className="h-4 w-4" aria-hidden /> {text.designTent}</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href="/admin/qr-code/print?design=card" target="_blank"><LayoutGrid className="h-4 w-4" aria-hidden /> {text.designCardSheet}</Link>
-                </Button>
+                {printMenuOpen ? (
+                  <>
+                    <button type="button" aria-hidden className="fixed inset-0 z-0 cursor-default" onClick={() => setPrintMenuOpen(false)} />
+                    <div className="absolute z-10 mt-1 w-60 overflow-hidden rounded-md border bg-background shadow-md">
+                      <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => openPrint("qr")}>
+                        <QrCode className="h-4 w-4 text-primary" aria-hidden /> {text.printQrOnly}
+                      </button>
+                      <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => openPrint("design")}>
+                        <Palette className="h-4 w-4 text-primary" aria-hidden /> {text.printFullDesign}
+                      </button>
+                    </div>
+                  </>
+                ) : null}
               </div>
             </section>
 
@@ -289,10 +309,6 @@ export function QrDesigner({ printMode = false, printDesign = "poster" }: { prin
                 <Button variant="secondary" onClick={copyQr} disabled={!dataUrl}><Copy className="h-4 w-4" aria-hidden /> {text.copyQr}</Button>
                 <Button variant="outline" onClick={downloadPng} disabled={!dataUrl}><Download className="h-4 w-4" aria-hidden /> PNG</Button>
                 <Button variant="outline" onClick={downloadSvg} disabled={!svg}><Download className="h-4 w-4" aria-hidden /> SVG</Button>
-                <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" aria-hidden /> {text.print}</Button>
-                <Button asChild variant="outline">
-                  <Link href="/admin/qr-code/print" target="_blank"><Printer className="h-4 w-4" aria-hidden /> {text.printPage}</Link>
-                </Button>
                 {validMenuUrl ? (
                   <Button asChild variant="outline" className="sm:col-span-2">
                     <Link href={settings.menuUrl} target="_blank"><ExternalLink className="h-4 w-4" aria-hidden /> {text.testLink}</Link>
@@ -307,33 +323,50 @@ export function QrDesigner({ printMode = false, printDesign = "poster" }: { prin
   );
 }
 
-function ScanCard({
+function TableCard({
+  variant,
+  number,
+  tableWord,
   logoSrc,
   qr,
   title,
-  url,
-  size
+  url
 }: {
+  variant: QrPrintVariant;
+  number: number;
+  tableWord: string;
   logoSrc: string;
   qr: string;
   title: LocalizedText;
   url: string;
-  size: "poster" | "tent" | "compact";
 }) {
+  if (variant === "qr") {
+    return (
+      <div className="qr-holder qr-holder--plain">
+        <div className="qr-holder__num">{tableWord} {number}</div>
+        <div className="qr-holder__tile">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {qr ? <img src={qr} alt="" /> : null}
+        </div>
+        <p className="qr-holder__url">{url}</p>
+      </div>
+    );
+  }
   return (
-    <div className={cn("qr-card", size === "tent" && "qr-card-tent", size === "compact" && "qr-card-compact")}>
+    <div className="qr-holder qr-holder--design">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="qr-card-logo" src={logoSrc} alt="Stone Cafe" />
-      <div className="qr-card-tile">
+      <img className="qr-holder__logo" src={logoSrc} alt="Stone Cafe" />
+      <div className="qr-holder__num">{tableWord} {number}</div>
+      <div className="qr-holder__tile">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {qr ? <img src={qr} alt="" /> : null}
       </div>
-      <div className="qr-card-titles">
-        <p className="qr-card-title" dir="rtl" lang="ckb">{title.ckb}</p>
-        <p className="qr-card-title" dir="rtl" lang="ar">{title.ar}</p>
-        <p className="qr-card-title qr-card-title-en">{title.en}</p>
+      <div className="qr-holder__titles">
+        <p className="qr-holder__title" dir="rtl" lang="ckb">{title.ckb}</p>
+        <p className="qr-holder__title" dir="rtl" lang="ar">{title.ar}</p>
+        <p className="qr-holder__title qr-holder__title--en">{title.en}</p>
       </div>
-      <p className="qr-card-url">{url}</p>
+      <p className="qr-holder__url">{url}</p>
     </div>
   );
 }

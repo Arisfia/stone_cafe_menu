@@ -1,11 +1,12 @@
-import { QrDesigner, type QrPrintDesign } from "@/components/qr/qr-designer";
+import { QrDesigner, type QrPrintVariant } from "@/components/qr/qr-designer";
 
 export default async function AdminQrPrintPage({
   searchParams
 }: {
-  searchParams: Promise<{ design?: string }>;
+  searchParams: Promise<{ mode?: string; count?: string }>;
 }) {
-  const { design } = await searchParams;
-  const printDesign: QrPrintDesign = design === "card" || design === "tent" ? design : "poster";
-  return <QrDesigner printMode printDesign={printDesign} />;
+  const { mode, count } = await searchParams;
+  const variant: QrPrintVariant = mode === "qr" ? "qr" : "design";
+  const tableCount = Math.min(Math.max(parseInt(count ?? "1", 10) || 1, 1), 200);
+  return <QrDesigner printMode printVariant={variant} tableCount={tableCount} />;
 }

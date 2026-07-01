@@ -53,8 +53,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const { text, dir: textDir } = useAdminLocale();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isLogin = pathname === "/admin/login";
+  const isQrPrint = pathname === "/admin/qr-code/print";
 
-  if (isLogin) return <>{children}</>;
+  if (isLogin || isQrPrint) return <>{children}</>;
 
   if (!auth.isConfigured) {
     return (

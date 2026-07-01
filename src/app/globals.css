@@ -706,159 +706,152 @@ body.overflow-lock {
   }
 }
 
-/* ---- QR printable designs: brand sage-green sheets with logo + QR ---- */
-.qr-print-area {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ---- QR table cards: 90×130mm inserts for acrylic table holders ---- */
+.qr-print-root {
   min-height: 100vh;
-  width: 100%;
-  padding: 24px;
   background: #e9eee6;
 }
-.qr-card {
+.qr-print-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8e2;
+}
+.qr-print-toolbar p {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+}
+.qr-print-area {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 18px;
+}
+.qr-sheet {
+  display: grid;
+  grid-template-columns: repeat(2, 90mm);
+  gap: 8mm;
+  justify-content: center;
+}
+.qr-holder {
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
   box-sizing: border-box;
+  width: 90mm;
+  height: 130mm;
+  break-inside: avoid;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  width: 150mm;
-  padding: 40px 36px 28px;
-  border-radius: 24px;
-  background: #719567;
-  color: #ffffff;
+  gap: 3mm;
+  padding: 6mm 5mm 5mm;
+  border-radius: 5mm;
   text-align: center;
 }
-.qr-card-logo {
-  width: 96mm;
-  height: auto;
-  object-fit: contain;
+.qr-holder--design {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(157deg, #82a476 0%, #719567 52%, #5d8356 100%);
+  color: #ffffff;
 }
-.qr-card-tile {
-  display: flex;
-  padding: 16px;
-  border-radius: 18px;
+/* Faint café motif (coffee beans + a cup) drifting behind the card. Sits at
+   z-index -1 so the opaque white QR tile always covers it — scanning stays safe. */
+.qr-holder--design::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.12;
+  background-image:
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='40'%20height='40'%20viewBox='0%200%2040%2040'%20fill='none'%20stroke='%23ffffff'%20stroke-width='1.5'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M11%2017%20h16%20v7%20a8%208%200%200%201%20-16%200%20z'/%3E%3Cpath%20d='M27%2018%20a5%205%200%200%201%200%209'/%3E%3Cpath%20d='M15%2012%20q2.5%20-3%200%20-6%20M21%2012%20q2.5%20-3%200%20-6'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='44'%20height='44'%20viewBox='0%200%2044%2044'%20fill='none'%20stroke='%23ffffff'%20stroke-width='1.1'%20stroke-linecap='round'%3E%3Cg%20transform='translate(22,22)%20rotate(28)'%3E%3Cellipse%20rx='4.6'%20ry='6.6'/%3E%3Cpath%20d='M0,-5.6%20C2.3,-2%20-2.3,2%200,5.6'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat, repeat;
+  background-position: right 5mm top 6mm, -3mm -3mm;
+  background-size: 14mm auto, 25mm 25mm;
+}
+/* Delicate inner keyline frame, like a printed coaster. */
+.qr-holder--design::after {
+  content: "";
+  position: absolute;
+  inset: 3.5mm;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 3.5mm;
+  pointer-events: none;
+}
+.qr-holder--design .qr-holder__num {
+  padding: 1.4mm 4.5mm;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+.qr-holder--plain {
   background: #ffffff;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  color: #0f172a;
+  border: 1px dashed #c2ccc2;
 }
-.qr-card-tile img {
-  display: block;
-  width: 78mm;
-  height: 78mm;
+.qr-holder__logo {
+  width: 62mm;
+  height: 13mm;
+  object-fit: cover;
 }
-.qr-card-titles {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.qr-card-title {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.3;
-}
-.qr-card-title-en {
+.qr-holder__num {
   font-size: 17px;
-  letter-spacing: 0.05em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  opacity: 0.95;
 }
-.qr-card-url {
-  margin: 4px 0 0;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  opacity: 0.85;
+.qr-holder__tile {
+  display: flex;
+  padding: 3mm;
+  border-radius: 3mm;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
 }
-
-/* Table-tent size: two stacked panels folded down the middle */
-.qr-card-tent {
-  width: 150mm;
-  gap: 14px;
-  padding: 22px 28px 16px;
-  border-radius: 18px;
+.qr-holder--plain .qr-holder__tile {
+  padding: 0;
+  box-shadow: none;
 }
-.qr-card-tent .qr-card-logo {
-  width: 84mm;
-  height: 28mm;
-  object-fit: cover;
+.qr-holder__tile img {
+  display: block;
+  width: 44mm;
+  height: 44mm;
 }
-.qr-card-tent .qr-card-tile {
-  padding: 12px;
-  border-radius: 14px;
+.qr-holder--plain .qr-holder__tile img {
+  width: 56mm;
+  height: 56mm;
 }
-.qr-card-tent .qr-card-tile img {
-  width: 48mm;
-  height: 48mm;
-}
-.qr-card-tent .qr-card-title {
-  font-size: 16px;
-}
-.qr-card-tent .qr-card-title-en {
-  font-size: 12px;
-}
-.qr-tent {
+.qr-holder__titles {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 272mm;
-  padding: 6mm 0;
-  box-sizing: border-box;
+  gap: 1px;
 }
-.qr-tent-panel {
-  display: flex;
-  flex: 1;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-}
-.qr-tent-flip {
-  transform: rotate(180deg);
-}
-.qr-tent-fold {
-  width: 90%;
-  border-top: 2px dashed #9aa79a;
-}
-
-/* Card sheet: 8 small cut-out cards per A4 */
-.qr-card-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8mm;
-  width: 190mm;
-}
-.qr-card-compact {
-  width: auto;
-  gap: 8px;
-  padding: 16px 14px 12px;
-  border-radius: 14px;
-}
-.qr-card-compact .qr-card-logo {
-  width: 46mm;
-  height: 15mm;
-  object-fit: cover;
-}
-.qr-card-compact .qr-card-tile {
-  padding: 8px;
-  border-radius: 10px;
-}
-.qr-card-compact .qr-card-tile img {
-  width: 34mm;
-  height: 34mm;
-}
-.qr-card-compact .qr-card-title {
-  font-size: 11px;
+.qr-holder__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
   line-height: 1.25;
 }
-.qr-card-compact .qr-card-title-en {
-  font-size: 9px;
+.qr-holder__title--en {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.9;
 }
-.qr-card-compact .qr-card-url {
-  font-size: 8px;
+.qr-holder__url {
+  margin: 1mm 0 0;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
 }
 
 @media print {
@@ -867,30 +860,21 @@ body.overflow-lock {
     margin: 4mm;
   }
 
-  /* QR sheets print full-page (A4), not on the 80mm receipt roll. */
-  @page qr-portrait {
+  /* QR table cards print on A4, not the 80mm receipt roll. */
+  @page qr-a4 {
     size: A4 portrait;
-    margin: 0;
+    margin: 8mm;
   }
-  body.qr-printing * {
-    visibility: hidden !important;
+  body.qr-printing {
+    page: qr-a4;
   }
-  body.qr-printing .qr-print-area,
-  body.qr-printing .qr-print-area * {
-    visibility: visible !important;
-  }
+  body.qr-printing .qr-print-root,
   body.qr-printing .qr-print-area {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    min-height: auto !important;
     padding: 0 !important;
     background: #ffffff !important;
-    page: qr-portrait;
   }
-  body.qr-printing .qr-card,
-  body.qr-printing .qr-card * {
+  body.qr-printing .qr-holder,
+  body.qr-printing .qr-holder * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
