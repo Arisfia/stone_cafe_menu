@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { useAdminLocale } from "@/components/admin/admin-preferences";
 import { getAdminAppData, saveSettings } from "@/lib/firebase/firestore";
 import { hasSafeQrContrast } from "@/lib/utils/qr";
@@ -39,31 +38,36 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
 
   useEffect(() => {
     let active = true;
-    Promise.all([
-      QRCode.toDataURL(settings.menuUrl, {
-        errorCorrectionLevel: settings.includeLogo ? "H" : "Q",
-        margin: 4,
-        width: 640,
-        color: { dark: settings.foregroundColor, light: settings.backgroundColor }
-      }),
-      QRCode.toString(settings.menuUrl, {
-        type: "svg",
-        errorCorrectionLevel: settings.includeLogo ? "H" : "Q",
-        margin: 4,
-        color: { dark: settings.foregroundColor, light: settings.backgroundColor }
-      })
-    ])
-      .then(([nextDataUrl, nextSvg]) => {
+    const logoUrl = settings.logoUrl || "/stone-cafe-logo.jpg";
+    (async () => {
+      try {
+        // Error correction "H" (30% recovery) so the centered Stone logo can sit
+        // over the QR without breaking scanning.
+        const [baseDataUrl, nextSvg] = await Promise.all([
+          QRCode.toDataURL(settings.menuUrl, {
+            errorCorrectionLevel: "H",
+            margin: 4,
+            width: 640,
+            color: { dark: settings.foregroundColor, light: settings.backgroundColor }
+          }),
+          QRCode.toString(settings.menuUrl, {
+            type: "svg",
+            errorCorrectionLevel: "H",
+            margin: 4,
+            color: { dark: settings.foregroundColor, light: settings.backgroundColor }
+          })
+        ]);
+        const withLogo = await composeQrWithLogo(baseDataUrl, logoUrl, 640).catch(() => baseDataUrl);
         if (!active) return;
-        setDataUrl(nextDataUrl);
+        setDataUrl(withLogo);
         setSvg(nextSvg);
-      })
-      .catch(() => {
+      } catch {
         if (!active) return;
         setDataUrl("");
         setSvg("");
         setError(text.qrGenerationFailed);
-      });
+      }
+    })();
 
     return () => {
       active = false;
@@ -197,10 +201,9 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
       {message ? <p className="rounded-md border border-primary/40 bg-primary/5 p-3 text-sm text-primary">{message}</p> : null}
       {error ? <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</p> : null}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <QrHealthCard icon={validMenuUrl ? CheckCircle2 : AlertTriangle} label={text.menuUrl} value={validMenuUrl ? text.ready : text.invalidUrl} good={validMenuUrl} />
         <QrHealthCard icon={safeContrast ? CheckCircle2 : AlertTriangle} label={text.scanContrast} value={safeContrast ? text.goodContrast : text.needsAttention} good={safeContrast} />
-        <QrHealthCard icon={settings.includeLogo ? CheckCircle2 : QrCode} label={text.logoProtection} value={settings.includeLogo ? text.enabled : text.disabled} good />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -226,10 +229,6 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
                 <Field label={text.backgroundColor}><Input type="color" value={settings.backgroundColor} onChange={(e) => setSettings({ ...settings, backgroundColor: e.target.value })} /></Field>
               </div>
               {!safeContrast ? <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{text.poorQrContrast}</p> : null}
-              <div className="flex items-center justify-between rounded-md border bg-background p-3">
-                <span className="text-sm font-medium">{text.includeLogo}</span>
-                <Switch label={text.includeLogo} checked={settings.includeLogo} onCheckedChange={(checked) => setSettings({ ...settings, includeLogo: checked })} />
-              </div>
             </section>
 
             <section className="space-y-3 rounded-lg border bg-muted/15 p-4">
@@ -238,40 +237,6 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
                 <Field label={text.titleEnglish}><Input value={settings.title.en} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, en: e.target.value } })} /></Field>
                 <Field label={text.titleArabic}><Input dir="rtl" value={settings.title.ar} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, ar: e.target.value } })} /></Field>
                 <Field label={text.titleKurdish}><Input dir="rtl" value={settings.title.ckb} onChange={(e) => setSettings({ ...settings, title: { ...settings.title, ckb: e.target.value } })} /></Field>
-              </div>
-            </section>
-
-            <section className="space-y-3 rounded-lg border bg-muted/15 p-4">
-              <h3 className="text-sm font-semibold">{text.tableCards}</h3>
-              <p dir={textDir} className="text-xs text-muted-foreground">{text.tableCardsHint}</p>
-              <Field label={text.numberOfTables}>
-                <Input
-                  type="number"
-                  min={1}
-                  max={200}
-                  className="w-28"
-                  value={cardCount}
-                  onChange={(e) => setCardCount(Math.min(Math.max(parseInt(e.target.value, 10) || 1, 1), 200))}
-                />
-              </Field>
-              <div className="relative inline-block">
-                <Button type="button" onClick={() => setPrintMenuOpen((v) => !v)} disabled={!readyToScan}>
-                  <Printer className="h-4 w-4" aria-hidden /> {text.print}
-                  <ChevronDown className="h-4 w-4" aria-hidden />
-                </Button>
-                {printMenuOpen ? (
-                  <>
-                    <button type="button" aria-hidden className="fixed inset-0 z-0 cursor-default" onClick={() => setPrintMenuOpen(false)} />
-                    <div className="absolute z-10 mt-1 w-60 overflow-hidden rounded-md border bg-background shadow-md">
-                      <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => openPrint("qr")}>
-                        <QrCode className="h-4 w-4 text-primary" aria-hidden /> {text.printQrOnly}
-                      </button>
-                      <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => openPrint("design")}>
-                        <Palette className="h-4 w-4 text-primary" aria-hidden /> {text.printFullDesign}
-                      </button>
-                    </div>
-                  </>
-                ) : null}
               </div>
             </section>
 
@@ -315,6 +280,42 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
                   </Button>
                 ) : null}
               </div>
+
+              <section className="mt-4 space-y-3 border-t pt-4">
+                <h3 className="text-sm font-semibold">{text.tableCards}</h3>
+                <p dir={textDir} className="text-xs text-muted-foreground">{text.tableCardsHint}</p>
+                <div className="flex flex-wrap items-end gap-3">
+                  <Field label={text.numberOfTables}>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={200}
+                      className="w-28"
+                      value={cardCount}
+                      onChange={(e) => setCardCount(Math.min(Math.max(parseInt(e.target.value, 10) || 1, 1), 200))}
+                    />
+                  </Field>
+                  <div className="relative inline-block">
+                    <Button type="button" onClick={() => setPrintMenuOpen((v) => !v)} disabled={!readyToScan}>
+                      <Printer className="h-4 w-4" aria-hidden /> {text.print}
+                      <ChevronDown className="h-4 w-4" aria-hidden />
+                    </Button>
+                    {printMenuOpen ? (
+                      <>
+                        <button type="button" aria-hidden className="fixed inset-0 z-0 cursor-default" onClick={() => setPrintMenuOpen(false)} />
+                        <div className="absolute z-10 mt-1 w-60 overflow-hidden rounded-md border bg-background shadow-md">
+                          <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => openPrint("qr")}>
+                            <QrCode className="h-4 w-4 text-primary" aria-hidden /> {text.printQrOnly}
+                          </button>
+                          <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => openPrint("design")}>
+                            <Palette className="h-4 w-4 text-primary" aria-hidden /> {text.printFullDesign}
+                          </button>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              </section>
             </div>
           </CardContent>
         </Card>
@@ -408,4 +409,43 @@ function download(href: string, filename: string) {
   anchor.href = href;
   anchor.download = filename;
   anchor.click();
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+// Draws the Stone logo in a white circular badge at the centre of the QR.
+async function composeQrWithLogo(qrDataUrl: string, logoUrl: string, size: number): Promise<string> {
+  const [qr, logo] = await Promise.all([loadImage(qrDataUrl), loadImage(logoUrl)]);
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return qrDataUrl;
+  ctx.drawImage(qr, 0, 0, size, size);
+
+  const cx = size / 2;
+  const cy = size / 2;
+  const outer = size * 0.15; // white badge radius (~30% of the QR width)
+  const inner = outer * 0.84; // logo circle, leaving a thin white ring
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, outer, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, inner, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.drawImage(logo, cx - inner, cy - inner, inner * 2, inner * 2);
+  ctx.restore();
+
+  return canvas.toDataURL("image/png");
 }
