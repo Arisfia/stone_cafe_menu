@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useAdminLocale } from "@/components/admin/admin-preferences";
-import { getAdminAppData, saveSettings } from "@/lib/firebase/firestore";
+import { getAdminAppData, getPosState, saveSettings } from "@/lib/firebase/firestore";
 import { hasSafeQrContrast } from "@/lib/utils/qr";
 import { cn } from "@/lib/utils/cn";
 import { defaultQrSettings } from "@/data/default-data";
@@ -18,7 +18,7 @@ import type { LocalizedText, QrSettings } from "@/types/models";
 
 export type QrPrintVariant = "qr" | "design";
 
-export function QrDesigner({ printMode = false, printVariant = "design", tableCount = 1 }: { printMode?: boolean; printVariant?: QrPrintVariant; tableCount?: number }) {
+export function QrDesigner({ printMode = false, printVariant = "design", tableLabels = ["1"] }: { printMode?: boolean; printVariant?: QrPrintVariant; tableLabels?: string[] }) {
   const { text, dir: textDir } = useAdminLocale();
   const [settings, setSettings] = useState<QrSettings>(defaultQrSettings);
   const [dataUrl, setDataUrl] = useState("");
@@ -26,7 +26,7 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [cardCount, setCardCount] = useState(8);
+  const [tablesInput, setTablesInput] = useState("");
   const [printMenuOpen, setPrintMenuOpen] = useState(false);
   const menuUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/menu`;
 
@@ -35,6 +35,22 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
       setSettings({ ...data.qr, menuUrl: data.qr.menuUrl || menuUrl });
     });
   }, [menuUrl]);
+
+  // Prefill the table list from the real POS tables (active, in display order).
+  // Editable afterwards, so the admin can print any specific subset.
+  useEffect(() => {
+    if (printMode) return;
+    getPosState()
+      .then((pos) => {
+        const names = [...pos.tables]
+          .filter((table) => table.isActive)
+          .sort((a, b) => a.displayOrder - b.displayOrder)
+          .map((table) => table.name.trim())
+          .filter(Boolean);
+        setTablesInput(names.length ? names.join(", ") : "1, 2, 3, 4, 5");
+      })
+      .catch(() => setTablesInput("1, 2, 3, 4, 5"));
+  }, [printMode]);
 
   useEffect(() => {
     let active = true;
@@ -146,9 +162,16 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
     setError("");
   }
 
+  const tablesForPrint = tablesInput
+    .split(",")
+    .map((label) => label.trim())
+    .filter(Boolean)
+    .slice(0, 200);
+
   function openPrint(mode: QrPrintVariant) {
     setPrintMenuOpen(false);
-    window.open(`/admin/qr-code/print?mode=${mode}&count=${cardCount}`, "_blank", "noopener");
+    if (!tablesForPrint.length) return;
+    window.open(`/admin/qr-code/print?mode=${mode}&tables=${encodeURIComponent(tablesForPrint.join(","))}`, "_blank", "noopener");
   }
 
   const safeContrast = hasSafeQrContrast(settings.foregroundColor, settings.backgroundColor);
@@ -161,31 +184,27 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
     return (
       <main className="qr-print-root">
         <div className="qr-print-toolbar no-print">
-          <p>{tableCount} × {text.tableCards} · {printVariant === "qr" ? text.printQrOnly : text.printFullDesign}</p>
+          <p>{tableLabels.length} × {text.tableCards} · {printVariant === "qr" ? text.printQrOnly : text.printFullDesign}</p>
           <Button onClick={() => window.print()} disabled={!dataUrl}>
             <Printer className="h-4 w-4" aria-hidden /> {text.printNow}
           </Button>
         </div>
         <div className="qr-print-area">
           <div className="qr-sheet">
-            {Array.from({ length: Math.ceil(tableCount / 2) }).map((_, page) => (
+            {Array.from({ length: Math.ceil(tableLabels.length / 2) }).map((_, page) => (
               <div className="qr-page" key={page}>
-                {[0, 1].map((col) => {
-                  const number = page * 2 + col + 1;
-                  if (number > tableCount) return null;
-                  return (
-                    <TableCard
-                      key={col}
-                      variant={printVariant}
-                      number={number}
-                      tableWord={text.tableWord}
-                      logoSrc={logoSrc}
-                      qr={dataUrl}
-                      title={settings.title}
-                      url={displayUrl}
-                    />
-                  );
-                })}
+                {tableLabels.slice(page * 2, page * 2 + 2).map((label, col) => (
+                  <TableCard
+                    key={col}
+                    variant={printVariant}
+                    label={label}
+                    tableWord={text.tableWord}
+                    logoSrc={logoSrc}
+                    qr={dataUrl}
+                    title={settings.title}
+                    url={displayUrl}
+                  />
+                ))}
               </div>
             ))}
           </div>
@@ -292,19 +311,17 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
               <section className="mt-4 space-y-3 border-t pt-4">
                 <h3 className="text-sm font-semibold">{text.tableCards}</h3>
                 <p dir={textDir} className="text-xs text-muted-foreground">{text.tableCardsHint}</p>
+                <Field label={text.numberOfTables}>
+                  <Input
+                    value={tablesInput}
+                    onChange={(e) => setTablesInput(e.target.value)}
+                    placeholder="1, 2, 3, 5, 10"
+                  />
+                </Field>
+                <p className="text-xs text-muted-foreground">{tablesForPrint.length} {text.tableCards}</p>
                 <div className="flex flex-wrap items-end gap-3">
-                  <Field label={text.numberOfTables}>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={200}
-                      className="w-28"
-                      value={cardCount}
-                      onChange={(e) => setCardCount(Math.min(Math.max(parseInt(e.target.value, 10) || 1, 1), 200))}
-                    />
-                  </Field>
                   <div className="relative inline-block">
-                    <Button type="button" onClick={() => setPrintMenuOpen((v) => !v)} disabled={!readyToScan}>
+                    <Button type="button" onClick={() => setPrintMenuOpen((v) => !v)} disabled={!readyToScan || !tablesForPrint.length}>
                       <Printer className="h-4 w-4" aria-hidden /> {text.print}
                       <ChevronDown className="h-4 w-4" aria-hidden />
                     </Button>
@@ -334,7 +351,7 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
 
 function TableCard({
   variant,
-  number,
+  label,
   tableWord,
   logoSrc,
   qr,
@@ -342,7 +359,7 @@ function TableCard({
   url
 }: {
   variant: QrPrintVariant;
-  number: number;
+  label: string;
   tableWord: string;
   logoSrc: string;
   qr: string;
@@ -352,7 +369,7 @@ function TableCard({
   if (variant === "qr") {
     return (
       <div className="qr-holder qr-holder--plain">
-        <div className="qr-holder__num">{tableWord} {number}</div>
+        <div className="qr-holder__num">{tableWord} {label}</div>
         <div className="qr-holder__tile">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {qr ? <img src={qr} alt="" /> : null}
@@ -365,7 +382,7 @@ function TableCard({
     <div className="qr-holder qr-holder--design">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="qr-holder__logo" src={logoSrc} alt="Stone Cafe" />
-      <div className="qr-holder__num">{tableWord} {number}</div>
+      <div className="qr-holder__num">{tableWord} {label}</div>
       <div className="qr-holder__tile">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {qr ? <img src={qr} alt="" /> : null}
