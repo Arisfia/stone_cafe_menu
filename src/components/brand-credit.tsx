@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils/cn";
 // The agency that builds & maintains this app. Centralized here so the credit
 // reads the same everywhere (menu footer, welcome screen, admin login, receipt)
 // and can be renamed in one place later.
-export const BRAND_AGENCY = "arisfia";
+export const BRAND_AGENCY = "Arisfia Agency";
 // TODO: placeholder — swap for the real arisfia site once it's built (separate project).
 export const BRAND_AGENCY_URL = "https://arisfia.com";
 
@@ -57,7 +57,7 @@ function AgencyMark() {
       aria-hidden
       className="inline-flex h-4 w-4 items-center justify-center rounded-[4px] border border-current text-[10px] font-bold leading-none"
     >
-      a
+      A
     </span>
   );
 }
