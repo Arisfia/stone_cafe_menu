@@ -168,17 +168,25 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableCo
         </div>
         <div className="qr-print-area">
           <div className="qr-sheet">
-            {Array.from({ length: tableCount }).map((_, i) => (
-              <TableCard
-                key={i}
-                variant={printVariant}
-                number={i + 1}
-                tableWord={text.tableWord}
-                logoSrc={logoSrc}
-                qr={dataUrl}
-                title={settings.title}
-                url={displayUrl}
-              />
+            {Array.from({ length: Math.ceil(tableCount / 2) }).map((_, page) => (
+              <div className="qr-page" key={page}>
+                {[0, 1].map((col) => {
+                  const number = page * 2 + col + 1;
+                  if (number > tableCount) return null;
+                  return (
+                    <TableCard
+                      key={col}
+                      variant={printVariant}
+                      number={number}
+                      tableWord={text.tableWord}
+                      logoSrc={logoSrc}
+                      qr={dataUrl}
+                      title={settings.title}
+                      url={displayUrl}
+                    />
+                  );
+                })}
+              </div>
             ))}
           </div>
         </div>
@@ -367,7 +375,6 @@ function TableCard({
         <p className="qr-holder__title" dir="rtl" lang="ar">{title.ar}</p>
         <p className="qr-holder__title qr-holder__title--en">{title.en}</p>
       </div>
-      <p className="qr-holder__url">{url}</p>
     </div>
   );
 }
