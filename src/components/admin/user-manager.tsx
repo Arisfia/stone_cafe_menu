@@ -9,6 +9,8 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import {
@@ -365,7 +367,11 @@ export function UserManager() {
       {/* Existing users */}
       <div className="space-y-3">
         {loading ? (
-          <p className="text-sm text-muted-foreground">{text.checkingSession}</p>
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-[72px] w-full rounded-xl" />
+            ))}
+          </div>
         ) : sortedUsers.length ? (
           sortedUsers.map((profile) => (
             <UserRow
@@ -387,24 +393,19 @@ export function UserManager() {
         )}
       </div>
 
-      {removeTarget ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>{text.removeAccess}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p dir={textDir} className="text-sm text-muted-foreground">
-                {formatAdminText(text.removeAccessConfirm, { email: removeTarget.email })}
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setRemoveTarget(null)} disabled={saving}>{text.cancel}</Button>
-                <Button variant="destructive" onClick={confirmRemove} disabled={saving}>{text.removeAccess}</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={Boolean(removeTarget)}
+        dir={textDir}
+        variant="destructive"
+        icon={<Trash2 className="h-5 w-5" aria-hidden />}
+        title={text.removeAccess}
+        description={removeTarget ? formatAdminText(text.removeAccessConfirm, { email: removeTarget.email }) : ""}
+        confirmLabel={text.removeAccess}
+        cancelLabel={text.cancel}
+        loading={saving}
+        onConfirm={confirmRemove}
+        onCancel={() => setRemoveTarget(null)}
+      />
     </div>
   );
 }

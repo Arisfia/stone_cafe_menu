@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ImageUploadField } from "@/components/forms/image-upload-field";
 import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { deleteMenuItem, getAdminAppData, saveMenuItem, updateMenuItemAvailability } from "@/lib/firebase/firestore";
@@ -52,7 +54,7 @@ const emptyItem: MenuItemFormData = {
 };
 
 export function MenuItemManager() {
-  const { locale, text } = useAdminLocale();
+  const { locale, text, dir: textDir } = useAdminLocale();
   const [data, setData] = useState<AppData | null>(null);
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -293,7 +295,9 @@ export function MenuItemManager() {
           </Select>
         </div>
         <div className="grid gap-3">
-          {items.length ? items.map((item) => {
+          {!data ? (
+            Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-[68px] w-full rounded-xl" />)
+          ) : items.length ? items.map((item) => {
             const category = data?.categories.find((entry) => entry.id === item.categoryId);
             const categoryName = localized(category?.name, locale, text.noCategory);
             const expanded = expandedItemId === item.id;
@@ -400,24 +404,23 @@ export function MenuItemManager() {
         </div>
       </div>
 
-      {deleteTarget ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>{text.deleteItem}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {formatAdminText(text.deleteItemConfirm, { name: localized(deleteTarget.name, locale, deleteTarget.name.en) })}
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={saving}>{text.cancel}</Button>
-                <Button variant="destructive" onClick={confirmDelete} disabled={saving}>{text.delete}</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        dir={textDir}
+        variant="destructive"
+        icon={<Trash2 className="h-5 w-5" aria-hidden />}
+        title={text.deleteItem}
+        description={
+          deleteTarget
+            ? formatAdminText(text.deleteItemConfirm, { name: localized(deleteTarget.name, locale, deleteTarget.name.en) })
+            : ""
+        }
+        confirmLabel={text.delete}
+        cancelLabel={text.cancel}
+        loading={saving}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

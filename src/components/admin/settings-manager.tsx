@@ -343,7 +343,7 @@ export function SettingsManager() {
         <Card id="account" className="settings-panel">
           <CardHeader><CardTitle>{text.accountSettings}</CardTitle></CardHeader>
           <CardContent id="admin-password">
-            <form className="grid gap-4 md:grid-cols-3" onSubmit={handlePasswordChange}>
+            <form className="grid gap-4 md:grid-cols-3" onSubmit={handlePasswordChange} noValidate>
               <Field label={text.currentPassword}><Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} /></Field>
               <Field label={text.newPassword}><Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /></Field>
               <Field label={text.confirmNewPassword}><Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></Field>

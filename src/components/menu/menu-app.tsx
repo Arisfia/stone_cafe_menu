@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CategoryIcon } from "@/components/menu/category-icon";
 import { LocationPinIcon, PhoneSignalIcon, WhatsappSendIcon } from "@/components/menu/menu-contact-icons";
 import { OpenStatusBadge } from "@/components/menu/open-status-badge";
@@ -39,6 +40,13 @@ export function MenuApp({
   const [query, setQuery] = useState("");
   const [activeCategoryId, setActiveCategoryId] = useState<string>("all");
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
+  const [contactPrompt, setContactPrompt] = useState<{
+    title: string;
+    description?: string;
+    confirmLabel: string;
+    href: string;
+    external: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -175,22 +183,58 @@ export function MenuApp({
           <div className="flex max-w-full flex-wrap items-center gap-2 text-sm">
             <OpenStatusBadge locale={locale} textDir={textDir} openHour={data.general.openHour} closeHour={data.general.closeHour} />
             {!loading && data.general.phone ? (
-              <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`tel:${data.general.phone}`}>
+              <button
+                type="button"
+                className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted"
+                onClick={() =>
+                  setContactPrompt({
+                    title: translate(locale, "menu.callConfirmTitle"),
+                    description: data.general.phone,
+                    confirmLabel: translate(locale, "menu.call"),
+                    href: `tel:${data.general.phone}`,
+                    external: false
+                  })
+                }
+              >
                 <PhoneSignalIcon className="h-4 w-4 text-primary" />
                 <span className="truncate">{data.general.phone}</span>
-              </a>
+              </button>
             ) : null}
             {!loading && data.general.whatsapp ? (
-              <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={`https://wa.me/${data.general.whatsapp.replace(/\D/g, "")}`} target="_blank">
+              <button
+                type="button"
+                className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted"
+                onClick={() =>
+                  setContactPrompt({
+                    title: translate(locale, "menu.whatsappConfirmTitle"),
+                    description: restaurantName,
+                    confirmLabel: translate(locale, "menu.open"),
+                    href: `https://wa.me/${(data.general.whatsapp || "").replace(/\D/g, "")}`,
+                    external: true
+                  })
+                }
+              >
                 <WhatsappSendIcon className="h-4 w-4 text-primary" />
                 <span dir={textDir}>{translate(locale, "menu.whatsapp")}</span>
-              </a>
+              </button>
             ) : null}
             {!loading && data.general.googleMapsUrl ? (
-              <a className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted" href={data.general.googleMapsUrl} target="_blank">
+              <button
+                type="button"
+                className="focus-ring inline-flex max-w-full items-center gap-2 rounded-full border bg-card px-3 py-1.5 transition-colors hover:bg-muted"
+                onClick={() =>
+                  setContactPrompt({
+                    title: translate(locale, "menu.mapsConfirmTitle"),
+                    description: restaurantName,
+                    confirmLabel: translate(locale, "menu.open"),
+                    href: data.general.googleMapsUrl || "",
+                    external: true
+                  })
+                }
+              >
                 <LocationPinIcon className="h-4 w-4 text-primary" />
                 <span dir={textDir}>{translate(locale, "menu.openMaps")}</span>
-              </a>
+              </button>
             ) : null}
             {!loading ? <SocialLinks social={data.general.socialLinks} className="ms-1" /> : null}
           </div>
@@ -311,6 +355,26 @@ export function MenuApp({
           onClose={() => setActiveItem(null)}
         />
       ) : null}
+
+      <ConfirmDialog
+        open={Boolean(contactPrompt)}
+        dir={textDir}
+        title={contactPrompt?.title || ""}
+        description={contactPrompt?.description ? <span dir="auto">{contactPrompt.description}</span> : undefined}
+        confirmLabel={contactPrompt?.confirmLabel || ""}
+        cancelLabel={translate(locale, "menu.cancel")}
+        onCancel={() => setContactPrompt(null)}
+        onConfirm={() => {
+          if (contactPrompt) {
+            if (contactPrompt.external) {
+              window.open(contactPrompt.href, "_blank", "noopener,noreferrer");
+            } else {
+              window.location.href = contactPrompt.href;
+            }
+          }
+          setContactPrompt(null);
+        }}
+      />
 
       <footer className="relative z-10 px-4 pb-10 pt-6">
         <BrandCredit />

@@ -23,6 +23,7 @@ import {
   type LucideIcon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminLocale } from "@/components/admin/admin-preferences";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { getAdminAppData, getPosState } from "@/lib/firebase/firestore";
@@ -41,6 +42,8 @@ export function DashboardStats() {
     getAdminAppData().then(setData).catch(() => undefined);
     getPosState().then((state) => setCompleted(state.completedOrders || [])).catch(() => undefined);
   }, []);
+
+  if (!data) return <DashboardSkeleton />;
 
   const categories = data?.categories || [];
   const items = data?.menuItems || [];
@@ -243,4 +246,27 @@ function localDateKey(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-52" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-[76px] w-full rounded-xl" />
+        ))}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Skeleton className="h-56 w-full rounded-xl" />
+        <Skeleton className="h-56 w-full rounded-xl" />
+      </div>
+      <Skeleton className="h-40 w-full rounded-xl" />
+    </div>
+  );
 }

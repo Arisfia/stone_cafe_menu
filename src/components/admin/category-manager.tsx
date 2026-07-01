@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { adminErrorText, formatAdminText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { CATEGORY_ICONS, CategoryIcon, DEFAULT_CATEGORY_ICON } from "@/components/menu/category-icon";
 import { getAdminAppData, deleteCategory, deleteMenuItem, saveCategory, saveMenuItem, updateCategoryActive } from "@/lib/firebase/firestore";
@@ -232,7 +233,9 @@ export function CategoryManager() {
           </Select>
         </div>
         <div className="grid gap-3">
-          {categories.length ? categories.map((category) => {
+          {!data ? (
+            Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-[68px] w-full rounded-xl" />)
+          ) : categories.length ? categories.map((category) => {
             const expanded = expandedCategoryId === category.id;
             const itemCount = data?.menuItems.filter((item) => item.categoryId === category.id).length || 0;
             const availableItemCount = data?.menuItems.filter((item) => item.categoryId === category.id && item.isAvailable && !item.isSoldOut).length || 0;
@@ -328,8 +331,18 @@ export function CategoryManager() {
       </div>
 
       {deleteTarget ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-md">
+        <div
+          className="dialog-backdrop fixed inset-0 z-[70] flex items-end justify-center p-3 sm:items-center sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={() => {
+            if (!saving) {
+              setDeleteTarget(null);
+              setDeleteMode("move");
+            }
+          }}
+        >
+          <Card className="dialog-panel w-full max-w-md" onMouseDown={(event) => event.stopPropagation()}>
             <CardHeader>
               <CardTitle>{text.deleteCategory}</CardTitle>
             </CardHeader>

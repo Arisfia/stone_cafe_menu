@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { logoutAdmin } from "@/lib/firebase/auth";
 import { cn } from "@/lib/utils/cn";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
@@ -82,9 +83,26 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   if (auth.loading) {
     return (
-      <main dir="ltr" className="flex min-h-screen items-center justify-center text-muted-foreground">
-        <span dir={textDir}>{text.checkingSession}</span>
-      </main>
+      <div dir="ltr" className="flex min-h-screen">
+        <aside className="hidden w-64 shrink-0 flex-col gap-3 border-e bg-card p-4 sm:flex">
+          <Skeleton className="h-10 w-40" />
+          <div className="mt-4 space-y-2">
+            {Array.from({ length: 7 }).map((_, index) => (
+              <Skeleton key={index} className="h-9 w-full" />
+            ))}
+          </div>
+          <Skeleton className="mt-auto h-12 w-full" />
+        </aside>
+        <main className="flex-1 space-y-6 p-6">
+          <Skeleton className="h-9 w-56" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-28 w-full rounded-xl" />
+            ))}
+          </div>
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </main>
+      </div>
     );
   }
 

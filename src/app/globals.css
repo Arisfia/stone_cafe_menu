@@ -308,6 +308,38 @@ body.overflow-lock {
   will-change: opacity, transform, clip-path;
 }
 
+/* Site-styled confirm dialog (replaces native window.confirm / browser prompts) */
+@keyframes dialog-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dialog-backdrop {
+  background: hsl(var(--background) / 0.55);
+  backdrop-filter: blur(4px);
+  animation: dialog-backdrop-in 0.2s ease-out;
+}
+
+.dialog-panel {
+  animation: dialog-panel-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
 /* Menu category icon animations */
 @keyframes cat-bob {
   0%, 100% { transform: translateY(0); }
@@ -702,6 +734,11 @@ body.overflow-lock {
   .social-anim-facebook svg,
   .social-anim-snapchat svg,
   .status-closed-dot {
+    animation: none;
+  }
+
+  .dialog-backdrop,
+  .dialog-panel {
     animation: none;
   }
 }

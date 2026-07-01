@@ -21,6 +21,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ identifier?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 
   // Already signed in as approved staff → skip the login page and go straight to
@@ -33,6 +34,14 @@ export function LoginForm() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // Validate in-app (site-styled inline errors) instead of the browser's
+    // native "please fill out this field" bubble — the form is noValidate.
+    const nextFieldErrors = {
+      identifier: identifier.trim() ? undefined : text.requiredField,
+      password: password ? undefined : text.requiredField
+    };
+    setFieldErrors(nextFieldErrors);
+    if (nextFieldErrors.identifier || nextFieldErrors.password) return;
     setLoading(true);
     setError("");
     try {
@@ -67,18 +76,31 @@ export function LoginForm() {
               {text.missingFirebase}
             </p>
           ) : null}
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <Field label={text.usernameOrEmail} labelDir={textDir} htmlFor="identifier">
-              <Input id="identifier" type="text" autoComplete="username" value={identifier} onChange={(event) => setIdentifier(event.target.value)} required />
+          <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+            <Field label={text.usernameOrEmail} labelDir={textDir} htmlFor="identifier" error={fieldErrors.identifier}>
+              <Input
+                id="identifier"
+                type="text"
+                autoComplete="username"
+                value={identifier}
+                onChange={(event) => {
+                  setIdentifier(event.target.value);
+                  if (fieldErrors.identifier) setFieldErrors((prev) => ({ ...prev, identifier: undefined }));
+                }}
+                required
+              />
             </Field>
-            <Field label={text.password} labelDir={textDir} htmlFor="password">
+            <Field label={text.password} labelDir={textDir} htmlFor="password" error={fieldErrors.password}>
               <div className="flex gap-2">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                  }}
                   required
                 />
                 <Button type="button" variant="outline" size="icon" onClick={() => setShowPassword((value) => !value)} aria-label={text.showPassword}>

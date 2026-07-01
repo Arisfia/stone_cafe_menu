@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { adminErrorText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { deleteExpense, getAdminAppData, getPosState, listExpenses, saveExpense } from "@/lib/firebase/firestore";
@@ -196,7 +197,7 @@ export function ExpenseManager() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form className="space-y-5" onSubmit={handleCreate}>
+            <form className="space-y-5" onSubmit={handleCreate} noValidate>
               <Field label={text.expenseTitle}>
                 <Input value={title} onChange={(event) => setTitle(event.target.value)} autoFocus />
               </Field>
@@ -349,7 +350,16 @@ export function ExpenseManager() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-sm text-muted-foreground">{text.checkingSession}</p>
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              ))}
+            </div>
           ) : filteredExpenses.length ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] text-sm">

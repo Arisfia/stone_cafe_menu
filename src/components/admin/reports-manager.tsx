@@ -5,6 +5,7 @@ import { BadgePercent, BarChart3, FileText, ListOrdered, Printer, Receipt, Scale
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { adminErrorText, useAdminLocale } from "@/components/admin/admin-preferences";
 import { getPosState, listExpenses } from "@/lib/firebase/firestore";
 import { localized } from "@/lib/i18n/config";
@@ -141,6 +142,24 @@ export function ReportsManager() {
     { key: "monthly", label: text.monthly },
     { key: "all", label: text.allTime }
   ];
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <Skeleton key={index} className="h-24 w-full rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-56 w-full rounded-xl" />
+        <Skeleton className="h-72 w-full rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
