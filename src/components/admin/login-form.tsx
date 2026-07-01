@@ -4,12 +4,21 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { signInAdmin } from "@/lib/firebase/auth";
 import { hasFirebaseClientConfig } from "@/lib/firebase/client";
-import { AdminPreferences, useAdminLocale } from "@/components/admin/admin-preferences";
+import {
+  AdminPreferences,
+  useAdminLocale,
+} from "@/components/admin/admin-preferences";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { BrandCredit } from "@/components/brand-credit";
 
@@ -21,7 +30,10 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<{ identifier?: string; password?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{
+    identifier?: string;
+    password?: string;
+  }>({});
   const [loading, setLoading] = useState(false);
 
   // Already signed in as approved staff → skip the login page and go straight to
@@ -38,7 +50,7 @@ export function LoginForm() {
     // native "please fill out this field" bubble — the form is noValidate.
     const nextFieldErrors = {
       identifier: identifier.trim() ? undefined : text.requiredField,
-      password: password ? undefined : text.requiredField
+      password: password ? undefined : text.requiredField,
     };
     setFieldErrors(nextFieldErrors);
     if (nextFieldErrors.identifier || nextFieldErrors.password) return;
@@ -48,7 +60,11 @@ export function LoginForm() {
       await signInAdmin(identifier, password);
       router.replace("/admin/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? friendlyAuthError(err.message, text) : text.loginFailed);
+      setError(
+        err instanceof Error
+          ? friendlyAuthError(err.message, text)
+          : text.loginFailed,
+      );
     } finally {
       setLoading(false);
     }
@@ -56,28 +72,37 @@ export function LoginForm() {
 
   if (alreadySignedIn) {
     return (
-      <main dir="ltr" className="flex min-h-screen items-center justify-center text-muted-foreground">
+      <main
+        dir="ltr"
+        className="flex min-h-screen items-center justify-center text-muted-foreground">
         <span dir={textDir}>{text.redirecting}</span>
       </main>
     );
   }
 
   return (
-    <main dir="ltr" className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-6">
+    <main
+      dir="ltr"
+      className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-6">
       <Card className="w-full max-w-md" dir="ltr">
         <CardHeader>
           <AdminPreferences />
           <CardTitle dir={textDir}>{text.loginTitle}</CardTitle>
-          <CardDescription dir={textDir}>{text.loginDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           {!hasFirebaseClientConfig() ? (
-            <p dir={textDir} className="mb-4 rounded-md border border-accent bg-accent/15 p-3 text-sm">
+            <p
+              dir={textDir}
+              className="mb-4 rounded-md border border-accent bg-accent/15 p-3 text-sm">
               {text.missingFirebase}
             </p>
           ) : null}
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-            <Field label={text.usernameOrEmail} labelDir={textDir} htmlFor="identifier" error={fieldErrors.identifier}>
+            <Field
+              label={text.usernameOrEmail}
+              labelDir={textDir}
+              htmlFor="identifier"
+              error={fieldErrors.identifier}>
               <Input
                 id="identifier"
                 type="text"
@@ -85,12 +110,20 @@ export function LoginForm() {
                 value={identifier}
                 onChange={(event) => {
                   setIdentifier(event.target.value);
-                  if (fieldErrors.identifier) setFieldErrors((prev) => ({ ...prev, identifier: undefined }));
+                  if (fieldErrors.identifier)
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      identifier: undefined,
+                    }));
                 }}
                 required
               />
             </Field>
-            <Field label={text.password} labelDir={textDir} htmlFor="password" error={fieldErrors.password}>
+            <Field
+              label={text.password}
+              labelDir={textDir}
+              htmlFor="password"
+              error={fieldErrors.password}>
               <div className="flex gap-2">
                 <Input
                   id="password"
@@ -99,12 +132,25 @@ export function LoginForm() {
                   value={password}
                   onChange={(event) => {
                     setPassword(event.target.value);
-                    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                    if (fieldErrors.password)
+                      setFieldErrors((prev) => ({
+                        ...prev,
+                        password: undefined,
+                      }));
                   }}
                   required
                 />
-                <Button type="button" variant="outline" size="icon" onClick={() => setShowPassword((value) => !value)} aria-label={text.showPassword}>
-                  {showPassword ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowPassword((value) => !value)}
+                  aria-label={text.showPassword}>
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" aria-hidden />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden />
+                  )}
                 </Button>
               </div>
             </Field>
@@ -114,7 +160,9 @@ export function LoginForm() {
               </p>
             ) : null}
             <Button className="w-full" type="submit" disabled={loading}>
-              <span dir={textDir}>{loading ? text.signingIn : text.signIn}</span>
+              <span dir={textDir}>
+                {loading ? text.signingIn : text.signIn}
+              </span>
             </Button>
           </form>
         </CardContent>
@@ -124,8 +172,12 @@ export function LoginForm() {
   );
 }
 
-function friendlyAuthError(message: string, text: ReturnType<typeof useAdminLocale>["text"]) {
-  if (message.includes("auth/invalid-credential")) return text.invalidCredential;
+function friendlyAuthError(
+  message: string,
+  text: ReturnType<typeof useAdminLocale>["text"],
+) {
+  if (message.includes("auth/invalid-credential"))
+    return text.invalidCredential;
   if (message.includes("auth/too-many-requests")) return text.tooManyRequests;
   if (message.includes("not approved")) return message;
   if (message.includes("not configured")) return message;
