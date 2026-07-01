@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils/cn";
 // The agency that builds & maintains this app. Centralized here so the credit
 // reads the same everywhere (menu footer, welcome screen, admin login, receipt)
 // and can be renamed in one place later.
-export const BRAND_AGENCY = "flan Agency";
-// TODO: replace with the real flan Agency site (or Instagram) URL.
-export const BRAND_AGENCY_URL = "https://flanagency.com";
+export const BRAND_AGENCY = "arisfia";
+// TODO: placeholder — swap for the real arisfia site once it's built (separate project).
+export const BRAND_AGENCY_URL = "https://arisfia.com";
 
 // Subtle "Powered by <agency>" credit with a small logomark. Color is inherited,
 // so pass a text-* class via `className` to recolor it on tinted backgrounds
@@ -57,7 +57,7 @@ function AgencyMark() {
       aria-hidden
       className="inline-flex h-4 w-4 items-center justify-center rounded-[4px] border border-current text-[10px] font-bold leading-none"
     >
-      f
+      a
     </span>
   );
 }

@@ -26,7 +26,9 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableLa
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [tablesInput, setTablesInput] = useState("");
+  const [tableSource, setTableSource] = useState<"pos" | "custom">("pos");
+  const [posTables, setPosTables] = useState<string[]>([]);
+  const [customInput, setCustomInput] = useState("");
   const [printMenuOpen, setPrintMenuOpen] = useState(false);
   const menuUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/menu`;
 
@@ -36,8 +38,8 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableLa
     });
   }, [menuUrl]);
 
-  // Prefill the table list from the real POS tables (active, in display order).
-  // Editable afterwards, so the admin can print any specific subset.
+  // Load the real POS tables (active, in display order) for the "All POS tables"
+  // mode. The custom text field is never touched by this, so what you type stays.
   useEffect(() => {
     if (printMode) return;
     getPosState()
@@ -47,9 +49,9 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableLa
           .sort((a, b) => a.displayOrder - b.displayOrder)
           .map((table) => table.name.trim())
           .filter(Boolean);
-        setTablesInput(names.length ? names.join(", ") : "1, 2, 3, 4, 5");
+        setPosTables(names);
       })
-      .catch(() => setTablesInput("1, 2, 3, 4, 5"));
+      .catch(() => setPosTables([]));
   }, [printMode]);
 
   useEffect(() => {
@@ -162,11 +164,12 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableLa
     setError("");
   }
 
-  const tablesForPrint = tablesInput
+  const customLabels = customInput
     .split(",")
     .map((label) => label.trim())
     .filter(Boolean)
     .slice(0, 200);
+  const tablesForPrint = tableSource === "pos" ? posTables.slice(0, 200) : customLabels;
 
   function openPrint(mode: QrPrintVariant) {
     setPrintMenuOpen(false);
@@ -311,13 +314,30 @@ export function QrDesigner({ printMode = false, printVariant = "design", tableLa
               <section className="mt-4 space-y-3 border-t pt-4">
                 <h3 className="text-sm font-semibold">{text.tableCards}</h3>
                 <p dir={textDir} className="text-xs text-muted-foreground">{text.tableCardsHint}</p>
-                <Field label={text.numberOfTables}>
-                  <Input
-                    value={tablesInput}
-                    onChange={(e) => setTablesInput(e.target.value)}
-                    placeholder="1, 2, 3, 5, 10"
-                  />
-                </Field>
+
+                <div className="inline-flex rounded-md border bg-muted/30 p-0.5 text-sm">
+                  <button type="button" onClick={() => setTableSource("pos")} className={cn("rounded px-3 py-1.5", tableSource === "pos" ? "bg-background font-medium shadow-sm" : "text-muted-foreground")}>
+                    {text.allTables}
+                  </button>
+                  <button type="button" onClick={() => setTableSource("custom")} className={cn("rounded px-3 py-1.5", tableSource === "custom" ? "bg-background font-medium shadow-sm" : "text-muted-foreground")}>
+                    {text.specificTables}
+                  </button>
+                </div>
+
+                {tableSource === "pos" ? (
+                  <p className="rounded-md border bg-muted/15 p-3 text-sm text-muted-foreground">
+                    {posTables.length ? posTables.join(" · ") : text.noPosTables}
+                  </p>
+                ) : (
+                  <Field label={text.numberOfTables}>
+                    <Input
+                      value={customInput}
+                      onChange={(e) => setCustomInput(e.target.value)}
+                      placeholder="1, 2, 3, 5, 10"
+                    />
+                  </Field>
+                )}
+
                 <p className="text-xs text-muted-foreground">{tablesForPrint.length} {text.tableCards}</p>
                 <div className="flex flex-wrap items-end gap-3">
                   <div className="relative inline-block">
